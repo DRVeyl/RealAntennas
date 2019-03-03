@@ -63,8 +63,7 @@ namespace RealAntennas
                 Debug.LogFormat(ModTag + "Created {0}", customBody);
                 if (RACommNetParams != null)
                 {
-                    ConfigNode bodyNode = RACommNetParams.GetNode(body.name);
-                    if (bodyNode != null)
+                    if (RACommNetParams.GetNode("CELESTIALBODY", "name", body.name) is ConfigNode bodyNode)
                     {
                         foreach (ConfigNode gsNode in bodyNode.GetNodes("GROUNDSTATION"))
                         {
