@@ -1,0 +1,115 @@
+RealAntennasCommNetParams
+{
+	GROUNDSTATION
+	{
+		name = Kerbin: North Station One
+		gain = 40
+		codingGain = 10
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 318862.25
+		y = 538584.6875
+		z = -131528.3125
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Crater Rim
+		gain = 40
+		codingGain = 11
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 893471.375
+		y = 100192.8671875
+		z = 101297.9375
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Mesa South
+		gain = 40
+		codingGain = 12
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 196703.15625
+		y = -521155.84375
+		z = -415554.21875
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Nye Island
+		gain = 40
+		codingGain = 13
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 1003873.125
+		y = 57101.140625
+		z = -652642.5
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Harvester Massif
+		gain = 40
+		codingGain = 14
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 328807.1875
+		y = -123777.9296875
+		z = -906786.5625
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Baikerbanur
+		gain = 40
+		codingGain = 15
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = 653478.375
+		y = 213072.640625
+		z = 197878.3125
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: KSC
+		gain = 40
+		codingGain = 15
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = -16.5
+		y = -0.0338134765625
+		z = 11.3125
+	}
+	GROUNDSTATION
+	{
+		name = Kerbin: Veyl Site
+		gain = 40
+		codingGain = 16
+		powerDraw = 60
+		txPower = 60
+		efficiency = 1
+		sensitivity = -120
+		bandwidth = 10000000
+		x = -16000
+		y = -0.0338134765625
+		z = 11000.3125
+	}
+}
