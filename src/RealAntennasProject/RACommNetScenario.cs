@@ -65,12 +65,18 @@ namespace RealAntennas
                 {
                     if (RACommNetParams.GetNode("CELESTIALBODY", "name", body.name) is ConfigNode bodyNode)
                     {
-                        foreach (ConfigNode gsNode in bodyNode.GetNodes("GROUNDSTATION"))
+                        ConfigNode gsTopNode = null;
+                        foreach (ConfigNode n in bodyNode.GetNodes("GroundStations"))
+                            gsTopNode = n;
+                        if (gsTopNode != null)
                         {
-                            GameObject newHome = new GameObject(body.name);
-                            RACommNetHome home = newHome.AddComponent<RACommNetHome>();
-                            home.Configure(gsNode, body);
-                            Debug.LogFormat(ModTag + "Built: {0}", home);
+                            foreach (ConfigNode gsNode in gsTopNode.GetNodes("STATION"))
+                            {
+                                GameObject newHome = new GameObject(body.name);
+                                RACommNetHome home = newHome.AddComponent<RACommNetHome>();
+                                home.Configure(gsNode, body);
+                                Debug.LogFormat(ModTag + "Built: {0}", home);
+                            }
                         }
                     }
                 }
