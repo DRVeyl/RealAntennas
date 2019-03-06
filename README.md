@@ -7,7 +7,7 @@ The primary driver for this mod is to replace the KSP notion of an individual an
 
 First, this mod implements a new interface in place of the RangeModel, which operates on extended CommNode objects in CommNetwork.  The new objects have a different version of the antenna info, with characteristics for antenna gain, transmit power, coding gain, sensitivity [and a few others].  It implements a typical link budget calculation:  RxPower = TxPower + TxGain - FreeSpacePathLoss + RxGain + CodingGain.  Then, C/I or SNR = RxPower - Rx_sensitivity.
 
-Note there are some simplifications to get started.  We currently define "sensitivity" as a stand-in for receiver noise figure, and we aren't adjusting for temperature variation (so we skip G/T calcs).  This is resonable for Earth transmitters, where the noise temperature of the antenna is assumed to be dominated by the noise temperature of the receiver/electronics, and T~=300K on Earth.  It's inaccurate for space relays (tho maybe not for space-based antennas pointed at Earth).  We aren't implementing other path loss effects (atmospheric, or edge-diffraction).  We aren't implementing pointing loss, and are not enforcing that directional antennas are directional ala RT.  CodingGain is currently just a fixed value, versus a scalable factor to trade data rate for SNR.  We assume frequency as 1GHz, tho the path loss calculation properly accounts for the frequency parameter.  Bandwidth is specified in the transmitter but not yet affecting total noise power.  (Ref: sensitivity stand-in.)  Adjusting these are on the TODO, but I needed to get something up for review.
+Note there are some simplifications to get started.  We currently define "sensitivity" as a stand-in for receiver noise figure and noise temperature.  We aren't implementing other path loss effects (atmospheric, or edge-diffraction).  We aren't implementing pointing loss, and are not enforcing that directional antennas are directional ala RT.  CodingGain is currently just a fixed value, versus a scalable factor to trade data rate for SNR.  We assume frequency as 1GHz, tho the path loss calculation properly accounts for the frequency parameter.  Bandwidth is specified in the transmitter but not yet affecting total noise power.  (Ref: sensitivity stand-in.)  Adjusting these are on the TODO, but I needed to get something up for review.
 
 Second, this mod manipulates how CommNetVessels select the best antenna for a given link.  The current method is very simplistic: max (txPower + gain).  It might be better to defer the antenna selection until in TryConnect(), where antennas can be selected by some configurable paradigm: best receiver, best transmitter, best data rate, other?
 
@@ -16,3 +16,13 @@ Third, this mod manipulates SetNodeConnection() and TryConnect() in CommNetwork.
 We create from scratch CommNetHome and CommNetBody objects rather than replacing CommNet stock's.  We borrowed RemoteTech's ConfigNode structure.  We modified these primarily to get access to the methods that created CommNodes so we could replace them with our custom class.
 
 Future work is to move beyond the basic link budget calculation and start affecting data transmission rates, and implement variable coding schemes.  I don't think I have much talent for UI, so that will need some help.  CommNet links are assumed bidirectional, so when establishing them we take the worst result for each direction.  Value in implementing asymmetric communications links is TBD.  There's not much concept for uplink data rate beyond command and control signaling, but is there much purpose to uplink C2 if there is no telemetry/state data from the remote end?
+
+Reference materiel:
+
+https://forum.kerbalspaceprogram.com/index.php?/topic/156251-commnet-notes-for-modders/
+
+https://en.wikipedia.org/wiki/Johnson%E2%80%93Nyquist_noise
+
+https://en.wikipedia.org/wiki/Noise_temperature
+
+http://www.delmarnorth.com/microwave/requirements/satellite_noise.pdf
