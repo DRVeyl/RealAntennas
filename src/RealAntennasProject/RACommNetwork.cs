@@ -1,5 +1,4 @@
-﻿using System;
-using CommNet;
+﻿using CommNet;
 using UnityEngine;
 
 namespace RealAntennas
@@ -29,7 +28,8 @@ namespace RealAntennas
             if (!(b is RACommNode)) return base.SetNodeConnection(a, b);
 
             double distance = Vector3d.Distance(a.position, b.position);
-            double maxDistance = RACommNetScenario.RangeModel.GetMaximumRange(a as RACommNode, b as RACommNode);
+            RACommNode tmp = a as RACommNode;
+            double maxDistance = RACommNetScenario.RangeModel.GetMaximumRange(a as RACommNode, b as RACommNode, tmp.RAAntenna.Frequency);
             if (distance > maxDistance) {
 //                Debug.LogFormat(ModTag + "SetNodeConnection() disconnecting: distance {0} > max {1}", distance, maxDistance);
                 Disconnect(a, b);
@@ -52,14 +52,17 @@ namespace RealAntennas
                 Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not VeylCommNodes!", a, b);
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
             }
-            double FSPL = RACommNetScenario.RangeModel.PathLoss(distance);   // Default freq = 1GHz
-            double RSSI_Fwd = RACommNetScenario.RangeModel.ComputeRSSI(tx, rx, distance);
-            double RSSI_Rev = RACommNetScenario.RangeModel.ComputeRSSI(rx, tx, distance);
-            double RSSI = Math.Min(RSSI_Fwd, RSSI_Rev);     // Calculate for bi-directional.
-            double CI = RSSI - rx.RAAntenna.Sensitivity;
-            double scaledCI = RACommNetScenario.RangeModel.ConvertCIToScaleFactor(CI);
+            // This calc moved into RealAntennasRangeModel.
+            //double FSPL = RACommNetScenario.RangeModel.PathLoss(distance);   // Default freq = 1GHz
+            //double RSSI_Fwd = RACommNetScenario.RangeModel.ComputeRSSI(tx, rx, distance);
+            //double RSSI_Rev = RACommNetScenario.RangeModel.ComputeRSSI(rx, tx, distance);
+            //double CI_Fwd = RSSI_Fwd - RACommNetScenario.RangeModel.NoiseFloor(rx);
+            //double CI_Rev = RSSI_Rev - RACommNetScenario.RangeModel.NoiseFloor(tx);
+            //double CI = Math.Min(CI_Fwd, CI_Rev);   // Calc for bi-directional and take worst C/I.
+            //double scaledCI = RACommNetScenario.RangeModel.ConvertCIToScaleFactor(CI);
+            double scaledCI = RACommNetScenario.RangeModel.GetNormalizedRange(tx, rx, distance);
 //            Debug.LogFormat(ModTag + "TryConnect: {0} / {1} distance {2}.  FSPL: {3}dB.  RSSI: {4}dBm.  C/I: {5}dB", tx, rx, distance, FSPL, RSSI, CI);
-            if (CI < 0)
+            if (scaledCI < 0)
             {
 //                Debug.LogFormat(ModTag + "Signal quality too poor, returning false from TryConnect().");
                 Disconnect(a, b);

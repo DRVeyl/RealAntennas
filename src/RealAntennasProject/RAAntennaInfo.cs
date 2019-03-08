@@ -5,26 +5,24 @@ namespace RealAntennas
     public class RAAntennaInfo: CommNet.CommNode.AntennaInfo
     {
         // Efficiency not yet used.  Dishes are typ 65% efficient.
-        // Sensitivity: thermal noise floor is -174dBm/Hz.  1MHz (10^6) BW is 60 dB => NF=-114dBm.
-        // Early tech might not have been as sensitive, but since you can always slap an amplifier on the front [and you aren't worried
-        // about being saturated from nearby noise] carrying around a sensitivity value might not matter.
-        // Maybe better to just track bandwidth and calculate minimum received signal strength as above.
-        // Typ link budget is TxPower + AntennaGain + CodingGain - Path Loss - OtherLosses + Receiver Antenna Gain > Receiver Sensitivity
+        // Start implementing a calculation for sensitivity/noise floor based on thermal noise
+        // Typ link budget is TxPower + AntennaGain + CodingGain - Path Loss - OtherLosses + Receiver Antenna Gain > Receiver Noise Floor
 
-        public double Gain { get; set; }             // Physical directionality, measured in dBi
-        public double CodingGain { get; set; }       // Coding/spreading gain, for transmitters only
-        public double PowerDraw { get; set; }        // Measured in dBm (milliwatts)
-        public double TxPower { get; set; }          // PowerConsumption * Efficiency convenience.  dBm.
-        public double Efficiency { get; set; }       // 0.0-1.0, how efficient is the materiel, electronics, power amp, etc.
-        public double Sensitivity { get; set; }      // Min received signal level in dBm.
-        public double Bandwidth { get; set; }        // BW of signal.
+        public double Gain { get; set; }            // Physical directionality, measured in dBi
+        public double CodingGain { get; set; }      // Coding/spreading gain, for transmitters only
+        public double PowerDraw { get; set; }       // Measured in dBm (milliwatts)
+        public double TxPower { get; set; }         // PowerConsumption * Efficiency convenience.  dBm.
+        public double Efficiency { get; set; }      // 0.0-1.0, how efficient is the materiel, electronics, power amp, etc.
+        public double Bandwidth { get; set; }       // BW in Hz of signal.
+        public double Frequency { get; set; }       // Frequency in Hz of signal.
+        public double NoiseFigure { get; set; }     // Noise figure of receiver electronics in dB
         protected static readonly string ModTag = "[RealAntennasAntennaInfo] ";
 
         //        public Part partReference;
         //        public ProtoPartSnapshot partSnapshotReference = null;
 
 
-        public RAAntennaInfo() : this(0.0, 0.0, 0.0, 0.0, -1.0, -100.0, 1000.0)
+        public RAAntennaInfo() : this(0.0, 0.0, 0.0, 0.0, -1.0, 1e5, 1e9, 3)
         {
         }
 
@@ -34,8 +32,9 @@ namespace RealAntennas
                 double.Parse(node.GetValue("powerDraw")),
                 double.Parse(node.GetValue("txPower")),
                 double.Parse(node.GetValue("efficiency")),
-                double.Parse(node.GetValue("sensitivity")),
-                double.Parse(node.GetValue("bandwidth")))
+                double.Parse(node.GetValue("bandwidth")),
+                double.Parse(node.GetValue("frequency")),
+                double.Parse(node.GetValue("noiseFigure")))
         {
         }
 
@@ -44,31 +43,34 @@ namespace RealAntennas
             Debug.LogWarning(ModTag + "Parent parameterized constructor called!");
         }
 
-        public RAAntennaInfo(double gain, double codingGain, double powerDraw, double txPower, double efficiency, double sensitivity, double bandwidth)
+        public RAAntennaInfo(double gain, double codingGain, double powerDraw, double txPower, double efficiency, double bandwidth, double frequency, double noiseFigure)
         {
             Gain = gain;
             CodingGain = codingGain;
             PowerDraw = powerDraw;
             TxPower = txPower;
             Efficiency = efficiency;
-            Sensitivity = sensitivity;
             Bandwidth = bandwidth;
+            Frequency = frequency;
+            NoiseFigure = noiseFigure;
         }
 
         public void SetFromConfigNode(ConfigNode node) =>
             SetDoublesFromStrings(node.GetValue("gain"), node.GetValue("codingGain"), node.GetValue("powerDraw"),
-                                  node.GetValue("txPower"), node.GetValue("efficiency"), node.GetValue("sensitivity"),
-                                  node.GetValue("bandwidth"));
+                                  node.GetValue("txPower"), node.GetValue("efficiency"), node.GetValue("bandwidth"),
+                                  node.GetValue("frequency"), node.GetValue("noiseFigure"));
+        
 
-        public void SetDoublesFromStrings(string gain, string codingGain, string powerDraw, string txPower, string efficiency, string sensitivity, string bandwidth)
+        public void SetDoublesFromStrings(string gain, string codingGain, string powerDraw, string txPower, string efficiency, string bandwidth, string frequency, string noiseFigure)
         {
-            Gain = double.Parse(gain);
-            CodingGain = double.Parse(codingGain);
-            PowerDraw = double.Parse(powerDraw);
-            TxPower = double.Parse(txPower);
-            Efficiency = double.Parse(efficiency);
-            Sensitivity = double.Parse(sensitivity);
-            Bandwidth = double.Parse(bandwidth);
+            if (gain != null) Gain = double.Parse(gain);
+            if (codingGain != null) CodingGain = double.Parse(codingGain);
+            if (powerDraw != null) PowerDraw = double.Parse(powerDraw);
+            if (txPower != null) TxPower = double.Parse(txPower);
+            if (efficiency != null) Efficiency = double.Parse(efficiency);
+            if (bandwidth != null) Bandwidth = double.Parse(bandwidth);
+            if (frequency != null) Frequency= double.Parse(frequency);
+            if (noiseFigure != null) NoiseFigure = double.Parse(noiseFigure);
         }
 
 

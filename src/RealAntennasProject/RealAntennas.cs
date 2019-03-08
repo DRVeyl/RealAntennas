@@ -9,8 +9,9 @@ namespace RealAntennas
         [KSPField] public string powerDraw;
         [KSPField] public string txPower;
         [KSPField] public string efficiency;
-        [KSPField] public string sensitivity;
         [KSPField] public string bandwidth;
+        [KSPField] public string frequency;
+        [KSPField] public string noiseFigure;
 
         public RAAntennaInfo antennaInfo;
         protected static readonly string ModTag = "[RealAntenna] ";
@@ -18,9 +19,9 @@ namespace RealAntennas
 
         public RealAntenna() => antennaInfo = new RAAntennaInfo();
 
-        public RealAntenna(double gain, double codingGain, double powerDraw, double txPower, double efficiency, double sensitivity, double bandwidth)
+        public RealAntenna(double gain, double codingGain, double powerDraw, double txPower, double efficiency, double bandwidth, double frequency, double noiseFigure)
         {
-            antennaInfo = new RAAntennaInfo(gain, codingGain, powerDraw, txPower, efficiency, sensitivity, bandwidth);
+            antennaInfo = new RAAntennaInfo(gain, codingGain, powerDraw, txPower, efficiency, bandwidth, frequency, noiseFigure);
         }
 
         public override string GetInfo()
@@ -37,13 +38,13 @@ namespace RealAntennas
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
-            antennaInfo.SetDoublesFromStrings(gain, codingGain, powerDraw, txPower, efficiency, sensitivity, bandwidth);
+            antennaInfo.SetFromConfigNode(node);
         }
 
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            antennaInfo.SetDoublesFromStrings(gain, codingGain, powerDraw, txPower, efficiency, sensitivity, bandwidth);
+            antennaInfo.SetDoublesFromStrings(gain, codingGain, powerDraw, txPower, efficiency, bandwidth, frequency, noiseFigure);
         }
 
         public override float GetVesselSignalStrength()
