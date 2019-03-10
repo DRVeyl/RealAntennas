@@ -31,8 +31,11 @@ namespace RealAntennas
         {
             Vector3d vec = body.GetWorldSurfacePosition(lat, lon, alt);
             transform.SetPositionAndRotation(vec, Quaternion.identity);
+            transform.SetParent(body.transform);
             base.CreateNode();
             comm = new RACommNode(comm);
+            RACommNode t = comm as RACommNode;
+            t.Body = body;
             comm.OnNetworkPreUpdate += OnNetworkPreUpdate;
             Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);
         }

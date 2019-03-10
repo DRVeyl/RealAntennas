@@ -11,12 +11,14 @@ namespace RealAntennas
         protected static readonly string ModTrace = ModTag + "[Trace] ";
 
         public RAAntennaInfo RAAntenna { get; set; }
+        public CelestialBody Body { get; set; }
 
         public RACommNode() => Debug.Log("RACommNode constructor()");
         public RACommNode(CommNet.CommNode cn) : base()
         {
             antennaRelay = cn.antennaRelay;
             antennaTransmit = cn.antennaTransmit;
+            Body = null;
 
             bestCost = cn.bestCost;
             bestLink = cn.bestLink;
@@ -39,6 +41,12 @@ namespace RealAntennas
             transform = cn.transform;
             occluder = cn.occluder;
             precisePosition = cn.precisePosition;
+        }
+
+        public Vector3d GetSurfaceNormalVector()
+        {
+            Body.GetLatLonAlt(position, out double lat, out double lon, out double alt);
+            return Body.GetSurfaceNVector(lat, lon);
         }
 
         public override string ToString()
