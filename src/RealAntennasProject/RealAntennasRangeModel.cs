@@ -19,8 +19,8 @@ namespace RealAntennas
         public double GetMaximumRange(RACommNode a, RACommNode b, double frequency = 1e9)
         {
             // Determine the (tx,rx) direction that can sustain the least path loss = Worst receive sensitivity modified by transmitter power+coding.
-            double noiseFloor_a = NoiseFloor(a);
-            double noiseFloor_b = NoiseFloor(b);
+            double noiseFloor_a = NoiseFloor(a, b.position);
+            double noiseFloor_b = NoiseFloor(b, a.position);
             double min_tx = Math.Min(a.RAAntenna.TxPower + a.RAAntenna.CodingGain - noiseFloor_b,
                                      b.RAAntenna.TxPower + b.RAAntenna.CodingGain - noiseFloor_a);
             double targetPL = min_tx + a.RAAntenna.Gain + b.RAAntenna.Gain;
@@ -34,8 +34,8 @@ namespace RealAntennas
         }
         public double GetNormalizedRange(RACommNode a, RACommNode b, double distance)
         {
-            double CI_a_is_tx = ComputeRSSI(a, b, distance, a.RAAntenna.Frequency) - NoiseFloor(b);
-            double CI_b_is_tx = ComputeRSSI(b, a, distance, b.RAAntenna.Frequency) - NoiseFloor(a);
+            double CI_a_is_tx = ComputeRSSI(a, b, distance, a.RAAntenna.Frequency) - NoiseFloor(b, a.position);
+            double CI_b_is_tx = ComputeRSSI(b, a, distance, b.RAAntenna.Frequency) - NoiseFloor(a, b.position);
             double CI = Math.Min(CI_a_is_tx, CI_b_is_tx);
             return ConvertCIToScaleFactor(CI);
         }
@@ -53,7 +53,7 @@ namespace RealAntennas
             double FSPL = (20 * Math.Log10(distance * frequency)) + path_loss_constant;
             return FSPL;
         }
-        public double NoiseFloor (RACommNode rx)
+        public double NoiseFloor (RACommNode rx, Vector3d origin)
         {
             // Calculating sensitivity from [fake] effective temperature and bandwidth
             // How do we actually get temperature of an unloaded vessel?
@@ -86,7 +86,17 @@ namespace RealAntennas
             double boltzmann_dbW = -228.59917;
             double boltzmann_dbm = boltzmann_dbW + 30;
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
+            if (rx.ParentBody != null)
+            {
+                Vector3d normal = rx.GetSurfaceNormalVector();
+                Vector3d to_origin = rx.position - origin;
+                double angle = Vector3d.Angle(normal, to_origin);   // Declination to incoming signal (0=vertical, 90=horizon)
+            }
             double temperature = 290;
+
+            //            Debug.LogFormat("{0} to {1}: {2}.  Normal: {3}.  Angle: {4}.", tx.name, rx.name, AtoB, normal, angle);
+
+
             double sensitivity_dbm = boltzmann_dbm + (10 * Math.Log10(temperature * rx.RAAntenna.Bandwidth));
   //          Debug.LogFormat("NoiseFloor() for {0}: {1}dBm.", rx, sensitivity_dbm);
             return sensitivity_dbm;

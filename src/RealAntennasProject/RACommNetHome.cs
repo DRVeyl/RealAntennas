@@ -12,19 +12,19 @@ namespace RealAntennas
 
         public void Configure(ConfigNode node, CelestialBody celestialBody)
         {
-            nodeName = node.GetValue("name");
-            name = node.GetValue("name");
-            displaynodeName = Localizer.Format(node.GetValue("name"));
-            //            this.displaynodeName = Localizer.Format(stockHome.displaynodeName);
-            //            this.nodeTransform = stockHome.nodeTransform; 
+            nodeName = node.GetValue("Name");
+            name = node.GetValue("Name");
+            displaynodeName = Localizer.Format(node.GetValue("Name"));
+            //            displaynodeName = Localizer.Format(stockHome.displaynodeName);
+            //            nodeTransform = celestialBody.transform;
             isKSC = true;
             isPermanent = true;
             body = celestialBody;
             tempBody = celestialBody;
             config = node;
-            lat = double.Parse(node.GetValue("lat"));
-            lon = double.Parse(node.GetValue("lon"));
-            alt = double.Parse(node.GetValue("alt"));
+            lat = double.Parse(node.GetValue("Latitude"));
+            lon = double.Parse(node.GetValue("Longitude"));
+            alt = double.Parse(node.GetValue("Height"));
         }
 
         protected override void CreateNode()
@@ -35,7 +35,7 @@ namespace RealAntennas
             base.CreateNode();
             comm = new RACommNode(comm);
             RACommNode t = comm as RACommNode;
-            t.Body = body;
+            t.ParentBody = body;
             comm.OnNetworkPreUpdate += OnNetworkPreUpdate;
             Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);
         }
