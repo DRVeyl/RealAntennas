@@ -12,9 +12,9 @@ namespace RealAntennas
 
         public void Configure(ConfigNode node, CelestialBody celestialBody)
         {
-            nodeName = node.GetValue("Name");
-            name = node.GetValue("Name");
-            displaynodeName = Localizer.Format(node.GetValue("Name"));
+            nodeName = node.GetValue("name");
+            name = node.GetValue("name");
+            displaynodeName = Localizer.Format(node.GetValue("name"));
             //            displaynodeName = Localizer.Format(stockHome.displaynodeName);
             //            nodeTransform = celestialBody.transform;
             isKSC = true;
@@ -35,6 +35,7 @@ namespace RealAntennas
             base.CreateNode();
             comm = new RACommNode(comm);
             RACommNode t = comm as RACommNode;
+            t.RAAntenna = new GameObject(t.name).AddComponent<RealAntenna>();
             t.ParentBody = body;
             comm.OnNetworkPreUpdate += OnNetworkPreUpdate;
             Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);
@@ -45,10 +46,9 @@ namespace RealAntennas
             // Vessels, which change, will determine the appropriate antenna for their commnode in UpdateComm() which is part of PreUpdate()
             // So for commnet home nodes, which generally don't change (but no reason why we cannot make more complicated logic to give DSNs
             // MULTIPLE possible antenna configurations?), this seems the right place also to set the antenna.
-            RACommNode vcn = comm as RACommNode;
-            if (config != null && vcn != null)
+            if (config != null && (comm is RACommNode vcn))
             {
-                vcn.RAAntenna.SetFromConfigNode(config);
+                vcn.RAAntenna.LoadFromConfigNode(config);
             } else {
                 Debug.LogWarning(ModTag + "No config node or improper CommNode for {0}!", this);
             }

@@ -10,7 +10,7 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNode] ";
         protected static readonly string ModTrace = ModTag + "[Trace] ";
 
-        public RAAntennaInfo RAAntenna { get; set; }
+        public RealAntenna RAAntenna { get; set; }
         public CelestialBody ParentBody { get; set; }
         public Vessel ParentVessel { get; set; }
 
@@ -34,7 +34,7 @@ namespace RealAntennas
             // OnLinkCreateSignalModifier = cn.OnLinkCreateSignalModifier;
             //OnNetworkPostUpdate = cn.OnNetworkPostUpdate;
             //OnNetworkPreUpdate = cn.OnNetworkPreUpdate;
-            RAAntenna = new RAAntennaInfo();
+            RAAntenna = null;
             pathingID = cn.pathingID;
             scienceCurve = cn.scienceCurve;
             //            displayName = cn.displayName; // Certain I'm using displayName wrong.

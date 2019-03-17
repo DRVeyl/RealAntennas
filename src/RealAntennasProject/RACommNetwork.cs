@@ -64,7 +64,6 @@ namespace RealAntennas
 //            Debug.LogFormat(ModTag + "TryConnect: {0} / {1} distance {2}.  FSPL: {3}dB.  RSSI: {4}dBm.  C/I: {5}dB", tx, rx, distance, FSPL, RSSI, CI);
             if (scaledCI < 0)
             {
-//                Debug.LogFormat(ModTag + "Signal quality too poor, returning false from TryConnect().");
                 Disconnect(a, b);
                 return false;
             }
@@ -84,6 +83,7 @@ namespace RealAntennas
             //return base.TryConnect(tx, rx, distance*1e2, aCanRelay, bCanRelay, bothRelay);
             return true;
         }
+
         private bool TimeToValidate()
         {
             bool res = Time.timeSinceLevelLoad > lastRun + updatePeriod;

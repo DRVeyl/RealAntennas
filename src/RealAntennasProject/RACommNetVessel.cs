@@ -37,6 +37,7 @@ namespace RealAntennas
                 vcn.OnLinkCreateSignalModifier += GetSignalStrengthModifier;
                 vcn.OnNetworkPreUpdate += OnNetworkPreUpdate;
                 vcn.OnNetworkPostUpdate += OnNetworkPostUpdate;
+                vcn.ParentVessel = Vessel;
                 Debug.LogFormat(ModTag + "Replacing original commNode");
                 Comm = vcn;
             }
@@ -76,7 +77,7 @@ namespace RealAntennas
                 // Implement reselection hysteresis?  (If a connection exists, stick with it, only consider updating at a max rate)
                 if (ant.CanComm())
                 {
-                    double antennaScore = ant.antennaInfo.Gain + ant.antennaInfo.CodingGain + ant.antennaInfo.TxPower;
+                    double antennaScore = ant.Gain + ant.CodingGain + ant.TxPower;
 //                    Debug.LogFormat(ModTag + " Antenna {0} scores {1} versus best {2}", ant, antennaScore, bestAntennaScore);
                     if (antennaScore > bestAntennaScore)
                     {
@@ -88,7 +89,7 @@ namespace RealAntennas
             if ((Comm is RACommNode vcn) && bestAntenna != null)
             {
                 Debug.LogFormat(ModTag + " {0} UpdateComm() chose {1}", name, bestAntenna);
-                vcn.RAAntenna = bestAntenna.antennaInfo;
+                vcn.RAAntenna = bestAntenna;
             }
             base.UpdateComm();  // Can probably skip this...
         }
