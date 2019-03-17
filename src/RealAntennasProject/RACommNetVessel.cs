@@ -7,7 +7,7 @@ namespace RealAntennas
     public class RACommNetVessel : CommNet.CommNetVessel
     {
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
-        public List<RealAntenna> antennaList = new List<RealAntenna>();
+        public List<ModuleRealAntenna> antennaList = new List<ModuleRealAntenna>();
 
         public override IScienceDataTransmitter GetBestTransmitter()
         {
@@ -59,9 +59,9 @@ namespace RealAntennas
 
         protected override void UpdateComm()
         {
-            RealAntenna bestAntenna = null;
+            ModuleRealAntenna bestAntenna = null;
             double bestAntennaScore = -100;
-            foreach (RealAntenna ant in antennaList)
+            foreach (ModuleRealAntenna ant in antennaList)
             {
                 // TODO: Deal with antenna A = better receiver, antenna B = better transmitter.
                 // That can get rolled into the RealAntennasCommNode by discovering both options here and carrying them forward.
@@ -89,28 +89,28 @@ namespace RealAntennas
             if ((Comm is RACommNode vcn) && bestAntenna != null)
             {
                 Debug.LogFormat(ModTag + " {0} UpdateComm() chose {1}", name, bestAntenna);
-                vcn.RAAntenna = bestAntenna;
+                vcn.RAAntenna = bestAntenna.RAAntenna;
             }
             base.UpdateComm();  // Can probably skip this...
         }
 
-        protected List<RealAntenna> DiscoverAntennas()
+        protected List<ModuleRealAntenna> DiscoverAntennas()
         {
-            if (Vessel == null) return new List<RealAntenna>();
-            if (Vessel.loaded) return Vessel.FindPartModulesImplementing<RealAntenna>().ToList();
+            if (Vessel == null) return new List<ModuleRealAntenna>();
+            if (Vessel.loaded) return Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList();
             // Grr, now we have to go scan ProtoParts...
             Debug.LogFormat(ModTag + "Discovering antennas for unloaded CommNet vessel {0}, protoVessel {1}", name, Vessel.protoVessel);
-            List<RealAntenna> antList = new List<RealAntenna>();
+            List<ModuleRealAntenna> antList = new List<ModuleRealAntenna>();
 
             if (Vessel.protoVessel != null)
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
                     Debug.LogFormat("Testing protoPart {0}", part.partName);
-                    if (part.FindModule(RealAntenna.ModuleName) != null)
+                    if (part.FindModule(ModuleRealAntenna.ModuleName) != null)
                     {
                         Part tempPart = PartLoader.getPartInfoByName(part.partName).partPrefab;
-                        RealAntenna raModule = tempPart.FindModuleImplementing<RealAntenna>();
+                        ModuleRealAntenna raModule = tempPart.FindModuleImplementing<ModuleRealAntenna>();
                         Debug.LogFormat("Gathered the RA module: {0}", raModule);
                         antList.Add(raModule);
                     }

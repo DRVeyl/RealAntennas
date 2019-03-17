@@ -34,7 +34,7 @@ namespace RealAntennas
             // OnLinkCreateSignalModifier = cn.OnLinkCreateSignalModifier;
             //OnNetworkPostUpdate = cn.OnNetworkPostUpdate;
             //OnNetworkPreUpdate = cn.OnNetworkPreUpdate;
-            RAAntenna = null;
+            RAAntenna = new RealAntenna(cn.name);
             pathingID = cn.pathingID;
             scienceCurve = cn.scienceCurve;
             //            displayName = cn.displayName; // Certain I'm using displayName wrong.

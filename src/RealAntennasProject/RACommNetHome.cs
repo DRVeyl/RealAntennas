@@ -35,7 +35,6 @@ namespace RealAntennas
             base.CreateNode();
             comm = new RACommNode(comm);
             RACommNode t = comm as RACommNode;
-            t.RAAntenna = new GameObject(t.name).AddComponent<RealAntenna>();
             t.ParentBody = body;
             comm.OnNetworkPreUpdate += OnNetworkPreUpdate;
             Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);

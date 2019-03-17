@@ -26,8 +26,8 @@ namespace RealAntennas
                 }
                 CommNode cn = cv.Comm;
                 res += string.Format("Vessel {0} with CommNetVessel {1} has CommNode {2}\n", v, cv, cn);
-                List<RealAntenna> updatedlist = v.FindPartModulesImplementing<RealAntenna>();
-                foreach (RealAntenna ra in updatedlist)
+                List<ModuleRealAntenna> updatedlist = v.FindPartModulesImplementing<ModuleRealAntenna>();
+                foreach (ModuleRealAntenna ra in updatedlist)
                 {
                     res += string.Format("... Contains realAntenna part {0} / {1}.  CN antennaPower: {2}.  Part antennaPower: {3}\n",
                         ra.part, ra.GetInfo(), cn.antennaTransmit.power, ra.antennaPower);

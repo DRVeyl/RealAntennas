@@ -49,6 +49,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RealAntennas.cs" />
     <Compile Include="RACommNetBody.cs" />
