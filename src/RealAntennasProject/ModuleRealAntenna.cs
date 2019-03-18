@@ -10,6 +10,9 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dBm", guiFormat = "D1")]
         public double TxPower;       // Transmit Power in dBm (milliwatts)
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bps", guiFormat = "D1")]
+        public new double DataRate;      // Maximum data rate in bits/sec
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "Hz", guiFormat = "D0")]
         public double Frequency;    // Frequency in Hz
 

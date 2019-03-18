@@ -36,7 +36,9 @@ namespace RealAntennas
         {
             double CI_a_is_tx = ComputeRSSI(a, b, distance, a.RAAntenna.Frequency) - NoiseFloor(b, a.position);
             double CI_b_is_tx = ComputeRSSI(b, a, distance, b.RAAntenna.Frequency) - NoiseFloor(a, b.position);
-            double CI = Math.Min(CI_a_is_tx, CI_b_is_tx);
+            double CI = Math.Min(CI_a_is_tx - a.RAAntenna.MinimumCI, CI_b_is_tx - b.RAAntenna.MinimumCI);
+            Debug.LogFormat("GetNormalizedRange() a MinCI: {0}", a.RAAntenna.DebugMinCI());
+            Debug.LogFormat("GetNormalizedRange() b MinCI: {0}", b.RAAntenna.DebugMinCI());
             return ConvertCIToScaleFactor(CI);
         }
         public bool InRange(RACommNode a, RACommNode b, double distance) => GetNormalizedRange(a, b, distance) > 0;
@@ -89,12 +91,27 @@ namespace RealAntennas
             if (rx.ParentBody != null)
             {
                 Vector3d normal = rx.GetSurfaceNormalVector();
-                Vector3d to_origin = rx.position - origin;
+                Vector3d to_origin = origin - rx.position;
                 double angle = Vector3d.Angle(normal, to_origin);   // Declination to incoming signal (0=vertical, 90=horizon)
+//                Debug.LogFormat(ModTag + "AoA offset from vertical: {0}", angle);
+                foreach (CelestialBody child in rx.ParentBody.orbitingBodies)
+                {
+                    double childAngle = Vector3d.Angle(to_origin, child.position - rx.position);
+                    double childDistance = Vector3d.Distance(rx.position, child.position);
+//                    Debug.LogFormat(ModTag + "Offset from Origin to sibling {0}: {1} deg and distance {2}", child, childAngle, childDistance);
+                }
+                CelestialBody refBody = rx.ParentBody;
+                while (refBody != Planetarium.fetch.Sun)
+                {
+                    refBody = refBody.referenceBody;
+                    double parentAngle = Vector3d.Angle(to_origin, refBody.position - rx.position);
+                    double parentDistance = Vector3d.Distance(rx.position, refBody.position);
+//                    Debug.LogFormat(ModTag + "Offset from Origin to {0}: {1} deg and distance {2}", refBody, parentAngle, parentDistance);
+                }
             }
             double temperature = 290;
 
-            //            Debug.LogFormat("{0} to {1}: {2}.  Normal: {3}.  Angle: {4}.", tx.name, rx.name, AtoB, normal, angle);
+            // Debug.LogFormat("{0} to {1}: {2}.  Normal: {3}.  Angle: {4}.", tx.name, rx.name, AtoB, normal, angle);
 
 
             double sensitivity_dbm = boltzmann_dbm + (10 * Math.Log10(temperature * rx.RAAntenna.Bandwidth));
@@ -107,7 +124,6 @@ namespace RealAntennas
             if (CI > 20) return 1;
             return (CI / 20);
         }
-
 
     }
 }
