@@ -74,6 +74,15 @@ namespace RealAntennas
             if (this?.vessel?.Connection?.Comm is RACommNode node)
             {
                 Debug.LogFormat("Found CommNode {0}, link {1} linkNode {2}", node, node.bestLink, node.bestLinkNode);
+                CommNet.CommPath path = new CommNet.CommPath();
+                if  (node.Net.FindHome(node, path))
+                {
+                    Debug.LogFormat("Path {0} of len {1} with strength {2}/{3}", path, path.Count, path.signal, path.signalStrength);
+                    foreach (CommNet.CommLink link in path)
+                    {
+                        Debug.LogFormat("Link {0} from {1} to {2} strength {3}/{4}", link, link.start, link.end, link.signalStrength, link.signal);
+                    }
+                }
             }
             base.StartTransmission();
             Debug.LogFormat(ModTag + "StartTransmission() end");
@@ -86,6 +95,7 @@ namespace RealAntennas
 
         public override bool CanTransmit()
         {
+            Debug.LogFormat(ModTag + "CanTransmit() for {0}", this);
             return base.CanTransmit();
         }
 
