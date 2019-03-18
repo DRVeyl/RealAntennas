@@ -29,8 +29,7 @@ namespace RealAntennas
                 List<ModuleRealAntenna> updatedlist = v.FindPartModulesImplementing<ModuleRealAntenna>();
                 foreach (ModuleRealAntenna ra in updatedlist)
                 {
-                    res += string.Format("... Contains realAntenna part {0} / {1}.  CN antennaPower: {2}.  Part antennaPower: {3}\n",
-                        ra.part, ra.GetInfo(), cn.antennaTransmit.power, ra.antennaPower);
+                    res += string.Format("... Contains realAntenna part {0} / {1}.\n", ra.part, ra);
                 }
             }
             return res;

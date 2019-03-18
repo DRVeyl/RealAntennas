@@ -7,8 +7,7 @@ namespace RealAntennas
     public class RealAntennasRangeModel : CommNet.IRangeModel, IRealAntennasRangeModel
     {
         protected static readonly string ModTag = "[RealAntennasRangeModel] ";
-        protected double path_loss_constant;
-        public RealAntennasRangeModel() => path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
+        protected static double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
         public double GetMaximumRange(double aPower, double bPower) => 1e30;
         public double GetNormalizedRange(double aPower, double bPower, double distance) {
             Debug.LogWarningFormat(ModTag + "Old GetNormalizedRange() called");
@@ -37,8 +36,6 @@ namespace RealAntennas
             double CI_a_is_tx = ComputeRSSI(a, b, distance, a.RAAntenna.Frequency) - NoiseFloor(b, a.position);
             double CI_b_is_tx = ComputeRSSI(b, a, distance, b.RAAntenna.Frequency) - NoiseFloor(a, b.position);
             double CI = Math.Min(CI_a_is_tx - a.RAAntenna.MinimumCI, CI_b_is_tx - b.RAAntenna.MinimumCI);
-            Debug.LogFormat("GetNormalizedRange() a MinCI: {0}", a.RAAntenna.DebugMinCI());
-            Debug.LogFormat("GetNormalizedRange() b MinCI: {0}", b.RAAntenna.DebugMinCI());
             return ConvertCIToScaleFactor(CI);
         }
         public bool InRange(RACommNode a, RACommNode b, double distance) => GetNormalizedRange(a, b, distance) > 0;
@@ -49,7 +46,7 @@ namespace RealAntennas
                        rx.RAAntenna.Gain + tx.RAAntenna.CodingGain;
             return RSSI;
         }
-        public double PathLoss(double distance, double frequency = 1e9)   // Default 1GHz
+        public static double PathLoss(double distance, double frequency = 1e9)   // Default 1GHz
         {
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             double FSPL = (20 * Math.Log10(distance * frequency)) + path_loss_constant;
