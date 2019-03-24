@@ -51,6 +51,8 @@
   <ItemGroup>
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RACommLink.cs" />
+    <Compile Include="RAModulator.cs" />
     <Compile Include="RealAntennas.cs" />
     <Compile Include="RACommNetBody.cs" />
     <Compile Include="RACommNetHome.cs" />

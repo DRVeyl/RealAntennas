@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 namespace RealAntennas
 {
@@ -10,7 +8,7 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNode] ";
         protected static readonly string ModTrace = ModTag + "[Trace] ";
 
-        public RealAntenna RAAntenna { get; set; }
+        public List<RealAntenna> RAAntennaList { get; set; }
         public CelestialBody ParentBody { get; set; }
         public Vessel ParentVessel { get; set; }
 
@@ -34,7 +32,7 @@ namespace RealAntennas
             // OnLinkCreateSignalModifier = cn.OnLinkCreateSignalModifier;
             //OnNetworkPostUpdate = cn.OnNetworkPostUpdate;
             //OnNetworkPreUpdate = cn.OnNetworkPreUpdate;
-            RAAntenna = new RealAntenna(cn.name);
+            RAAntennaList = null;
             pathingID = cn.pathingID;
             scienceCurve = cn.scienceCurve;
             //            displayName = cn.displayName; // Certain I'm using displayName wrong.
@@ -54,7 +52,12 @@ namespace RealAntennas
 
         public override string ToString()
         {
-            return string.Format("{0}: {1}", base.ToString(), RAAntenna);
+            string s = string.Format("{0} : ", base.ToString());
+            foreach (RealAntenna ra in RAAntennaList)
+            {
+                s += string.Format("{0}  ",ra);
+            }
+            return s;
         }
 
         public override double GetSignalStrengthMultiplier(CommNet.CommNode b)
@@ -72,24 +75,6 @@ namespace RealAntennas
                 res = string.Format("Name:{0} DisplayName:{1} Cost:{2} Link:{3} LinkNode:{4} Position:{5} Transform:{6}",
                                             obj.name, obj.displayName, obj.bestCost, obj.bestLink, obj.bestLinkNode, obj.position, obj.transform);
             }
-            return res;
-        }
-
-        public static string DebugDumpDelegates(CommNet.CommNode obj)
-        {
-            string res = "";
-            if (obj.OnLinkCreateSignalModifier != null)
-            {
-                List<Delegate> delegates = obj.OnLinkCreateSignalModifier.GetInvocationList().ToList();
-                foreach (Delegate dgel in delegates)
-                {
-                    res += string.Format("  CreateSignal Delegate: {0} / {1}\n",
-                        obj.OnLinkCreateSignalModifier.Target,
-                        obj.OnLinkCreateSignalModifier.Method);
-                }
-            }
-            res += "OnNetworkPostUpdate Actions:\n" + RealAntennasTools.DumpAction(obj.OnNetworkPostUpdate);
-            res += "OnNetworkPreUpdate Actions:\n" + RealAntennasTools.DumpAction(obj.OnNetworkPreUpdate);
             return res;
         }
     }

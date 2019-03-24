@@ -1,26 +1,33 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace RealAntennas
 {
     public class ModuleRealAntenna : ModuleDataTransmitter
     {
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dBi", guiFormat = "F1")]
-        public double Gain;         // Physical directionality, measured in dBi
+        public double Gain;          // Physical directionality, measured in dBi
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dBm", guiFormat = "F1")]
         public double TxPower;       // Transmit Power in dBm (milliwatts)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bps", guiFormat = "N0")]
-        public new double DataRate;      // Maximum data rate in bits/sec
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "Hz", guiFormat = "N0")]
-        public double Frequency;    // Frequency in Hz
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "Hz", guiFormat = "N0")]
-        public double Bandwidth;    // Bandwidth in Hz
-
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
         public double PowerEfficiency;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "Hz", guiFormat = "N0")]
+        public double Frequency;     // Frequency in Hz
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "S/s", guiFormat = "N0")]
+        public double SymbolRate;    // Symbol Rate in Samples/second
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bits", guiFormat = "N0")]
+        public int ModulationBits;    // Constellation size (bits, 0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bits", guiFormat = "N0")]
+        public int MinModulationBits;    // Minimum constellation size (bits)
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dB", guiFormat = "F1")]
+        public double NoiseFigure;     // Noise figure of receiver electronics in dB
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
         public double SpectralEfficiency;
@@ -28,16 +35,12 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
         public double AntennaEfficiency;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dB", guiFormat = "F1")]
-        public double NoiseFigure;     // Noise figure of receiver electronics in dB
-
-        public double PowerDraw { get => TxPower / PowerEfficiency; }
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dB", guiFormat = "F1")]
-        public double CodingGain;      // Coding/spreading gain, for transmitters only
+        public double PowerDraw { get => LogScale(LinearScale(TxPower) / PowerEfficiency); }
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
+        public static double LinearScale(double x) => Math.Pow(10, x / 10);
+        public static double LogScale(double x) => 10 * Math.Log10(x);
         public RealAntenna RAAntenna = new RealAntenna();
 
         public override void OnLoad(ConfigNode node)
@@ -52,8 +55,7 @@ namespace RealAntennas
             return string.Format(ModTag + "\n" +
                                 "<b>Gain</b>: {0}\n" +
                                 "<b>Transmit Power</b>: {1}\n" +
-                                "<b>Data Rate</b>: {2}\n" +
-                                "<b>Bandwidth</b>: {3}\n", Gain, TxPower, DataRate, Bandwidth);
+                                "<b>Data Rate</b>: {2}\n", Gain, TxPower, DataRate);
         }
 
         public override string ToString()

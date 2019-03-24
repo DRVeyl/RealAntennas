@@ -2,8 +2,8 @@
 {
     public interface IRealAntennasRangeModel
     {
-        double GetMaximumRange(RACommNode a, RACommNode b, double frequency = 1e9);
-        double GetNormalizedRange(RACommNode a, RACommNode b, double distance);
-        bool InRange(RACommNode a, RACommNode b, double distance);
+        double GetMaximumRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double frequency = 1e9);
+        double GetNormalizedRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance);
+        bool InRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance);
     }
 }

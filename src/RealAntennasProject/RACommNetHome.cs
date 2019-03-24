@@ -1,5 +1,6 @@
 ﻿using CommNet;
 using KSP.Localization;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RealAntennas
@@ -36,22 +37,14 @@ namespace RealAntennas
             comm = new RACommNode(comm);
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
+            RealAntenna ant = new RealAntenna(name);
+            ant.LoadFromConfigNode(config);
+            t.RAAntennaList = new List<RealAntenna>
+            {
+                ant
+            };
             comm.OnNetworkPreUpdate += OnNetworkPreUpdate;
             Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);
-        }
-
-        protected override void OnNetworkPreUpdate()
-        {
-            // Vessels, which change, will determine the appropriate antenna for their commnode in UpdateComm() which is part of PreUpdate()
-            // So for commnet home nodes, which generally don't change (but no reason why we cannot make more complicated logic to give DSNs
-            // MULTIPLE possible antenna configurations?), this seems the right place also to set the antenna.
-            if (config != null && (comm is RACommNode vcn))
-            {
-                vcn.RAAntenna.LoadFromConfigNode(config);
-            } else {
-                Debug.LogWarning(ModTag + "No config node or improper CommNode for {0}!", this);
-            }
-            base.OnNetworkPreUpdate();
         }
 
         protected override void OnNetworkInitialized()

@@ -20,7 +20,7 @@ namespace RealAntennas
         protected override bool CreateControlConnection()
         {
             bool e = base.CreateControlConnection();
-//            Debug.LogFormat(ModTag + " CreateControlConnection() for {0} using {1} was {2}", name, Comm, e);
+            //            Debug.LogFormat(ModTag + " CreateControlConnection() for {0} using {1} was {2}", name, Comm, e);
             return e;       // Returns True if it changed the control connection state.
         }
 
@@ -38,7 +38,14 @@ namespace RealAntennas
                 vcn.OnNetworkPreUpdate += OnNetworkPreUpdate;
                 vcn.OnNetworkPostUpdate += OnNetworkPostUpdate;
                 vcn.ParentVessel = Vessel;
-                Debug.LogFormat(ModTag + "Replacing original commNode");
+                vcn.RAAntennaList = new List<RealAntenna>(GatherRealAntennas(antennaList));
+                vcn.RAAntennaList.Sort();
+                vcn.RAAntennaList.Reverse();
+                Debug.LogFormat(ModTag + "Replacing original commNode, now have {0} with antList {1}", vcn, vcn.RAAntennaList);
+                foreach (RealAntenna ra in vcn.RAAntennaList)
+                {
+                    Debug.LogFormat("RealAntenna {0}", ra);
+                }
                 Comm = vcn;
             }
             base.OnNetworkInitialized();
@@ -59,39 +66,17 @@ namespace RealAntennas
 
         protected override void UpdateComm()
         {
-            ModuleRealAntenna bestAntenna = null;
-            double bestAntennaScore = -100;
-            foreach (ModuleRealAntenna ant in antennaList)
+            base.UpdateComm();  // Need some features from base to set some features of the node I don't know about yet.
+        }
+
+        internal List<RealAntenna> GatherRealAntennas(List<ModuleRealAntenna> src)
+        {
+            List<RealAntenna> l = new List<RealAntenna>();
+            foreach (ModuleRealAntenna ant in src)
             {
-                // TODO: Deal with antenna A = better receiver, antenna B = better transmitter.
-                // That can get rolled into the RealAntennasCommNode by discovering both options here and carrying them forward.
-                // To get things off the ground, just pick the strongest transmitter.
-                // RA's RangeModel checks the link in both directions.  We could optimize "best tx" and "best rx"
-                // and will the RangeModel implicitly handle asymmetric connections?
-                // (Do we want to get into asymmetric data rates?)
-                //
-                // Revision Idea: make the entire antenna list accessible in the RACommNode.
-                // When evaluating InRange, test against the most sensitive antenna (lowest [sensitivity-gain])
-                // When connecting two CommNodes, choose pairing that produces highest data rate?
-                // Basically defer all these decisions to TryConnect().  Major efficiency hit, tho?
-                // Implement reselection hysteresis?  (If a connection exists, stick with it, only consider updating at a max rate)
-                if (ant.CanComm())
-                {
-                    double antennaScore = ant.Gain + ant.CodingGain + ant.TxPower;
-//                    Debug.LogFormat(ModTag + " Antenna {0} scores {1} versus best {2}", ant, antennaScore, bestAntennaScore);
-                    if (antennaScore > bestAntennaScore)
-                    {
-                        bestAntenna = ant;
-                        bestAntennaScore = antennaScore;
-                    }
-                }
+                l.Add(ant.RAAntenna);
             }
-            if ((Comm is RACommNode vcn) && bestAntenna != null)
-            {
-                Debug.LogFormat(ModTag + " {0} UpdateComm() chose {1}", name, bestAntenna);
-                vcn.RAAntenna = bestAntenna.RAAntenna;
-            }
-            base.UpdateComm();  // Can probably skip this...
+            return l;
         }
 
         protected List<ModuleRealAntenna> DiscoverAntennas()
@@ -124,6 +109,13 @@ namespace RealAntennas
             // Regenerate the antenna data.
             Debug.LogFormat("OnVesselModified() for {0}, vessel {1}.  Discovering antennas!", this, data);
             antennaList = DiscoverAntennas();
+            if (Comm is RACommNode vcn)
+            {
+                vcn.RAAntennaList.Clear();
+                vcn.RAAntennaList.AddRange(GatherRealAntennas(antennaList));
+                vcn.RAAntennaList.Sort();
+                vcn.RAAntennaList.Reverse();
+            }
         }
     }
 }

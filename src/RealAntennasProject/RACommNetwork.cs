@@ -1,5 +1,10 @@
 ﻿using CommNet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+
+// I see lots of comments that hate .Linq.  Is it really worse than doing a nested ForEach?
 
 namespace RealAntennas
 {
@@ -27,14 +32,9 @@ namespace RealAntennas
             if (!(a is RACommNode)) return base.SetNodeConnection(a, b);
             if (!(b is RACommNode)) return base.SetNodeConnection(a, b);
 
-            double distance = Vector3d.Distance(a.position, b.position);
-            RACommNode tmp = a as RACommNode;
-            double maxDistance = RACommNetScenario.RangeModel.GetMaximumRange(a as RACommNode, b as RACommNode, tmp.RAAntenna.Frequency);
-            if (distance > maxDistance) {
-//                Debug.LogFormat(ModTag + "SetNodeConnection() disconnecting: distance {0} > max {1}", distance, maxDistance);
-                Disconnect(a, b);
-                return false;
-            }
+            // Specific antenna selection within the set available to a CommNode is deferred until TryConnect()
+            // Do not prematurely halt based on range here anymore, because we need to check (all?) pairings.
+            // TryConnect() should call Disconnect() if no connection can be achieved.
             return base.SetNodeConnection(a, b);
         }
 
@@ -46,42 +46,130 @@ namespace RealAntennas
 
         protected override bool TryConnect(CommNode a, CommNode b, double distance, bool aCanRelay, bool bCanRelay, bool bothRelay)
         {
-            RACommNode tx = a as RACommNode, rx = b as RACommNode;
-            if ((tx == null) || (rx == null))
+            RACommNode rac_a = a as RACommNode, rac_b = b as RACommNode;
+            if ((rac_a == null) || (rac_b == null))
             {
-                Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not VeylCommNodes!", a, b);
+                Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not RACommNode!", a, b);
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
             }
-            // This calc moved into RealAntennasRangeModel.
-            //double FSPL = RACommNetScenario.RangeModel.PathLoss(distance);   // Default freq = 1GHz
-            //double RSSI_Fwd = RACommNetScenario.RangeModel.ComputeRSSI(tx, rx, distance);
-            //double RSSI_Rev = RACommNetScenario.RangeModel.ComputeRSSI(rx, tx, distance);
-            //double CI_Fwd = RSSI_Fwd - RACommNetScenario.RangeModel.NoiseFloor(rx);
-            //double CI_Rev = RSSI_Rev - RACommNetScenario.RangeModel.NoiseFloor(tx);
-            //double CI = Math.Min(CI_Fwd, CI_Rev);   // Calc for bi-directional and take worst C/I.
-            //double scaledCI = RACommNetScenario.RangeModel.ConvertCIToScaleFactor(CI);
-            double scaledCI = RACommNetScenario.RangeModel.GetNormalizedRange(tx, rx, distance);
-//            Debug.LogFormat(ModTag + "TryConnect: {0} / {1} distance {2}.  FSPL: {3}dB.  RSSI: {4}dBm.  C/I: {5}dB", tx, rx, distance, FSPL, RSSI, CI);
-            if (scaledCI < 0)
+            // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
+            var fwd_pairing =
+                from first in rac_a.RAAntennaList
+                from second in rac_b.RAAntennaList
+                select new[] { first, second };
+            var rev_pairing =
+                from first in rac_a.RAAntennaList
+                from second in rac_b.RAAntennaList
+                select new[] { second, first };
+            double[] noiseTemps = {
+                RACommNetScenario.RangeModel.NoiseTemperature(rac_a, rac_b.position),
+                RACommNetScenario.RangeModel.NoiseTemperature(rac_b, rac_a.position)
+            };
+
+            bool bestFwd = BestConnection(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair, out RAModulator bestFwdMod);
+            bool bestRev = BestConnection(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair, out RAModulator bestRevMod);
+
+            if (!(bestFwd && bestRev))
             {
                 Disconnect(a, b);
                 return false;
             }
-            CommLink link = Connect(tx, rx, distance);
+            //Debug.LogFormat(ModTag + "TryConnect() {0}->{1} distance {2} chose {3} w/{4}", rac_a, rac_b, distance, bestFwdAnt, bestFwdMod);
+            //Debug.LogFormat(ModTag + "TryConnect() {1}->{0} distance {2} chose {3} w/{4}", rac_b, rac_a, distance, bestRevAnt, bestRevMod);
+            RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
+            link.SetModulators(bestFwdMod, bestRevMod);
+            link.cost = RACommLink.CostFunc((bestFwdMod.DataRate + bestRevMod.DataRate) / 2);
+
+            RealAntenna fwdAntTx = bestFwdAntPair[0];
+            RealAntenna fwdAntRx = bestFwdAntPair[1];
+            RealAntenna revAntTx = bestRevAntPair[0];
+            RealAntenna revAntRx = bestRevAntPair[1];
+
+            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(fwdAntTx, fwdAntRx, distance, bestFwdMod.Frequency);
+            link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(fwdAntRx, noiseTemps[1]);
+
+            double RevRSSI = RACommNetScenario.RangeModel.RSSI(revAntTx, revAntRx, distance, bestRevMod.Frequency);
+            link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(revAntRx, noiseTemps[0]);
+
             // TryConnect() is responsible for setting link parameters like below.
             //link.aCanRelay = a.isHome || a.isControlSourceMultiHop;     // This is wrong, it's the antennaType=RELAY or antennaType=DIRECT
             link.aCanRelay = true; 
-            link.bCanRelay = true;      // All antennas can relay.  TDM/FDM.
+            link.bCanRelay = true;      // All antennas can relay.
             link.bothRelay = (link.aCanRelay && link.bCanRelay);
+            // Ok, so what is the link strength here?
+            // Let's just make it, for now, the linear ratio between min and max data rate of the fwd link.
+            // (Yeah, not very bidirectional yet.)
+            double scaledCI = bestFwdMod.DataRate / bestFwdAntPair[0].modulator.DataRate;
             link.strengthAR = (link.aCanRelay ? scaledCI : 0);
             link.strengthBR = (link.bCanRelay ? scaledCI : 0);
             link.strengthRR = (link.bothRelay ? scaledCI : 0);
-
-            //            linkRes.SetSignalStrength(CI);
-            // Consider calling base TryConnect(), it will query the RangeModel and also set these fields.
-            // But will call RangeModel with wrong parameters/will call OLD RangeModel functions.
-            //return base.TryConnect(tx, rx, distance*1e2, aCanRelay, bCanRelay, bothRelay);
+            link.SetSignalStrength(scaledCI);
+            link.signal = (SignalStrength) Convert.ToInt32(Math.Ceiling(4 * scaledCI));
             return true;
+        }
+
+        private static bool BestConnection(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair, out RAModulator mod)
+        {
+            bestPair = new RealAntenna[2];
+            mod = new RAModulator();
+            bool found = false;
+            foreach (RealAntenna[] antPair in pairList)
+            {
+                bool check = BestModulator(antPair[0], antPair[1], distance, noiseTemp, out RAModulator candidateMod);
+                if (check && (mod.DataRate < candidateMod.DataRate))
+                {
+                    bestPair[0] = antPair[0];
+                    bestPair[1] = antPair[1];
+                    mod.Copy(candidateMod);
+                    found = true;
+                }
+            }
+            return found;
+        }
+
+        internal static bool BestModulator(RealAntenna tx, RealAntenna rx, double distance, double noiseTemp, out RAModulator mod)
+        {
+            mod = null;
+            RAModulator txMod = tx.modulator, rxMod = rx.modulator;
+            if (!txMod.Compatible(rxMod)) return false;
+            int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
+            int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
+
+            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, txMod.Frequency);
+            double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
+            double CI = RSSI - Noise;
+
+            if (CI < RAModulator.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.
+
+            // Link can close.  Load & config modulator with agreed SymbolRate and ModulationBits range.
+            mod = new RAModulator(txMod)
+            {
+                SymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate),
+                ModulationBits = maxBits
+            };
+
+            while (CI < mod.RequiredCI() && mod.ModulationBits > minBits)
+            {
+                mod.ModulationBits--;
+            }
+            return (CI >= mod.RequiredCI());
+        }
+
+        protected override CommLink Connect(CommNode a, CommNode b, double distance)
+        {
+            a.TryGetValue(b, out CommLink foundLink);
+            if (foundLink != null)
+            {
+                foundLink.Update(distance);
+            } else
+            {
+                foundLink = new RACommLink();
+                foundLink.Set(a, b, distance);
+                Links.Add(foundLink);
+                a.Add(b, foundLink);
+                b.Add(a, foundLink);
+            }
+            return foundLink;
         }
 
         private bool TimeToValidate()
@@ -92,11 +180,6 @@ namespace RealAntennas
         }
 
         // Instrumentation functions, no useful overrides below.  Delete when no longer instrumenting.
-
-        protected override CommLink Connect(CommNode a, CommNode b, double distance)
-        {
-            return base.Connect(a, b, distance);
-        }
 
         public override Occluder Add(Occluder conn)
         {
@@ -112,7 +195,7 @@ namespace RealAntennas
         public override bool FindHome(CommNode from, CommPath path = null)
         {
             bool res = base.FindHome(from, path);
-            Debug.LogFormat(ModTrace + "FindHome result {2}: from={0} | path={1}", from, path, res);
+//            Debug.LogFormat(ModTrace + "FindHome result {2}: from={0} | path={1}", from, path, res);
             return res;
         }
         public override bool FindPath(CommNode start, CommPath path, CommNode end)
@@ -145,7 +228,7 @@ namespace RealAntennas
             string res = string.Format(ModTag + "CommNode walk\n");
             foreach (RACommNode item in nodes)
             {
-                res += string.Format(ModTag + "{0} / {1}\n", item, item.name);
+                res += string.Format(ModTag + "{0}\n", item);
             }
             return res;
         }
@@ -166,7 +249,6 @@ namespace RealAntennas
             Debug.Log(RealAntennasTools.VesselWalk(this, ModTag));
             foreach (Vessel v in FlightGlobals.Vessels)
             {
-//                RACommNetVessel cnv = v.Connection as RACommNetVessel;
                 if (v.Connection is RACommNetVessel cnv)
                 {
                     if ((cnv.Comm is RACommNode vcn) && (!nodes.Contains(vcn)))
