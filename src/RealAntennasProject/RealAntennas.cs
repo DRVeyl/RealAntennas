@@ -12,6 +12,7 @@ namespace RealAntennas
         public double AntennaEfficiency { get; set; }
         public double PowerDraw { get => TxPower / PowerEfficiency; }
         public string Name { get; set; }
+        public ModuleRealAntenna Parent { get; internal set; }
 
         protected static readonly string ModTag = "[RealAntenna] ";
         public static readonly string ModuleName = "RealAntenna";

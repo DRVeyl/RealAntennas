@@ -11,17 +11,21 @@ namespace RealAntennas
 
         public override IScienceDataTransmitter GetBestTransmitter()
         {
-            Debug.LogFormat(ModTag + " GetBestTransmitter() start for {0}", this.name);
+            CommNet.CommPath path = new CommNet.CommPath();
+            if ((Comm is RACommNode node) && node.Net.FindHome(node, path))
+            {
+                if (Comm[path.First.end] is RACommLink link)    // CommNet.FindHome() makes new CommLinks. :/
+                {
+                    RealAntenna target = link.start.Equals(Comm) ? link.FwdAntennaTx : link.RevAntennaTx;
+                    foreach (ModuleRealAntenna mra in antennaList)
+                    {
+                        if (mra.RAAntenna.Equals(target)) return mra;
+                    }
+                }
+            }
             IScienceDataTransmitter e = base.GetBestTransmitter();
-            Debug.LogFormat(ModTag + " GetBestTransmitter() stop, res: {0}", e);
+            Debug.LogWarningFormat(ModTag + "Could not find best transmitter, defaulted to {0}", e);
             return e;
-        }
-
-        protected override bool CreateControlConnection()
-        {
-            bool e = base.CreateControlConnection();
-            //            Debug.LogFormat(ModTag + " CreateControlConnection() for {0} using {1} was {2}", name, Comm, e);
-            return e;       // Returns True if it changed the control connection state.
         }
 
         protected override void OnNetworkInitialized()
@@ -66,7 +70,7 @@ namespace RealAntennas
 
         protected override void UpdateComm()
         {
-            base.UpdateComm();  // Need some features from base to set some features of the node I don't know about yet.
+            base.UpdateComm();  // Need base to set some features of the node I don't know about yet.
         }
 
         internal List<RealAntenna> GatherRealAntennas(List<ModuleRealAntenna> src)

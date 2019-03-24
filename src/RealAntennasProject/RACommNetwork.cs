@@ -13,7 +13,7 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNetwork] ";
         protected static readonly string ModTrace = ModTag + "[Trace] ";
 
-        private readonly float updatePeriod = 1.0f;
+        private readonly float updatePeriod = 10.0f;
         private float lastRun = 0f;
 
         public override CommNode Add(CommNode conn)
@@ -74,16 +74,21 @@ namespace RealAntennas
                 Disconnect(a, b);
                 return false;
             }
-            //Debug.LogFormat(ModTag + "TryConnect() {0}->{1} distance {2} chose {3} w/{4}", rac_a, rac_b, distance, bestFwdAnt, bestFwdMod);
-            //Debug.LogFormat(ModTag + "TryConnect() {1}->{0} distance {2} chose {3} w/{4}", rac_b, rac_a, distance, bestRevAnt, bestRevMod);
-            RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
-            link.SetModulators(bestFwdMod, bestRevMod);
-            link.cost = RACommLink.CostFunc((bestFwdMod.DataRate + bestRevMod.DataRate) / 2);
-
             RealAntenna fwdAntTx = bestFwdAntPair[0];
             RealAntenna fwdAntRx = bestFwdAntPair[1];
             RealAntenna revAntTx = bestRevAntPair[0];
             RealAntenna revAntRx = bestRevAntPair[1];
+
+            //Debug.LogFormat(ModTag + "TryConnect() {0}->{1} distance {2} chose {3} w/{4}", rac_a, rac_b, distance, bestFwdAnt, bestFwdMod);
+            //Debug.LogFormat(ModTag + "TryConnect() {1}->{0} distance {2} chose {3} w/{4}", rac_b, rac_a, distance, bestRevAnt, bestRevMod);
+            RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
+            link.FwdAntennaTx = fwdAntTx;
+            link.FwdAntennaRx = fwdAntRx;
+            link.RevAntennaTx = revAntTx;
+            link.RevAntennaRx = revAntRx;
+            link.FwdModulator = bestFwdMod;
+            link.RevModulator = bestRevMod;
+            link.cost = RACommLink.CostFunc((bestFwdMod.DataRate + bestRevMod.DataRate) / 2);
 
             double FwdRSSI = RACommNetScenario.RangeModel.RSSI(fwdAntTx, fwdAntRx, distance, bestFwdMod.Frequency);
             link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(fwdAntRx, noiseTemps[1]);
@@ -131,6 +136,8 @@ namespace RealAntennas
         {
             mod = null;
             RAModulator txMod = tx.modulator, rxMod = rx.modulator;
+            if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return false;
+            if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return false;
             if (!txMod.Compatible(rxMod)) return false;
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
             int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
@@ -179,24 +186,27 @@ namespace RealAntennas
             return res;
         }
 
+        public double MaxDataRateToHome(RACommNode start)
+        {
+            CommPath path = new CommPath();
+            if ((start == null) || !FindHome(start, path)) return 0;
+            double data_rate = 1e10;
+            foreach (CommLink l in path)
+            {
+                RACommLink link = l.start[l.end] as RACommLink;
+                RAModulator mod = link.start.Equals(l.start) ? link.FwdModulator : link.RevModulator;
+                data_rate = Math.Min(data_rate, mod.DataRate);
+            }
+            return data_rate;
+        }
+
+
         // Instrumentation functions, no useful overrides below.  Delete when no longer instrumenting.
 
         public override Occluder Add(Occluder conn)
         {
             Debug.LogFormat(ModTag + "Adding Occluder at {0} radius {1}", conn.position, conn.radius);
             return base.Add(conn);
-        }
-        public override bool FindClosestControlSource(CommNode from, CommPath path = null)
-        {
-            bool res = base.FindClosestControlSource(from, path);
-            Debug.LogFormat(ModTrace + "FindClosestControlSource: from={0} result: {1}", from, res);
-            return res;
-        }
-        public override bool FindHome(CommNode from, CommPath path = null)
-        {
-            bool res = base.FindHome(from, path);
-//            Debug.LogFormat(ModTrace + "FindHome result {2}: from={0} | path={1}", from, path, res);
-            return res;
         }
         public override bool FindPath(CommNode start, CommPath path, CommNode end)
         {
@@ -209,18 +219,6 @@ namespace RealAntennas
             //            Debug.Log(ModTrace + " Rebuild()");
             base.Rebuild();
             //            Debug.Log(ModTrace + " Rebuild() exit");
-        }
-
-        protected override void CreateShortestPathTree(CommNode start, CommNode end)
-        {
-            Debug.LogFormat(ModTrace + "CreateShortestPathTree start={0}  end={1}", start, end);
-            base.CreateShortestPathTree(start, end);
-        }
-
-        protected override void UpdateShortestPath(CommNode a, CommNode b, CommLink link, double bestCost, CommNode startNode, CommNode endNode)
-        {
-            Debug.LogFormat(ModTrace + "UpdateShortestPath a={0} b={1} link={2} bestCost={3} start={4} end={5}", a, b, link, bestCost, startNode, endNode);
-            base.UpdateShortestPath(a, b, link, bestCost, startNode, endNode);
         }
 
         protected string CommNodeWalk()

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RealAntennas
@@ -35,18 +37,22 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
         public double AntennaEfficiency;
 
-        public double PowerDraw { get => LogScale(LinearScale(TxPower) / PowerEfficiency); }
+        public double PowerDraw { get => LogScale(PowerDrawLinear); }
+        public double PowerDrawLinear { get => LinearScale(TxPower) / PowerEfficiency;  }
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
         public static double LinearScale(double x) => Math.Pow(10, x / 10);
         public static double LogScale(double x) => 10 * Math.Log10(x);
+        private static readonly string ResourceRequiredName = "ElectricCharge";
+        private static readonly PartResourceDefinition ECDefinition = PartResourceLibrary.Instance.GetDefinition(ResourceRequiredName);
         public RealAntenna RAAntenna = new RealAntenna();
 
         public override void OnLoad(ConfigNode node)
         {
             RAAntenna.LoadFromConfigNode(node);
             RAAntenna.Name = name;
+            RAAntenna.Parent = this;
             base.OnLoad(node);
         }
 
@@ -63,47 +69,85 @@ namespace RealAntennas
             return string.Format("[+RealAntennas] {0} [{1}dB]", name, Gain);
         }
 
-        public override float GetVesselSignalStrength()
-        {
-            float x = base.GetVesselSignalStrength();
-            Debug.LogFormat(ModTag + "Part {0} GetVesselSignalStrength was {1}", part, x);
-            return x;
-        }
-
-        public override void StartTransmission()
-        {
-            Debug.LogFormat(ModTag + "StartTransmission() for {0}", this);
-            if (this?.vessel?.Connection?.Comm is RACommNode node)
-            {
-                Debug.LogFormat("Found CommNode {0}, link {1} linkNode {2}", node, node.bestLink, node.bestLinkNode);
-                CommNet.CommPath path = new CommNet.CommPath();
-                if  (node.Net.FindHome(node, path))
-                {
-                    Debug.LogFormat("Path {0} of len {1} with strength {2}/{3}", path, path.Count, path.signal, path.signalStrength);
-                    foreach (CommNet.CommLink link in path)
-                    {
-                        Debug.LogFormat("Link {0} from {1} to {2} strength {3}/{4}", link, link.start, link.end, link.signalStrength, link.signal);
-                    }
-                }
-            }
-            base.StartTransmission();
-            Debug.LogFormat(ModTag + "StartTransmission() end");
-        }
-
         public override void StopTransmission()
         {
+            Debug.LogFormat(ModTag + "StopTransmission() start");
             base.StopTransmission();
+            Debug.LogFormat(ModTag + "StopTransmission() exit");
+        }
+
+        // StartTransmission -> CanTransmit()
+        //                  -> OnStartTransmission() -> queueVesselData(), transmitQueuedData()
+        // (Science) -> TransmitData() -> TransmitQueuedData()
+
+        internal void SetTransmissionParams()
+        {
+            double data_rate = 0;
+            if (this?.vessel?.Connection?.Comm is RACommNode node)
+            {
+                data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
+                packetInterval = 0.1F;
+                packetSize = Convert.ToSingle(data_rate * packetInterval / 10000);
+                packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
+            }
+            Debug.LogFormat(ModTag + "SetTransmissionParams() for {0}: data_rate={1}", this, data_rate);
         }
 
         public override bool CanTransmit()
         {
-            Debug.LogFormat(ModTag + "CanTransmit() for {0}", this);
+            SetTransmissionParams();
             return base.CanTransmit();
         }
 
         public override bool IsBusy()
         {
+            Debug.LogFormat(ModTag + "IsBusy() for {0}", this);
             return base.IsBusy();
+        }
+
+        public override void OnUpdate()
+        {
+//            Debug.LogFormat(ModTag + "OnUpdate() start");
+// Could update rates here, but way too heavy-weight.
+            base.OnUpdate();
+//            Debug.LogFormat(ModTag + "OnUpdate() stop");
+        }
+
+        protected override List<ScienceData> queueVesselData(List<IScienceDataContainer> experiments)
+        {
+            Debug.LogFormat(ModTag + "queueVesselData({0}) start", experiments);
+            return base.queueVesselData(experiments);
+        }
+
+        protected override IEnumerator transmitQueuedData(float transmitInterval, float dataPacketSize, Callback callback = null, bool sendData = true)
+        {
+            Debug.LogFormat(ModTag + "transmitQueuedData({0},{1},{2},{3}) start", transmitInterval, dataPacketSize, callback, sendData);
+            return base.transmitQueuedData(transmitInterval, dataPacketSize, callback, sendData);
+        }
+
+        protected override void AbortTransmission(string message)
+        {
+            Debug.LogFormat(ModTag + "AbortTransmission({0}) start", message);
+            base.AbortTransmission(message);
+            Debug.LogFormat(ModTag + "AbortTransmission() stop");
+        }
+
+        public override void TransmitData(List<ScienceData> dataQueue)
+        {
+            Debug.LogFormat(ModTag + "TransmitData({0}) start", dataQueue);
+            SetTransmissionParams();
+            foreach (ScienceData sd in dataQueue)
+            {
+                Debug.LogFormat(ModTag + "Queue contents: {0} : {1}", sd.subjectID, sd.dataAmount);
+            }
+            base.TransmitData(dataQueue);
+            Debug.LogFormat(ModTag + "TransmitData() stop");
+        }
+
+        public override void TransmitData(List<ScienceData> dataQueue, Callback callback)
+        {
+            SetTransmissionParams();
+            base.TransmitData(dataQueue, callback);
         }
     }
 }

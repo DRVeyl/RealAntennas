@@ -29,19 +29,27 @@ https://forum.kerbalspaceprogram.com/index.php?/topic/156251-commnet-notes-for-m
 https://kerbalspaceprogram.com/api/namespace_comm_net.html
 
 Noise:
+
 http://literature.cdn.keysight.com/litweb/pdf/5952-8255E.pdf
+
 http://www.delmarnorth.com/microwave/requirements/satellite_noise.pdf
+
 https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.372-7-200102-S!!PDF-E.pdf
 
 https://en.wikipedia.org/wiki/Johnson%E2%80%93Nyquist_noise
+
 https://en.wikipedia.org/wiki/Noise_temperature
 
 
 Antenna BW:
+
 http://www.cs.binghamton.edu/~vinkolar/directional/Direct_antennas.pdf
+
 http://www.tscm.com/antennas.pdf
+
 http://www.satsig.net/pointing/antenna-beamwidth-calculator.htm
 
 BW/Symbol Rate:
+
 https://dsp.stackexchange.com/questions/41983/relation-between-bandwidth-and-baud-rate-for-8-psk
 
