@@ -120,7 +120,7 @@ namespace RealAntennas
             bool found = false;
             foreach (RealAntenna[] antPair in pairList)
             {
-                bool check = BestModulator(antPair[0], antPair[1], distance, noiseTemp, out RAModulator candidateMod);
+                bool check = antPair[0].BestPeerModulator(antPair[1], distance, noiseTemp, out RAModulator candidateMod);
                 if (check && (mod.DataRate < candidateMod.DataRate))
                 {
                     bestPair[0] = antPair[0];
@@ -130,36 +130,6 @@ namespace RealAntennas
                 }
             }
             return found;
-        }
-
-        internal static bool BestModulator(RealAntenna tx, RealAntenna rx, double distance, double noiseTemp, out RAModulator mod)
-        {
-            mod = null;
-            RAModulator txMod = tx.modulator, rxMod = rx.modulator;
-            if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return false;
-            if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return false;
-            if (!txMod.Compatible(rxMod)) return false;
-            int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
-            int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
-
-            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, txMod.Frequency);
-            double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
-            double CI = RSSI - Noise;
-
-            if (CI < RAModulator.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.
-
-            // Link can close.  Load & config modulator with agreed SymbolRate and ModulationBits range.
-            mod = new RAModulator(txMod)
-            {
-                SymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate),
-                ModulationBits = maxBits
-            };
-
-            while (CI < mod.RequiredCI() && mod.ModulationBits > minBits)
-            {
-                mod.ModulationBits--;
-            }
-            return (CI >= mod.RequiredCI());
         }
 
         protected override CommLink Connect(CommNode a, CommNode b, double distance)

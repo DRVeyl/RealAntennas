@@ -7,35 +7,34 @@ namespace RealAntennas
 {
     public class ModuleRealAntenna : ModuleDataTransmitter
     {
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dBi", guiFormat = "F1")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dBm", guiFormat = "F1")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dBm", guiFormat = "F1")]
         public double TxPower;       // Transmit Power in dBm (milliwatts)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
-        public double PowerEfficiency;
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "N0")]
+        public int TechLevel = 0;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "Hz", guiFormat = "N0")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " Hz", guiFormat = "N0")]
         public double Frequency;     // Frequency in Hz
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "S/s", guiFormat = "N0")]
-        public double SymbolRate;    // Symbol Rate in Samples/second
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " S/s", guiFormat = "F0"),
+        UI_FloatEdit(scene = UI_Scene.Editor, minValue = 1000f, incrementLarge = 10000f, incrementSmall = 1000f, incrementSlide = 10f, sigFigs = 6, unit = " S/s", suppressEditorShipModified = true)]
+        public float SymbolRate;    // Symbol Rate in Samples/second
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bits", guiFormat = "N0")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " bits", guiFormat = "N0")]
         public int ModulationBits;    // Constellation size (bits, 0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "bits", guiFormat = "N0")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " bits", guiFormat = "N0")]
         public int MinModulationBits;    // Minimum constellation size (bits)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = "dB", guiFormat = "F1")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dB", guiFormat = "F1")]
         public double NoiseFigure;     // Noise figure of receiver electronics in dB
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
-        public double SpectralEfficiency;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "P2")]
-        public double AntennaEfficiency;
+        public double PowerEfficiency { get => RAAntenna.PowerEfficiency; }
+        public double SpectralEfficiency { get => RAAntenna.SpectralEfficiency; }
+        public double AntennaEfficiency { get => RAAntenna.AntennaEfficiency; }
 
         public double PowerDraw { get => LogScale(PowerDrawLinear); }
         public double PowerDrawLinear { get => LinearScale(TxPower) / PowerEfficiency;  }

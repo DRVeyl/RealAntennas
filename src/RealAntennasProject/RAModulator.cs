@@ -9,7 +9,8 @@ namespace RealAntennas
         public int ModulationBits { get; set; }     // Bits / symbol (0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int MinModulationBits { get; set; }  // Min modulation supported
         public double NoiseFigure { get; set; }     // Noise figure of receiver electronics in dB
-        public double SpectralEfficiency { get; set; }
+        public int TechLevel { get; set; }
+        public double SpectralEfficiency { get => Math.Max(0.01, 1 - (1 / Math.Pow(2, TechLevel))); }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
         public double Bandwidth { get => SymbolRate / SpectralEfficiency; }         // RF bandwidth required.
 
@@ -54,16 +55,16 @@ namespace RealAntennas
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }
-        public RAModulator() : this(1, 1, 0, 0, 3, 0.5) { }
-        public RAModulator(RAModulator orig) : this(orig.Frequency, orig.SymbolRate, orig.ModulationBits, orig.MinModulationBits, orig.NoiseFigure, orig.SpectralEfficiency) { }
-        public RAModulator(double frequency, double symbolRate, int modulationBits, int minModulationBits, double noiseFigure, double spectralEfficiency)
+        public RAModulator() : this(1, 1, 0, 0, 3, 0) { }
+        public RAModulator(RAModulator orig) : this(orig.Frequency, orig.SymbolRate, orig.ModulationBits, orig.MinModulationBits, orig.NoiseFigure, orig.TechLevel) { }
+        public RAModulator(double frequency, double symbolRate, int modulationBits, int minModulationBits, double noiseFigure, int techLevel)
         {
             Frequency = frequency;
             SymbolRate = symbolRate;
             ModulationBits = modulationBits;
             MinModulationBits = minModulationBits;
             NoiseFigure = noiseFigure;
-            SpectralEfficiency = spectralEfficiency;
+            TechLevel = techLevel;
         }
         public void Copy(RAModulator orig)
         {
@@ -72,7 +73,7 @@ namespace RealAntennas
             ModulationBits = orig.ModulationBits;
             MinModulationBits = orig.MinModulationBits;
             NoiseFigure = orig.NoiseFigure;
-            SpectralEfficiency = orig.SpectralEfficiency;
+            TechLevel = orig.TechLevel;
         }
 
         public void LoadFromConfigNode(ConfigNode config)
@@ -82,7 +83,7 @@ namespace RealAntennas
             ModulationBits = int.Parse(config.GetValue("ModulationBits"));
             MinModulationBits = int.Parse(config.GetValue("MinModulationBits"));
             NoiseFigure = double.Parse(config.GetValue("NoiseFigure"));
-            SpectralEfficiency = double.Parse(config.GetValue("SpectralEfficiency"));
+            TechLevel = int.Parse(config.GetValue("TechLevel"));
         }
     }
 }
