@@ -66,10 +66,10 @@ namespace RealAntennas
                 RACommNetScenario.RangeModel.NoiseTemperature(rac_b, rac_a.position)
             };
 
-            bool bestFwd = BestConnection(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair, out double FwdDataRate);
-            bool bestRev = BestConnection(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair, out double RevDataRate);
+            double FwdDataRate = BestDataRate(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair);
+            double RevDataRate = BestDataRate(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair);
 
-            if (!(bestFwd && bestRev))
+            if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
             {
                 Disconnect(a, b);
                 return false;
@@ -79,8 +79,6 @@ namespace RealAntennas
             RealAntenna revAntTx = bestRevAntPair[0];
             RealAntenna revAntRx = bestRevAntPair[1];
 
-            //Debug.LogFormat(ModTag + "TryConnect() {0}->{1} distance {2} chose {3} w/{4}", rac_a, rac_b, distance, bestFwdAnt, bestFwdMod);
-            //Debug.LogFormat(ModTag + "TryConnect() {1}->{0} distance {2} chose {3} w/{4}", rac_b, rac_a, distance, bestRevAnt, bestRevMod);
             RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
             link.FwdAntennaTx = fwdAntTx;
             link.FwdAntennaRx = fwdAntRx;
@@ -113,21 +111,21 @@ namespace RealAntennas
             return true;
         }
 
-        private static bool BestConnection(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair, out double dataRate)
+        private static double BestDataRate(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair)
         {
             bestPair = new RealAntenna[2];
-            dataRate = 0;
+            double dataRate = 0;
             foreach (RealAntenna[] antPair in pairList)
             {
-                bool check = antPair[0].BestPeerModulator(antPair[1], distance, noiseTemp, out RAModulator candidateMod);
-                if (check && (dataRate < candidateMod.DataRate))
+                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1], distance, noiseTemp);
+                if (dataRate < candidateRate)
                 {
                     bestPair[0] = antPair[0];
                     bestPair[1] = antPair[1];
-                    dataRate = candidateMod.DataRate;
+                    dataRate = candidateRate;
                 }
             }
-            return (dataRate > 0);
+            return dataRate;
         }
 
         protected override CommLink Connect(CommNode a, CommNode b, double distance)

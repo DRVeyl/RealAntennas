@@ -35,7 +35,17 @@ namespace RealAntennas
         }
 
         public override string ToString() => string.Format("[+RA] {0} [{1}dB {2}]", Name, Gain, modulator);
-        public virtual bool BestPeerModulator(RealAntenna rx, double distance, double noiseTemp, out RAModulator mod)
+        public virtual double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
+        {
+            double dataRate = 0;
+            if (BestPeerModulator(rx, distance, noiseTemp, out RAModulator mod))
+            {
+                dataRate = mod.DataRate;
+            }
+            return dataRate;
+        }
+
+        private bool BestPeerModulator(RealAntenna rx, double distance, double noiseTemp, out RAModulator mod)
         {
             mod = null;
             RealAntenna tx = this;
