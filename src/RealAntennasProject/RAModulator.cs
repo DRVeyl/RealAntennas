@@ -44,7 +44,7 @@ namespace RealAntennas
 
         public override string ToString() => $"{BitsToString(ModulationBits)} {DataRate} bps";
 
-        public static string BitsToString(int bits)
+        public virtual string BitsToString(int bits)
         {
             switch(bits)
             {

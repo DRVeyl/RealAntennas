@@ -60,13 +60,6 @@ namespace RealAntennas
             return s;
         }
 
-        public override double GetSignalStrengthMultiplier(CommNet.CommNode b)
-        {
-            Debug.LogFormat(ModTrace + "GetSignalStrengthMultiplier({1}) for {0}",this,b);
-            double res = base.GetSignalStrengthMultiplier(b);
-            Debug.LogFormat(ModTrace + "GetSignalStrengthMultiplier() result {0}", res);
-            return res;
-        }
         public static string DebugDump(CommNet.CommNode obj)
         {
             string res = "CommNode is null";

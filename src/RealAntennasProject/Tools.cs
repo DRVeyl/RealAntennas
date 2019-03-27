@@ -5,8 +5,10 @@ using System.Linq;
 
 namespace RealAntennas
 {
-    public class RealAntennasTools : object
+    public class RATools : object
     {
+        public static double LinearScale(double x) => Math.Pow(10, x / 10);
+        public static double LogScale(double x) => 10 * Math.Log10(x);
         public static string VesselWalk(RACommNetwork net, string ModTag="[RealAntennas] ")
         {
             string res = string.Format(ModTag + "VesselWalk()\n");

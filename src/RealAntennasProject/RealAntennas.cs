@@ -12,14 +12,13 @@ namespace RealAntennas
         public double AntennaEfficiency { get => Math.Min(0.7, 0.5 + (TechLevel * 0.025)); }
         public double SpectralEfficiency { get => modulator.SpectralEfficiency; }
         public double DataRate { get => modulator.DataRate; }
+        public double NoiseFigure { get => modulator.NoiseFigure; }
         public RAModulator modulator;
 
-        public double PowerDraw { get => LogScale(PowerDrawLinear); }
-        public double PowerDrawLinear { get => LinearScale(TxPower) / PowerEfficiency; }
-        public static double LinearScale(double x) => Math.Pow(10, x / 10);
-        public static double LogScale(double x) => 10 * Math.Log10(x);
+        public double PowerDraw { get => RATools.LogScale(PowerDrawLinear); }
+        public double PowerDrawLinear { get => RATools.LinearScale(TxPower) / PowerEfficiency; }
         // beamwidth = sqrt(52525*efficiency / g)   G = 10*log(g) => g = 10^(G/10)
-        public double Beamwidth { get => Math.Sqrt(52525 * AntennaEfficiency / LinearScale(Gain)); }
+        public double Beamwidth { get => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain)); }
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }

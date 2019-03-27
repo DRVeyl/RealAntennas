@@ -82,7 +82,7 @@ namespace RealAntennas
             link.RevAntennaRx = bestRevAntPair[1];
             link.FwdDataRate = FwdDataRate;
             link.RevDataRate = RevDataRate;
-            link.cost = RACommLink.CostFunc((FwdDataRate + RevDataRate) / 2);
+            link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
 
             double FwdRSSI = RACommNetScenario.RangeModel.RSSI(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
             link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.FwdAntennaRx, noiseTemps[1]);
@@ -104,7 +104,7 @@ namespace RealAntennas
             return true;
         }
 
-        private static double BestDataRate(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair)
+        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair)
         {
             bestPair = new RealAntenna[2];
             double dataRate = 0;
@@ -167,12 +167,7 @@ namespace RealAntennas
             Debug.LogFormat(ModTag + "Adding Occluder at {0} radius {1}", conn.position, conn.radius);
             return base.Add(conn);
         }
-        public override bool FindPath(CommNode start, CommPath path, CommNode end)
-        {
-            bool res = base.FindPath(start, path, end);
-            Debug.LogFormat(ModTrace + "FindPath from {0} to {1} via {2} returned {3}", start, end, path, res);
-            return res;
-        }
+
         public override void Rebuild()
         {
             //            Debug.Log(ModTrace + " Rebuild()");
@@ -203,7 +198,7 @@ namespace RealAntennas
 
         public void ValidateNodes()
         {
-            Debug.Log(RealAntennasTools.VesselWalk(this, ModTag));
+            Debug.Log(RATools.VesselWalk(this, ModTag));
             foreach (Vessel v in FlightGlobals.Vessels)
             {
                 if (v.Connection is RACommNetVessel cnv)

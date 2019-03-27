@@ -16,11 +16,7 @@ namespace RealAntennas
             {
                 if (Comm[path.First.end] is RACommLink link)    // CommNet.FindHome() makes new CommLinks. :/
                 {
-                    RealAntenna target = link.start.Equals(Comm) ? link.FwdAntennaTx : link.RevAntennaTx;
-                    foreach (ModuleRealAntenna mra in antennaList)
-                    {
-                        if (mra.RAAntenna.Equals(target)) return mra;
-                    }
+                    return link.start.Equals(Comm) ? link.FwdAntennaTx.Parent : link.RevAntennaTx.Parent;
                 }
             }
             IScienceDataTransmitter e = base.GetBestTransmitter();
@@ -62,12 +58,6 @@ namespace RealAntennas
             GameEvents.onVesselWasModified.Add(new EventData<Vessel>.OnEvent(OnVesselModified));
         }
 
-        protected override void OnDestroy()
-        {
-            Debug.LogFormat(ModTag + "OnDestroy() for {0}. ID:{1}.  Comm:{2}", name, gameObject.GetInstanceID(), Comm);
-            base.OnDestroy();
-        }
-
         protected override void UpdateComm()
         {
             base.UpdateComm();  // Need base to set some features of the node I don't know about yet.
@@ -95,7 +85,6 @@ namespace RealAntennas
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
-                    Debug.LogFormat("Testing protoPart {0}", part.partName);
                     if (part.FindModule(ModuleRealAntenna.ModuleName) != null)
                     {
                         Part tempPart = PartLoader.getPartInfoByName(part.partName).partPrefab;

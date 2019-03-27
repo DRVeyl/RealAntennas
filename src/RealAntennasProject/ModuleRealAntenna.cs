@@ -29,20 +29,16 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " bits", guiFormat = "N0")]
         public int MinModulationBits;    // Minimum constellation size (bits)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dB", guiFormat = "F1")]
-        public double NoiseFigure;     // Noise figure of receiver electronics in dB
-
+        public double NoiseFigure { get => RAAntenna.NoiseFigure; }     // Noise figure of receiver electronics in dB
         public double PowerEfficiency { get => RAAntenna.PowerEfficiency; }
         public double SpectralEfficiency { get => RAAntenna.SpectralEfficiency; }
         public double AntennaEfficiency { get => RAAntenna.AntennaEfficiency; }
 
-        public double PowerDraw { get => LogScale(PowerDrawLinear); }
-        public double PowerDrawLinear { get => LinearScale(TxPower) / PowerEfficiency;  }
+        public double PowerDraw { get => RATools.LogScale(PowerDrawLinear); }
+        public double PowerDrawLinear { get => RATools.LinearScale(TxPower) / PowerEfficiency;  }
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
-        public static double LinearScale(double x) => Math.Pow(10, x / 10);
-        public static double LogScale(double x) => 10 * Math.Log10(x);
         private static readonly string ResourceRequiredName = "ElectricCharge";
         private static readonly PartResourceDefinition ECDefinition = PartResourceLibrary.Instance.GetDefinition(ResourceRequiredName);
         public RealAntenna RAAntenna = new RealAntenna();
