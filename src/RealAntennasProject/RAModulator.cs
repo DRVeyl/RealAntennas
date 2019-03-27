@@ -8,7 +8,7 @@ namespace RealAntennas
         public double SymbolRate { get; set; }      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int MinModulationBits { get; set; }  // Min modulation supported
-        public double NoiseFigure { get; set; }     // Noise figure of receiver electronics in dB
+        public double NoiseFigure { get => 2 + ((TechLevel - 10) * 0.3); }  // Noise figure of receiver electronics in dB
         public int TechLevel { get; set; }
         public double SpectralEfficiency { get => Math.Max(0.01, 1 - (1 / Math.Pow(2, TechLevel))); }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
@@ -23,15 +23,15 @@ namespace RealAntennas
         // QPSK: 7-10.  16-QAM: 15-18.  64-QAM: 22-24.  256-QAM: 28-30dB Minimums
         // These values are for a symbol error rate of 10^-2 (ouch!)
         // Probably should shift to 6, 10, 14, 18, 21, 23.5, 27, 29, 31
-        public static readonly double[] QAM_CI = { 6, 10, 14, 18, 21, 23.5, 27, 29, 31 };
-        public double RequiredCI() => RequiredCI(ModulationBits);
-        public static double RequiredCI(int modulationBits)
+        public readonly double[] QAM_CI = { 6, 10, 14, 18, 21, 23.5, 27, 29, 31 };
+        public virtual double RequiredCI() => RequiredCI(ModulationBits);
+        public virtual double RequiredCI(int modulationBits)
         {
             // OOK: 2, BPSK: 5, QPSK: 8, 8PSK: 11, 16QAM: 16, 32QAM: 19, 64QAM: 22
             if (modulationBits < QAM_CI.Length) return QAM_CI[modulationBits];
             return QAM_CI[QAM_CI.Length - 1];
         }
-        public bool Compatible(RAModulator other)
+        public virtual bool Compatible(RAModulator other)
         {
             // Test frequency range and minimum modulation order
             if (Frequency > other.Frequency * 1.1) return false;
@@ -40,7 +40,7 @@ namespace RealAntennas
             if (other.MinModulationBits > ModulationBits) return false;
             return true;
         }
-        public bool SupportModulation(int bits) => bits >= MinModulationBits && bits <= ModulationBits;
+        public virtual bool SupportModulation(int bits) => bits >= MinModulationBits && bits <= ModulationBits;
 
         public override string ToString() => $"{BitsToString(ModulationBits)} {DataRate} bps";
 
@@ -55,15 +55,14 @@ namespace RealAntennas
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }
-        public RAModulator() : this(1, 1, 0, 0, 3, 0) { }
-        public RAModulator(RAModulator orig) : this(orig.Frequency, orig.SymbolRate, orig.ModulationBits, orig.MinModulationBits, orig.NoiseFigure, orig.TechLevel) { }
-        public RAModulator(double frequency, double symbolRate, int modulationBits, int minModulationBits, double noiseFigure, int techLevel)
+        public RAModulator() : this(1, 1, 0, 0, 0) { }
+        public RAModulator(RAModulator orig) : this(orig.Frequency, orig.SymbolRate, orig.ModulationBits, orig.MinModulationBits, orig.TechLevel) { }
+        public RAModulator(double frequency, double symbolRate, int modulationBits, int minModulationBits, int techLevel)
         {
             Frequency = frequency;
             SymbolRate = symbolRate;
             ModulationBits = modulationBits;
             MinModulationBits = minModulationBits;
-            NoiseFigure = noiseFigure;
             TechLevel = techLevel;
         }
         public void Copy(RAModulator orig)
@@ -72,7 +71,6 @@ namespace RealAntennas
             SymbolRate = orig.SymbolRate;
             ModulationBits = orig.ModulationBits;
             MinModulationBits = orig.MinModulationBits;
-            NoiseFigure = orig.NoiseFigure;
             TechLevel = orig.TechLevel;
         }
 
@@ -82,7 +80,6 @@ namespace RealAntennas
             SymbolRate = double.Parse(config.GetValue("SymbolRate"));
             ModulationBits = int.Parse(config.GetValue("ModulationBits"));
             MinModulationBits = int.Parse(config.GetValue("MinModulationBits"));
-            NoiseFigure = double.Parse(config.GetValue("NoiseFigure"));
             TechLevel = int.Parse(config.GetValue("TechLevel"));
         }
     }

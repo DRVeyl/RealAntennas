@@ -19,7 +19,7 @@ namespace RealAntennas
         public static double LinearScale(double x) => Math.Pow(10, x / 10);
         public static double LogScale(double x) => 10 * Math.Log10(x);
         // beamwidth = sqrt(52525*efficiency / g)   G = 10*log(g) => g = 10^(G/10)
-        public double Beamwidth { get => Math.Sqrt(52525 * AntennaEfficiency / Math.Pow(10, Gain / 10)); }
+        public double Beamwidth { get => Math.Sqrt(52525 * AntennaEfficiency / LinearScale(Gain)); }
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }
@@ -60,7 +60,7 @@ namespace RealAntennas
             double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
             double CI = RSSI - Noise;
 
-            if (CI < RAModulator.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.
+            if (CI < txMod.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.
 
             // Link can close.  Load & config modulator with agreed SymbolRate and ModulationBits range.
             mod = new RAModulator(txMod)

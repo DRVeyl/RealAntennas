@@ -74,38 +74,31 @@ namespace RealAntennas
                 Disconnect(a, b);
                 return false;
             }
-            RealAntenna fwdAntTx = bestFwdAntPair[0];
-            RealAntenna fwdAntRx = bestFwdAntPair[1];
-            RealAntenna revAntTx = bestRevAntPair[0];
-            RealAntenna revAntRx = bestRevAntPair[1];
 
             RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
-            link.FwdAntennaTx = fwdAntTx;
-            link.FwdAntennaRx = fwdAntRx;
-            link.RevAntennaTx = revAntTx;
-            link.RevAntennaRx = revAntRx;
+            link.FwdAntennaTx = bestFwdAntPair[0];
+            link.FwdAntennaRx = bestFwdAntPair[1];
+            link.RevAntennaTx = bestRevAntPair[0];
+            link.RevAntennaRx = bestRevAntPair[1];
             link.FwdDataRate = FwdDataRate;
             link.RevDataRate = RevDataRate;
             link.cost = RACommLink.CostFunc((FwdDataRate + RevDataRate) / 2);
 
-            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(fwdAntTx, fwdAntRx, distance, fwdAntTx.Frequency);
-            link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(fwdAntRx, noiseTemps[1]);
+            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
+            link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.FwdAntennaRx, noiseTemps[1]);
 
-            double RevRSSI = RACommNetScenario.RangeModel.RSSI(revAntTx, revAntRx, distance, revAntTx.Frequency);
-            link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(revAntRx, noiseTemps[0]);
+            double RevRSSI = RACommNetScenario.RangeModel.RSSI(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
+            link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.RevAntennaRx, noiseTemps[0]);
 
             // TryConnect() is responsible for setting link parameters like below.
-            //link.aCanRelay = a.isHome || a.isControlSourceMultiHop;     // This is wrong, it's the antennaType=RELAY or antennaType=DIRECT
             link.aCanRelay = true; 
             link.bCanRelay = true;      // All antennas can relay.
-            link.bothRelay = (link.aCanRelay && link.bCanRelay);
-            // Ok, so what is the link strength here?
-            // Let's just make it, for now, the linear ratio between min and max data rate of the fwd link.
-            // (Yeah, not very bidirectional yet.)
+            link.bothRelay = link.aCanRelay && link.bCanRelay;
+            // WIP: Set link strength to the achieved percentage of the maximum possible data rate for the fwd link.
             double scaledCI = FwdDataRate / bestFwdAntPair[0].DataRate;
-            link.strengthAR = (link.aCanRelay ? scaledCI : 0);
-            link.strengthBR = (link.bCanRelay ? scaledCI : 0);
-            link.strengthRR = (link.bothRelay ? scaledCI : 0);
+            link.strengthAR = link.aCanRelay ? scaledCI : 0;
+            link.strengthBR = link.bCanRelay ? scaledCI : 0;
+            link.strengthRR = link.bothRelay ? scaledCI : 0;
             link.SetSignalStrength(scaledCI);
             link.signal = (SignalStrength) Convert.ToInt32(Math.Ceiling(4 * scaledCI));
             return true;
