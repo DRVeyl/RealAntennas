@@ -66,8 +66,8 @@ namespace RealAntennas
                 RACommNetScenario.RangeModel.NoiseTemperature(rac_b, rac_a.position)
             };
 
-            bool bestFwd = BestConnection(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair, out RAModulator bestFwdMod);
-            bool bestRev = BestConnection(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair, out RAModulator bestRevMod);
+            bool bestFwd = BestConnection(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair, out double FwdDataRate);
+            bool bestRev = BestConnection(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair, out double RevDataRate);
 
             if (!(bestFwd && bestRev))
             {
@@ -86,14 +86,14 @@ namespace RealAntennas
             link.FwdAntennaRx = fwdAntRx;
             link.RevAntennaTx = revAntTx;
             link.RevAntennaRx = revAntRx;
-            link.FwdModulator = bestFwdMod;
-            link.RevModulator = bestRevMod;
-            link.cost = RACommLink.CostFunc((bestFwdMod.DataRate + bestRevMod.DataRate) / 2);
+            link.FwdDataRate = FwdDataRate;
+            link.RevDataRate = RevDataRate;
+            link.cost = RACommLink.CostFunc((FwdDataRate + RevDataRate) / 2);
 
-            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(fwdAntTx, fwdAntRx, distance, bestFwdMod.Frequency);
+            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(fwdAntTx, fwdAntRx, distance, fwdAntTx.Frequency);
             link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(fwdAntRx, noiseTemps[1]);
 
-            double RevRSSI = RACommNetScenario.RangeModel.RSSI(revAntTx, revAntRx, distance, bestRevMod.Frequency);
+            double RevRSSI = RACommNetScenario.RangeModel.RSSI(revAntTx, revAntRx, distance, revAntTx.Frequency);
             link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(revAntRx, noiseTemps[0]);
 
             // TryConnect() is responsible for setting link parameters like below.
@@ -104,7 +104,7 @@ namespace RealAntennas
             // Ok, so what is the link strength here?
             // Let's just make it, for now, the linear ratio between min and max data rate of the fwd link.
             // (Yeah, not very bidirectional yet.)
-            double scaledCI = bestFwdMod.DataRate / bestFwdAntPair[0].modulator.DataRate;
+            double scaledCI = FwdDataRate / bestFwdAntPair[0].DataRate;
             link.strengthAR = (link.aCanRelay ? scaledCI : 0);
             link.strengthBR = (link.bCanRelay ? scaledCI : 0);
             link.strengthRR = (link.bothRelay ? scaledCI : 0);
@@ -113,23 +113,21 @@ namespace RealAntennas
             return true;
         }
 
-        private static bool BestConnection(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair, out RAModulator mod)
+        private static bool BestConnection(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair, out double dataRate)
         {
             bestPair = new RealAntenna[2];
-            mod = new RAModulator();
-            bool found = false;
+            dataRate = 0;
             foreach (RealAntenna[] antPair in pairList)
             {
                 bool check = antPair[0].BestPeerModulator(antPair[1], distance, noiseTemp, out RAModulator candidateMod);
-                if (check && (mod.DataRate < candidateMod.DataRate))
+                if (check && (dataRate < candidateMod.DataRate))
                 {
                     bestPair[0] = antPair[0];
                     bestPair[1] = antPair[1];
-                    mod.Copy(candidateMod);
-                    found = true;
+                    dataRate = candidateMod.DataRate;
                 }
             }
-            return found;
+            return (dataRate > 0);
         }
 
         protected override CommLink Connect(CommNode a, CommNode b, double distance)
@@ -164,8 +162,8 @@ namespace RealAntennas
             foreach (CommLink l in path)
             {
                 RACommLink link = l.start[l.end] as RACommLink;
-                RAModulator mod = link.start.Equals(l.start) ? link.FwdModulator : link.RevModulator;
-                data_rate = Math.Min(data_rate, mod.DataRate);
+                double linkRate = link.start.Equals(l.start) ? link.FwdDataRate : link.RevDataRate;
+                data_rate = Math.Min(data_rate, linkRate);
             }
             return data_rate;
         }

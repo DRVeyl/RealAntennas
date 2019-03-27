@@ -7,6 +7,7 @@ namespace RealAntennas
         public double Gain { get; set; }         // Physical directionality, measured in dBi
         public double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public int TechLevel { get; set; }
+        public double Frequency { get => modulator.Frequency; }
         public double PowerEfficiency { get => Math.Min(1, 0.5 + (TechLevel * 0.05)); }
         public double AntennaEfficiency { get => Math.Min(0.7, 0.5 + (TechLevel * 0.025)); }
         public double SpectralEfficiency { get => modulator.SpectralEfficiency; }
