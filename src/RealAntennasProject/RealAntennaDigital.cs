@@ -4,11 +4,11 @@ namespace RealAntennas
 {
     public class RealAntennaDigital : RealAntenna
     {
-        public override double Frequency { get => modulator.Frequency; }
-        public override double SpectralEfficiency { get => modulator.SpectralEfficiency; }
-        public override double DataRate { get => modulator.DataRate; }
-        public override double NoiseFigure { get => modulator.NoiseFigure; }
-        public override double Bandwidth { get => modulator.Bandwidth; }         // RF bandwidth required.
+        public override double Frequency => modulator.Frequency;
+        public override double SpectralEfficiency => modulator.SpectralEfficiency;
+        public override double DataRate => modulator.DataRate;
+        public override double NoiseFigure => modulator.NoiseFigure;
+        public override double Bandwidth => modulator.Bandwidth;          // RF bandwidth required.
         public override double RequiredCI() => modulator.RequiredCI();
         public RAModulator modulator;
 
@@ -24,7 +24,7 @@ namespace RealAntennas
             modulator = new RAModulator();
         }
 
-        public override string ToString() => string.Format("[+RA] {0} [{1}dB {2}]", Name, Gain, modulator);
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]";
         public override double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
         {
             double dataRate = 0;

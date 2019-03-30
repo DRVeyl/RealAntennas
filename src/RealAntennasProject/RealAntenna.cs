@@ -8,21 +8,21 @@ namespace RealAntennas
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public virtual int TechLevel { get; set; }
         public virtual double Frequency { get; set; }
-        public virtual double PowerEfficiency { get => Math.Min(1, 0.5 + (TechLevel * 0.05)); }
-        public virtual double AntennaEfficiency { get => Math.Min(0.7, 0.5 + (TechLevel * 0.025)); }
-        public virtual double SpectralEfficiency { get; }
+        public virtual double PowerEfficiency => Math.Min(1, 0.5 + (TechLevel * 0.05));
+        public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
+        public virtual double SpectralEfficiency => 1.01 - (1 / Math.Pow(2, TechLevel));
         public virtual double DataRate { get; }
-        public virtual double NoiseFigure { get; }
-        public virtual double Bandwidth { get => DataRate / SpectralEfficiency; }         // RF bandwidth required.
+        public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
+        public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
         public virtual double RequiredCI() => 1;
 
-        public double PowerDraw { get => RATools.LogScale(PowerDrawLinear); }
-        public double PowerDrawLinear { get => RATools.LinearScale(TxPower) / PowerEfficiency; }
-        public double Beamwidth { get => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain)); }
+        public double PowerDraw => RATools.LogScale(PowerDrawLinear);
+        public virtual double PowerDrawLinear => RATools.LinearScale(TxPower) / PowerEfficiency;
+        public double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }
-        public override string ToString() => string.Format("[+RA] {0} [{1}dB]", Name, Gain);
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB]";
 
         public int CompareTo(object obj)
         {
@@ -42,9 +42,10 @@ namespace RealAntennas
             return (CI > RequiredCI()) ? DataRate : 0;
         }
         public RealAntenna() : this("New RealAntennaDigital") { }
-        public RealAntenna(string name)
+        public RealAntenna(string name, double dataRate = 1000)
         {
             Name = name;
+            DataRate = dataRate;
         }
         public virtual void LoadFromConfigNode(ConfigNode config)
         {

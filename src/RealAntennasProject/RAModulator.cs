@@ -8,7 +8,7 @@ namespace RealAntennas
         public double SymbolRate { get; set; }      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int MinModulationBits { get; set; }  // Min modulation supported
-        public double NoiseFigure { get => 2 + ((TechLevel - 10) * 0.3); }  // Noise figure of receiver electronics in dB
+        public double NoiseFigure { get => 2 + ((10 - TechLevel) * 0.8); }  // Noise figure of receiver electronics in dB
         public int TechLevel { get; set; }
         public double SpectralEfficiency { get => Math.Max(0.01, 1 - (1 / Math.Pow(2, TechLevel))); }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
