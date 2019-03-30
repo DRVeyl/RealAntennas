@@ -29,7 +29,18 @@ namespace RealAntennas
             if (obj is RealAntenna ra) return DataRate.CompareTo(ra.DataRate);
             else throw new System.ArgumentException();
         }
-        public virtual double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp) => DataRate;
+        public virtual double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
+        {
+            RealAntenna tx = this;
+            if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
+            if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
+
+            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, Frequency);
+            double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
+            double CI = RSSI - Noise;
+
+            return (CI > RequiredCI()) ? DataRate : 0;
+        }
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name)
         {

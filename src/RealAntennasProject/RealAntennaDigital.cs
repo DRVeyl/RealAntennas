@@ -48,7 +48,7 @@ namespace RealAntennas
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
             int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
 
-            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, txMod.Frequency);
+            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, tx.Frequency);
             double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
             double CI = RSSI - Noise;
 
