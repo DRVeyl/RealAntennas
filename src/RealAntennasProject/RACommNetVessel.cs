@@ -41,11 +41,7 @@ namespace RealAntennas
                 vcn.RAAntennaList = new List<RealAntenna>(GatherRealAntennas(antennaList));
                 vcn.RAAntennaList.Sort();
                 vcn.RAAntennaList.Reverse();
-                Debug.LogFormat(ModTag + "Replacing original commNode, now have {0} with antList {1}", vcn, vcn.RAAntennaList);
-                foreach (RealAntenna ra in vcn.RAAntennaList)
-                {
-                    Debug.LogFormat("RealAntenna {0}", ra);
-                }
+                Debug.LogFormat(ModTag + "Replacing original commNode, now have {0}", vcn);
                 Comm = vcn;
             }
             base.OnNetworkInitialized();
@@ -85,10 +81,11 @@ namespace RealAntennas
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
-                    if (part.FindModule(ModuleRealAntenna.ModuleName) != null)
+                    if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
-                        Part tempPart = PartLoader.getPartInfoByName(part.partName).partPrefab;
-                        ModuleRealAntenna raModule = tempPart.FindModuleImplementing<ModuleRealAntenna>();
+                        Part prefab = part.partInfo.partPrefab;
+                        ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
+                        raModule.Configure(snap.moduleValues);
                         Debug.LogFormat("Gathered the RA module: {0}", raModule);
                         antList.Add(raModule);
                     }

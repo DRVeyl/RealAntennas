@@ -45,10 +45,15 @@ namespace RealAntennas
 
         public override void OnLoad(ConfigNode node)
         {
+            Configure(node);
+            base.OnLoad(node);
+        }
+
+        public void Configure(ConfigNode node)
+        {
             RAAntenna.LoadFromConfigNode(node);
             RAAntenna.Name = name;
             RAAntenna.Parent = this;
-            base.OnLoad(node);
         }
 
         public override string GetInfo()
@@ -59,10 +64,7 @@ namespace RealAntennas
                                 "<b>Data Rate</b>: {2}\n", Gain, TxPower, DataRate);
         }
 
-        public override string ToString()
-        {
-            return string.Format("[+RealAntennas] {0} [{1}dB]", name, Gain);
-        }
+        public override string ToString() => RAAntenna.ToString();
 
         public override void StopTransmission()
         {
