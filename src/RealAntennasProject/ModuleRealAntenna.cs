@@ -23,10 +23,10 @@ namespace RealAntennas
         UI_FloatEdit(scene = UI_Scene.Editor, minValue = 1000f, incrementLarge = 10000f, incrementSmall = 1000f, incrementSlide = 10f, sigFigs = 6, unit = " S/s", suppressEditorShipModified = true)]
         public float SymbolRate;    // Symbol Rate in Samples/second
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " bits", guiFormat = "N0")]
+        [KSPField(isPersistant = true)]
         public int ModulationBits;    // Constellation size (bits, 0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " bits", guiFormat = "N0")]
+        [KSPField(isPersistant = true)]
         public int MinModulationBits;    // Minimum constellation size (bits)
 
         public double NoiseFigure { get => RAAntenna.NoiseFigure; }     // Noise figure of receiver electronics in dB

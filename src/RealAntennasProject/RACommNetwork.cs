@@ -20,7 +20,7 @@ namespace RealAntennas
         {
             if (!(conn is RACommNode))
             {
-                Debug.LogWarning(string.Format(ModTag + "Wrong commnode type, so ignoring. Got: {0}", RACommNode.DebugDump(conn)));
+                Debug.LogWarningFormat(ModTag + "Wrong commnode type, so ignoring.");
                 return conn;
             }
             Debug.LogFormat(ModTag + "Adding {0}", conn);

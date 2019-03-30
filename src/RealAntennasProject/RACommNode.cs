@@ -60,15 +60,15 @@ namespace RealAntennas
             return s;
         }
 
-        public static string DebugDump(CommNet.CommNode obj)
+        public virtual RealAntenna AntennaTowardsHome()
         {
-            string res = "CommNode is null";
-            if (obj != null)
+            CommNet.CommPath path = new CommNet.CommPath();
+            if (!(Net.FindHome(this, path))) return null;
+            if (this[path.First.end] is RACommLink link)
             {
-                res = string.Format("Name:{0} DisplayName:{1} Cost:{2} Link:{3} LinkNode:{4} Position:{5} Transform:{6}",
-                                            obj.name, obj.displayName, obj.bestCost, obj.bestLink, obj.bestLinkNode, obj.position, obj.transform);
+                return link.start.Equals(this) ? link.FwdAntennaTx: link.RevAntennaTx;
             }
-            return res;
+            return null;
         }
     }
 }

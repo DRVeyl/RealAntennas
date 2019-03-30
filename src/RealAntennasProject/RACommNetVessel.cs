@@ -11,13 +11,9 @@ namespace RealAntennas
 
         public override IScienceDataTransmitter GetBestTransmitter()
         {
-            CommNet.CommPath path = new CommNet.CommPath();
-            if ((Comm is RACommNode node) && node.Net.FindHome(node, path))
+            if (Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome)
             {
-                if (Comm[path.First.end] is RACommLink link)    // CommNet.FindHome() makes new CommLinks. :/
-                {
-                    return link.start.Equals(Comm) ? link.FwdAntennaTx.Parent : link.RevAntennaTx.Parent;
-                }
+                return toHome.Parent;
             }
             IScienceDataTransmitter e = base.GetBestTransmitter();
             Debug.LogWarningFormat(ModTag + "Could not find best transmitter, defaulted to {0}", e);
