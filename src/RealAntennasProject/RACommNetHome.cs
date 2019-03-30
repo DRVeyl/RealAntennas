@@ -37,7 +37,7 @@ namespace RealAntennas
             comm = new RACommNode(comm);
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
-            RealAntenna ant = new RealAntenna(name);
+            RealAntenna ant = new RealAntennaDigital(name);
             ant.LoadFromConfigNode(config);
             t.RAAntennaList = new List<RealAntenna>
             {

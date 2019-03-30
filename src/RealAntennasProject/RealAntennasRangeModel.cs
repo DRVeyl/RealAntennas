@@ -36,9 +36,9 @@ namespace RealAntennas
         }
         public double GetNormalizedRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance)
         {
-            double CI_fwd = RSSI(txAnt, rxAnt, distance, txAnt.modulator.Frequency) - NoiseFloor(rxAnt, NoiseTemperature(rx, tx.position));
-            double CI_rev = RSSI(rxAnt, txAnt, distance, rxAnt.modulator.Frequency) - NoiseFloor(txAnt, NoiseTemperature(tx, rx.position));
-            double CI = Math.Min(CI_fwd - txAnt.modulator.RequiredCI(), CI_rev - rxAnt.modulator.RequiredCI());
+            double CI_fwd = RSSI(txAnt, rxAnt, distance, txAnt.Frequency) - NoiseFloor(rxAnt, NoiseTemperature(rx, tx.position));
+            double CI_rev = RSSI(rxAnt, txAnt, distance, rxAnt.Frequency) - NoiseFloor(txAnt, NoiseTemperature(tx, rx.position));
+            double CI = Math.Min(CI_fwd - txAnt.RequiredCI(), CI_rev - rxAnt.RequiredCI());
             return ConvertCIToScaleFactor(CI);
         }
         public bool InRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance) 
@@ -50,7 +50,7 @@ namespace RealAntennas
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;
         public double NoiseFloor (RealAntenna rx, double noiseTemp = 290)
         {
-            double sensitivity_dbm = boltzmann_dbm + (10 * Math.Log10(noiseTemp * rx.modulator.Bandwidth));
+            double sensitivity_dbm = boltzmann_dbm + (10 * Math.Log10(noiseTemp * rx.Bandwidth));
             //          Debug.LogFormat("NoiseFloor() for {0}: {1}dBm.", rx, sensitivity_dbm);
             return sensitivity_dbm;
         }

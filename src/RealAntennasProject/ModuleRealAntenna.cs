@@ -41,7 +41,7 @@ namespace RealAntennas
         public static readonly string ModuleName = "ModuleRealAntenna";
         private static readonly string ResourceRequiredName = "ElectricCharge";
         private static readonly PartResourceDefinition ECDefinition = PartResourceLibrary.Instance.GetDefinition(ResourceRequiredName);
-        public RealAntenna RAAntenna = new RealAntenna();
+        public RealAntenna RAAntenna = new RealAntennaDigital();
 
         public override void OnLoad(ConfigNode node)
         {
