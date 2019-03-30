@@ -1,59 +1,33 @@
 ﻿using System;
-using UnityEngine;
 
 namespace RealAntennas
 {
     // Implements the old range model to fulfill general CommNetScenario requirement
-    public class RealAntennasRangeModel : CommNet.IRangeModel, IRealAntennasRangeModel
+    public class RealAntennasRangeModel : CommNet.IRangeModel
     {
         protected static readonly string ModTag = "[RealAntennasRangeModel] ";
-        protected static double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
+        protected static readonly double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
         //double boltzman = 1.38064852 * Math.Pow(10,-23);
         public static readonly double boltzmann_dbW = 10 * Math.Log10(1.38064852e-23);      //-228.59917;
         public static readonly double boltzmann_dbm = boltzmann_dbW + 30;
         public double GetMaximumRange(double aPower, double bPower) => 1e30;
-        public double GetNormalizedRange(double aPower, double bPower, double distance) {
-            Debug.LogWarningFormat(ModTag + "Old GetNormalizedRange() called");
-            Debug.LogFormat(StackTraceUtility.ExtractStackTrace());
-            return 1;
-        }
+        public double GetNormalizedRange(double aPower, double bPower, double distance) => 1;
         public bool InRange(double aPower, double bPower, double sqrDistance) => true;
-        public double GetMaximumRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double frequency = 1e9)
-        {
-            // Determine the (tx,rx) direction that can sustain the least path loss = Worst receive sensitivity modified by transmitter power+coding.
-            double rxNoiseFloor = NoiseFloor(rxAnt, NoiseTemperature(rx, tx.position));
-            double txNoiseFloor = NoiseFloor(txAnt, NoiseTemperature(tx, rx.position));
 
-            double min_tx = Math.Min(txAnt.TxPower - rxNoiseFloor,
-                                     rxAnt.TxPower - txNoiseFloor);
-            double targetPL = min_tx + txAnt.Gain + rxAnt.Gain;
-
-            // Calc the range that yields this path loss.
-            // double log_10_dist = (targetPL - (20 * Math.Log10(frequency)) - (20 * Math.Log10(corr))) / 20;
-            double log_10_dist = (targetPL - (20 * Math.Log10(frequency)) - path_loss_constant) / 20;
-            double maxDistance = Math.Pow(10, log_10_dist);
-            return maxDistance;
-        }
-        public double GetNormalizedRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance)
-        {
-            double CI_fwd = RSSI(txAnt, rxAnt, distance, txAnt.Frequency) - NoiseFloor(rxAnt, NoiseTemperature(rx, tx.position));
-            double CI_rev = RSSI(rxAnt, txAnt, distance, rxAnt.Frequency) - NoiseFloor(txAnt, NoiseTemperature(tx, rx.position));
-            double CI = Math.Min(CI_fwd - txAnt.RequiredCI(), CI_rev - rxAnt.RequiredCI());
-            return ConvertCIToScaleFactor(CI);
-        }
-        public bool InRange(RACommNode tx, RACommNode rx, RealAntenna txAnt, RealAntenna rxAnt, double distance) 
-            => GetNormalizedRange(tx, rx, txAnt, rxAnt, distance) > 0;
         public double RSSI(RealAntenna tx, RealAntenna rx, double distance, double frequency = 1e9)
             => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - 0 + rx.Gain;
+
         public double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;
+
         public double NoiseFloor (RealAntenna rx, double noiseTemp = 290)
         {
             double sensitivity_dbm = boltzmann_dbm + (10 * Math.Log10(noiseTemp * rx.Bandwidth));
             //          Debug.LogFormat("NoiseFloor() for {0}: {1}dBm.", rx, sensitivity_dbm);
             return sensitivity_dbm;
         }
+
         public double NoiseTemperature(RACommNode rx, Vector3d origin)
         {
             // Calculating sensitivity from [fake] effective temperature and bandwidth

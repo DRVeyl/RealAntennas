@@ -60,7 +60,6 @@
     <Compile Include="RACommNetScenario.cs" />
     <Compile Include="RACommNetVessel.cs" />
     <Compile Include="RACommNetwork.cs" />
-    <Compile Include="RealAntennasIRangeModel.cs" />
     <Compile Include="RealAntennasRangeModel.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="RACommNetNetwork.cs" />
