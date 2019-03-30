@@ -38,7 +38,6 @@ namespace KERBALISM
         }
     }
 
-
     public sealed class ConnectionInfo
     {
         /// <summary> true if there is a connection back to DSN </summary>
@@ -84,6 +83,26 @@ namespace KERBALISM
                 }
             }
         }
+    }
+
+
+	public static class RealAntennas
+	{
+		// constructor
+		static RealAntennas()
+		{
+			foreach (var a in AssemblyLoader.loadedAssemblies)
+			{
+				if (a.name == "RealAntennas")       // "RealAntennasProject" ?
+				{
+                    RealAntenna = a.assembly.GetType("RealAntennas.RealAntenna");
+                    RACommNode = a.assembly.GetType("RealAntennas.RACommNode");
+                    RACommNetwork = a.assembly.GetType("RealAntennas.RACommNetwork");
+                    MaxDataRateToHome = RACommNetwork.GetMethod("MaxDataRateToHome");
+                    AntennaTowardsHome = RACommNode.GetMethod("AntennaTowardsHome");
+				}
+			}
+		}
     }
 }
 */
