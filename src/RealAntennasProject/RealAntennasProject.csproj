@@ -49,6 +49,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Antenna\AntennaGUI.cs" />
+    <Compile Include="Kerbalism\AntennaInfoRA.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RACommLink.cs" />
@@ -66,7 +68,6 @@
     <Compile Include="RACommNode.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Antenna\" />
     <Folder Include="CommNet\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

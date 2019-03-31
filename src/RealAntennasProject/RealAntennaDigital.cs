@@ -44,6 +44,7 @@ namespace RealAntennas
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return false;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return false;
+            if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
             if (!txMod.Compatible(rxMod)) return false;
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
             int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);

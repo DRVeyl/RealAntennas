@@ -7,19 +7,19 @@ namespace RealAntennas
 {
     public class ModuleRealAntenna : ModuleDataTransmitter
     {
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dBi", guiFormat = "F1")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " dBm", guiFormat = "F1")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power", guiUnits = " dBm", guiFormat = "F1")]
         public double TxPower;       // Transmit Power in dBm (milliwatts)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiFormat = "N0")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0")]
         public int TechLevel = 0;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " Hz", guiFormat = "N0")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Frequency", guiUnits = " Hz", guiFormat = "N0")]
         public double Frequency;     // Frequency in Hz
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiUnits = " S/s", guiFormat = "F0"),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Symbol Rate", guiUnits = " S/s", guiFormat = "F0"),
         UI_FloatEdit(scene = UI_Scene.Editor, minValue = 1000f, incrementLarge = 10000f, incrementSmall = 1000f, incrementSlide = 10f, sigFigs = 6, unit = " S/s", suppressEditorShipModified = true)]
         public float SymbolRate;    // Symbol Rate in Samples/second
 
@@ -29,19 +29,53 @@ namespace RealAntennas
         [KSPField(isPersistant = true)]
         public int MinModulationBits;    // Minimum constellation size (bits)
 
-        public double NoiseFigure { get => RAAntenna.NoiseFigure; }     // Noise figure of receiver electronics in dB
         public double PowerEfficiency { get => RAAntenna.PowerEfficiency; }
-        public double SpectralEfficiency { get => RAAntenna.SpectralEfficiency; }
-        public double AntennaEfficiency { get => RAAntenna.AntennaEfficiency; }
-
         public double PowerDraw { get => RATools.LogScale(PowerDrawLinear); }
-        public double PowerDrawLinear { get => RATools.LinearScale(TxPower) / PowerEfficiency;  }
+        public double PowerDrawLinear { get => RATools.LinearScale(TxPower) / PowerEfficiency; }
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
-        private static readonly string ResourceRequiredName = "ElectricCharge";
-        private static readonly PartResourceDefinition ECDefinition = PartResourceLibrary.Instance.GetDefinition(ResourceRequiredName);
         public RealAntenna RAAntenna = new RealAntennaDigital();
+        public Antenna.AntennaGUI GUI = new Antenna.AntennaGUI();
+
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Extra Info")]
+        public string guiExtraInfo = "";
+
+        [KSPField(guiActive = true, guiName = "Antenna Target")]
+        private string _antennaTargetString = string.Empty;
+        public string AntennaTargetString { get => _antennaTargetString; set => _antennaTargetString = value; }
+
+        [KSPField(isPersistant = true)]
+        private string targetID = string.Empty;
+        public string TargetID { get => targetID; set => targetID = value; }
+
+        public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
+
+        [KSPEvent(active = true, guiActive = true, guiActiveUnfocused = false, guiActiveEditor = false, externalToEVAOnly = false, guiName = "Antenna Targeting")]
+        void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
+        public void OnGUI() => GUI.OnGUI();
+
+        public override bool CanComm()
+        {
+            guiExtraInfo = RAAntenna.ToString();
+            return base.CanComm();
+        }
+
+        public override void OnStart(StartState state)
+        {
+            base.OnStart(state);
+            { if (Events["TransmitIncompleteToggle"] is BaseEvent be) be.active = false; }
+            { if (Events["StartTransmission"] is BaseEvent be) be.active = false; }
+            { if (Events["StopTransmission"] is BaseEvent be) be.active = false; }
+            if (Actions["StartTransmissionAction"] is BaseAction ba) ba.active = false;
+            if (Fields["powerText"] is BaseField bf) bf.guiActive = false;      // "Antenna Rating"
+            if (!RAAntenna.CanTarget)
+            {
+                Fields["_antennaTargetString"].guiActive = false;
+                Events["AntennaTargetGUI"].active = false;
+            }
+            GUI.Start();
+        }
 
         public override void OnLoad(ConfigNode node)
         {
@@ -54,6 +88,19 @@ namespace RealAntennas
             RAAntenna.LoadFromConfigNode(node);
             RAAntenna.Name = name;
             RAAntenna.Parent = this;
+            GUI.ParentPart = part;
+            GUI.ParentPartModule = this;
+            if (!(string.IsNullOrEmpty(TargetID)))
+            {
+                if (FlightGlobals.GetBodyByName(TargetID) is CelestialBody body) Target = body;
+                try
+                {
+                    if (FlightGlobals.FindVessel(new Guid(TargetID)) is Vessel v) Target = v;
+                }
+                catch (FormatException) { }
+            }
+            Debug.LogFormat("Configure() for {0} set Antenna Target to {1}", this, Target);
+
         }
 
         public override string GetInfo()
@@ -104,10 +151,10 @@ namespace RealAntennas
 
         public override void OnUpdate()
         {
-//            Debug.LogFormat(ModTag + "OnUpdate() start");
-// Could update rates here, but way too heavy-weight.
+            //            Debug.LogFormat(ModTag + "OnUpdate() start");
+            // Could update rates here, but way too heavy-weight.
             base.OnUpdate();
-//            Debug.LogFormat(ModTag + "OnUpdate() stop");
+            //            Debug.LogFormat(ModTag + "OnUpdate() stop");
         }
 
         protected override List<ScienceData> queueVesselData(List<IScienceDataContainer> experiments)

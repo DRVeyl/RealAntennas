@@ -1,7 +1,12 @@
 ﻿using System;
+using UnityEngine;
 
 namespace RealAntennas
 {
+    public enum AntennaShape
+    {
+        Auto, Omni, Dish
+    }
     public class RealAntenna : IComparable
     {
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
@@ -15,10 +20,41 @@ namespace RealAntennas
         public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
         public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
         public virtual double RequiredCI() => 1;
+        private readonly double minimumSpotRadius = 1e3;
+        private readonly double maxOmniGain = 8;
+
+        public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
+        public virtual bool CanTarget => Shape != AntennaShape.Omni;
+
+        private ITargetable _target = null;
+        private void _internalSet(ITargetable tgt, string dispString, string tgtId)
+        {
+            _target = tgt; Parent.AntennaTargetString = dispString; Parent.TargetID = tgtId;
+        }
+        public ITargetable Target
+        {
+            get => _target;
+            set
+            {
+                if (!CanTarget) _internalSet(null, string.Empty, string.Empty);
+                else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
+                else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
+                else
+                {
+                    Debug.LogWarningFormat("Tried to set antenna target to {0} and failed", value);
+                }
+            }
+        }
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public virtual double PowerDrawLinear => RATools.LinearScale(TxPower) / PowerEfficiency;
         public double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
+        // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
+        // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
+        // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
+        // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
+        // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
+        public virtual double MinimumDistance => (Shape == AntennaShape.Omni || Beamwidth >= 90 ? 0 : minimumSpotRadius / Math.Tan(Beamwidth));
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }
@@ -34,6 +70,7 @@ namespace RealAntennas
             RealAntenna tx = this;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
+            if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;
 
             double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, Frequency);
             double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
