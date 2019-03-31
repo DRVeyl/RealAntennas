@@ -74,6 +74,8 @@ namespace RealAntennas
                 Fields["_antennaTargetString"].guiActive = false;
                 Events["AntennaTargetGUI"].active = false;
             }
+            GUI.ParentPart = part;
+            GUI.ParentPartModule = this;
             GUI.Start();
         }
 
@@ -88,19 +90,6 @@ namespace RealAntennas
             RAAntenna.LoadFromConfigNode(node);
             RAAntenna.Name = name;
             RAAntenna.Parent = this;
-            GUI.ParentPart = part;
-            GUI.ParentPartModule = this;
-            if (!(string.IsNullOrEmpty(TargetID)))
-            {
-                if (FlightGlobals.GetBodyByName(TargetID) is CelestialBody body) Target = body;
-                try
-                {
-                    if (FlightGlobals.FindVessel(new Guid(TargetID)) is Vessel v) Target = v;
-                }
-                catch (FormatException) { }
-            }
-            Debug.LogFormat("Configure() for {0} set Antenna Target to {1}", this, Target);
-
         }
 
         public override string GetInfo()

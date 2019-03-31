@@ -26,14 +26,35 @@ namespace RealAntennas
         public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni;
 
-        private ITargetable _target = null;
+        private string TargetID { get; set; }
+        private ITargetable _findTargetFromID(string id)
+        {
+            if (FlightGlobals.fetch && CanTarget)
+            {
+                if (string.IsNullOrEmpty(TargetID)) return FlightGlobals.GetHomeBody();
+                if (FlightGlobals.GetBodyByName(TargetID) is CelestialBody body) return body;
+                try
+                {
+                    if (FlightGlobals.FindVessel(new Guid(TargetID)) is Vessel v) return v;
+                }
+                catch (FormatException) { }
+            }
+            return null;
+        }
         private void _internalSet(ITargetable tgt, string dispString, string tgtId)
         {
-            _target = tgt; Parent.AntennaTargetString = dispString; Parent.TargetID = tgtId;
+            _target = tgt; TargetID = tgtId;
+            if (Parent is ModuleRealAntenna) { Parent.AntennaTargetString = dispString; Parent.TargetID = tgtId; }
         }
+        private ITargetable _target = null;
         public ITargetable Target
         {
-            get => _target;
+            get
+            {
+                if (!CanTarget) return null;
+                if (_target == null) _target = _findTargetFromID(TargetID);
+                return _target;
+            }
             set
             {
                 if (!CanTarget) _internalSet(null, string.Empty, string.Empty);
@@ -90,6 +111,7 @@ namespace RealAntennas
             TxPower = double.Parse(config.GetValue("TxPower"));
             TechLevel = int.Parse(config.GetValue("TechLevel"));
             Frequency = double.Parse(config.GetValue("Frequency"));
+            if (config.HasValue("targetID")) TargetID = config.GetValue("targetID");
         }
     }
 
