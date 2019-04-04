@@ -9,14 +9,12 @@ namespace RealAntennas
     public class RACommNetNetwork : CommNetNetwork
     {
         protected static readonly string ModTag = "[RACommNetNetwork] ";
-        public static new RACommNetNetwork Instance { get; protected set; }
 
         protected override void Awake()
         {
-            Debug.Log(ModTag + "CommNet Network booting");
             foreach (Vessel v in FlightGlobals.Vessels)
             {
-                if ((v.Connection != null) && (!(v.Connection is RACommNetVessel)))
+                if (!(v.Connection is RACommNetVessel ra))
                 {
                     Debug.LogFormat(ModTag + "Rebuilding CommVessel on {0}.  (Was {1} of type {2})", v, v.Connection, v.Connection.GetType());
                     CommNetVessel temp = v.Connection;
@@ -24,11 +22,14 @@ namespace RealAntennas
                     Destroy(temp);
                 }
             }
-
+            // Not sure why the base singleton Instance check is killing itself.  (Instance != this?)
             CommNetNetwork.Instance = this;
-
-            GameEvents.OnGameSettingsApplied.Add(new EventVoid.OnEvent(ResetNetwork));
+            if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
+                GameEvents.onPlanetariumTargetChanged.Add(new EventData<MapObject>.OnEvent(this.OnMapFocusChange));
+            GameEvents.OnGameSettingsApplied.Add(new EventVoid.OnEvent(this.ResetNetwork));
+            //CommNetNetwork.Reset();       // Don't call this way, it will invoke the parent class' ResetNetwork()
             ResetNetwork();
+            //            base.Awake();
         }
 
         protected new void ResetNetwork()
@@ -36,18 +37,9 @@ namespace RealAntennas
             Debug.Log(ModTag + "CommNet Network resetNetwork() start");
 
             CommNet = new RACommNetwork();
-            /* Maybe we skip firing CommNet.OnNetworkInitialized.  It's purpose seems to be:
-             * Generate occluders for all celestial bodies.
-             * Generate CommNet stations for the default CommNet set.
-             * This seems without regard to the global list of CommNetBody (or extension) or CommNetHome.
-             * That global list will LATER get OnStart() calls and separate OnNetworkInitialized() calls.
-             */
-            /*
             Debug.Log(ModTag + "CommNet Network Firing onNetworkInitialized()");
             GameEvents.CommNet.OnNetworkInitialized.Fire();
             Debug.Log(ModTag + "CommNet Network onNetworkInitialized() complete");
-           */
-            Debug.Log(ModTag + "Skipping GameEvents.CommNet.OnNetworkInitialized.Fire()");
         }
     }
 }

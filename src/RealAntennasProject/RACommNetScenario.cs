@@ -3,10 +3,7 @@ using UnityEngine;
 
 namespace RealAntennas
 {
-    /// <summary>
-    /// This class is the key that allows to break into and customise KSP's CommNet.  Using TaxiService' CommNetConstellation model.
-    /// </summary>
-    [KSPScenario(ScenarioCreationOptions.AddToAllGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.EDITOR, GameScenes.SPACECENTER })]
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames | ScenarioCreationOptions.AddToAllMissionGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR })]
     public class RACommNetScenario : CommNetScenario
     {
         protected static readonly string ModTag = "[RealAntennasCommNetScenario] ";
@@ -25,11 +22,6 @@ namespace RealAntennas
             this.network = gameObject.AddComponent<RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
 
-            //Replace the CommNet network
-            CommNetNetwork net = FindObjectOfType<CommNetNetwork>();
-            network = gameObject.AddComponent<RACommNetNetwork>();
-            Destroy(net);
-            //override to turn off CommNetScenario's instance check
             ConfigNode RACommNetParams = null;
             foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
                 RACommNetParams = n;
@@ -54,13 +46,22 @@ namespace RealAntennas
 
         public override void OnAwake()
         {
-            foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
+            UnloadHomes();
+            if (GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
-                //                Debug.LogFormat(ModTag + "Destroying {0}", home);
-                Debug.LogFormat("Going to destroy {0}", home);
-                Debug.Log(RATools.TransformWalk(home.transform));
-                Destroy(home);
+                if (!_CommNetPatched(psm))
+                {
+                    Debug.LogFormat("Patching out CommNetScenario");
+                    UnloadCommNet(psm);
+                    DestroyNetwork();
+                    /*
+                    Debug.LogFormat("Rebuilding CommNetBody and CommNetHome list");
+                    UnloadHomes();
+                    BuildHomes();
+                    */
+                }
             }
+            base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
 
         private void OnDestroy()
@@ -69,6 +70,34 @@ namespace RealAntennas
             if (ui != null) Destroy(ui);
         }
 
+        private ProtoScenarioModule GetCommNetScenarioModule()
+        {
+            foreach (ProtoScenarioModule psm in HighLogic.CurrentGame.scenarios)
+            {
+                if (psm.moduleName.Equals("CommNetScenario")) return psm;
+            }
+            return null;
+        }
+        private bool _CommNetPatched(ProtoScenarioModule psm) => psm != null ? psm.targetScenes.Contains(GameScenes.CREDITS) : false;
+        private void UnloadCommNet(ProtoScenarioModule psm = null)
+        {
+            if (psm == null) psm = GetCommNetScenarioModule();
+            if (psm != null) psm.SetTargetScenes(new GameScenes[] { GameScenes.CREDITS });
+        }
+        private void DestroyNetwork()
+        {
+            if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
+        }
+
+        private void UnloadHomes()
+        {
+            foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
+            {
+                Debug.LogFormat("Going to destroy {0}", home);
+                Debug.Log(RATools.TransformWalk(home.transform));
+                DestroyImmediate(home);
+            }
+        }
         private void BuildHome(ConfigNode node, CelestialBody body)
         {
             ConfigNode gsTopNode = null;
@@ -85,6 +114,20 @@ namespace RealAntennas
                     home.Configure(gsNode, body);
                     Debug.LogFormat(ModTag + "Built: {0}", home);
                     Debug.Log(RATools.TransformWalk(home.transform));
+                }
+            }
+        }
+        private void LoadTempCurves(ConfigNode bodyNode)
+        {
+            if (bodyNode?.GetNode("skyTemperature") is ConfigNode temperatureNode)
+            {
+                foreach (ConfigNode n in temperatureNode.GetNodes("temperatureCurve"))
+                {
+                    FloatCurve MyFloatCurve = new FloatCurve();
+                    MyFloatCurve.Load(n);
+                    MyFloatCurve.Curve.postWrapMode = WrapMode.ClampForever;
+                    MyFloatCurve.Curve.preWrapMode = WrapMode.ClampForever;
+                    Debug.LogFormat("Loaded temperature curve for declination {0} with {1} keys", n.GetValue("declination"), MyFloatCurve.Curve.length);
                 }
             }
         }

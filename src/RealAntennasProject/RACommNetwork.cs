@@ -24,18 +24,26 @@ namespace RealAntennas
                 return conn;
             }
             Debug.LogFormat(ModTag + "Adding {0}", conn);
-            return base.Add(conn);
+            CommNode res = base.Add(conn);
+            Debug.LogFormat("Result was {0}", res);
+            return res;
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
         {
-            if (a.isHome && b.isHome) return base.SetNodeConnection(a, b);
-            if (!(a is RACommNode)) return base.SetNodeConnection(a, b);
-            if (!(b is RACommNode)) return base.SetNodeConnection(a, b);
+            if (a.isHome && b.isHome)
+            {
+                Disconnect(a, b);
+                return false;
+            }
+            double distance = (b.precisePosition - a.precisePosition).magnitude;
+            if (TestOcclusion(a.precisePosition, a.occluder, b.precisePosition, b.occluder, distance))
+                return TryConnect(a, b, distance);
 
+            Disconnect(a, b, true);
+            return false;
             // Specific antenna selection within the set available to a CommNode is deferred until TryConnect()
             // Do not prematurely halt based on range here anymore, because we need to check (all?) pairings.
             // TryConnect() should call Disconnect() if no connection can be achieved.
-            return base.SetNodeConnection(a, b);
         }
 
         protected override void PostUpdateNodes()
@@ -44,7 +52,7 @@ namespace RealAntennas
             base.PostUpdateNodes();
         }
 
-        protected override bool TryConnect(CommNode a, CommNode b, double distance, bool aCanRelay, bool bCanRelay, bool bothRelay)
+        protected override bool TryConnect(CommNode a, CommNode b, double distance, bool aCanRelay = true, bool bCanRelay = true, bool bothRelay = true)
         {
             RACommNode rac_a = a as RACommNode, rac_b = b as RACommNode;
             if ((rac_a == null) || (rac_b == null))
@@ -91,7 +99,7 @@ namespace RealAntennas
             link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.RevAntennaRx, noiseTemps[0]);
 
             // TryConnect() is responsible for setting link parameters like below.
-            link.aCanRelay = true; 
+            link.aCanRelay = true;
             link.bCanRelay = true;      // All antennas can relay.
             link.bothRelay = link.aCanRelay && link.bCanRelay;
             // WIP: Set link strength to the achieved percentage of the maximum possible data rate for the fwd link.
@@ -127,7 +135,8 @@ namespace RealAntennas
             if (foundLink != null)
             {
                 foundLink.Update(distance);
-            } else
+            }
+            else
             {
                 foundLink = new RACommLink();
                 foundLink.Set(a, b, distance);

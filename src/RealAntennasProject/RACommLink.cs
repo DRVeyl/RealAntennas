@@ -22,5 +22,20 @@ namespace RealAntennas
         }
 
         public virtual double CostFunc(double datarate) => CostScaler / Math.Pow(datarate, 2);
+
+        public override void Set(CommNet.CommNode a, CommNet.CommNode b, double datarate, double signalStrength)
+        {
+            this.a = a;
+            this.b = b;
+            cost = CostFunc(datarate);
+            Update(signalStrength);
+        }
+
+        public override void Update(double signalStrength)
+        {
+            this.signalStrength = signalStrength;
+            strengthAR = strengthBR = strengthRR = signalStrength;
+            signal = CommNet.NodeUtilities.ConvertSignalStrength(this.signalStrength);
+        }
     }
 }

@@ -57,7 +57,6 @@
     <Compile Include="RAModulator.cs" />
     <Compile Include="RealAntennaDigital.cs" />
     <Compile Include="RealAntenna.cs" />
-    <Compile Include="RACommNetBody.cs" />
     <Compile Include="RACommNetHome.cs" />
     <Compile Include="RACommNetScenario.cs" />
     <Compile Include="RACommNetVessel.cs" />
