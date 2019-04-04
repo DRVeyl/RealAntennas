@@ -12,7 +12,13 @@ namespace RealAntennas
         public CelestialBody ParentBody { get; set; }
         public Vessel ParentVessel { get; set; }
 
-        public RACommNode() => Debug.Log("RACommNode constructor()");
+        public RACommNode() : base() { }
+        public RACommNode(Transform t) : base(t)
+        {
+            ParentBody = null;
+            ParentVessel = null;
+            RAAntennaList = null;
+        }
         public RACommNode(CommNet.CommNode cn) : base()
         {
             antennaRelay = cn.antennaRelay;

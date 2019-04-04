@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using CommNet;
 using System.Linq;
+using UnityEngine;
 
 namespace RealAntennas
 {
@@ -9,6 +10,16 @@ namespace RealAntennas
     {
         public static double LinearScale(double x) => Math.Pow(10, x / 10);
         public static double LogScale(double x) => 10 * Math.Log10(x);
+        public static string TransformWalk(Transform t)
+        {
+            string s = string.Empty;
+            while (t != null)
+            {
+                s += string.Format("Transform {0} of GameObject {1} at {2} with parent {3}\n", t, t.gameObject, t.position, t.parent);
+                t = t.parent;
+            }
+            return s;
+        }
         public static string VesselWalk(RACommNetwork net, string ModTag="[RealAntennas] ")
         {
             string res = string.Format(ModTag + "VesselWalk()\n");
