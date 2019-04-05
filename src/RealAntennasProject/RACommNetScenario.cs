@@ -46,13 +46,12 @@ namespace RealAntennas
 
         public override void OnAwake()
         {
-            UnloadHomes();
-            if (GetCommNetScenarioModule() is ProtoScenarioModule psm)
+            if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
-                if (!_CommNetPatched(psm))
+                Debug.LogFormat(ModTag + "Scenario check: Found {0}", RATools.DisplayGamescenes(psm));
+                if (! RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
                 {
-                    Debug.LogFormat("Patching out CommNetScenario");
-                    UnloadCommNet(psm);
+                    RealAntennas.Network.CommNetPatcher.UnloadCommNet();
                     DestroyNetwork();
                     /*
                     Debug.LogFormat("Rebuilding CommNetBody and CommNetHome list");
@@ -61,6 +60,7 @@ namespace RealAntennas
                     */
                 }
             }
+            UnloadHomes();
             base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
 
@@ -70,20 +70,6 @@ namespace RealAntennas
             if (ui != null) Destroy(ui);
         }
 
-        private ProtoScenarioModule GetCommNetScenarioModule()
-        {
-            foreach (ProtoScenarioModule psm in HighLogic.CurrentGame.scenarios)
-            {
-                if (psm.moduleName.Equals("CommNetScenario")) return psm;
-            }
-            return null;
-        }
-        private bool _CommNetPatched(ProtoScenarioModule psm) => psm != null ? psm.targetScenes.Contains(GameScenes.CREDITS) : false;
-        private void UnloadCommNet(ProtoScenarioModule psm = null)
-        {
-            if (psm == null) psm = GetCommNetScenarioModule();
-            if (psm != null) psm.SetTargetScenes(new GameScenes[] { GameScenes.CREDITS });
-        }
         private void DestroyNetwork()
         {
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);

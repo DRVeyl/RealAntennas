@@ -17,41 +17,13 @@ namespace RealAntennas
         {
             ParentBody = null;
             ParentVessel = null;
-            RAAntennaList = null;
+            RAAntennaList = new List<RealAntenna>();
         }
-        public RACommNode(CommNet.CommNode cn) : base()
-        {
-            antennaRelay = cn.antennaRelay;
-            antennaTransmit = cn.antennaTransmit;
-            ParentBody = null;
-            ParentVessel = null;
-
-            bestCost = cn.bestCost;
-            bestLink = cn.bestLink;
-            bestLinkNode = cn.bestLinkNode;
-            distanceOffset = cn.distanceOffset;
-            isControlSource = cn.isControlSource;
-            isControlSourceMultiHop = cn.isControlSourceMultiHop;
-            isHome = cn.isHome;
-            isInCandidateList = cn.isInCandidateList;
-            // Don't copy delegates.  Let the parent do so (because who knows where they point.)
-            // OnLinkCreateSignalModifier = cn.OnLinkCreateSignalModifier;
-            //OnNetworkPostUpdate = cn.OnNetworkPostUpdate;
-            //OnNetworkPreUpdate = cn.OnNetworkPreUpdate;
-            RAAntennaList = null;
-            pathingID = cn.pathingID;
-            scienceCurve = cn.scienceCurve;
-            //            displayName = cn.displayName; // Certain I'm using displayName wrong.
-            displayName = cn.name;
-            name = cn.name;
-            position = cn.position;
-            transform = cn.transform;
-            occluder = cn.occluder;
-            precisePosition = cn.precisePosition;
-        }
+        public RACommNode(CommNet.CommNode cn) : this(cn.transform) { }
 
         public Vector3d GetSurfaceNormalVector()
         {
+            if (ParentBody == null) return Vector3d.zero;
             ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double alt);
             return ParentBody.GetSurfaceNVector(lat, lon);
         }

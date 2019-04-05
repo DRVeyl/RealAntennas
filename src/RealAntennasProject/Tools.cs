@@ -20,6 +20,13 @@ namespace RealAntennas
             }
             return s;
         }
+        public static string DisplayGamescenes(ProtoScenarioModule psm)
+        {
+            string s = "[ ";
+            foreach (GameScenes gs in psm.targetScenes) { s += string.Format("{0} ", gs); }
+            s += "]";
+            return string.Format("{0} {1} {2}", psm, psm.moduleName, s);
+        }
         public static string VesselWalk(RACommNetwork net, string ModTag="[RealAntennas] ")
         {
             string res = string.Format(ModTag + "VesselWalk()\n");
