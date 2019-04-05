@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Experience.Effects;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -9,50 +11,100 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
         public List<ModuleRealAntenna> antennaList = new List<ModuleRealAntenna>();
 
-        public override IScienceDataTransmitter GetBestTransmitter()
-        {
-            if (Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome)
-            {
-                return toHome.Parent;
-            }
-            IScienceDataTransmitter e = base.GetBestTransmitter();
-            Debug.LogWarningFormat(ModTag + "Could not find best transmitter, defaulted to {0}", e);
-            return e;
-        }
-
-        protected override void OnNetworkInitialized()
-        {
-            Debug.LogFormat(ModTag + "OnNetworkInitialized() for {0}.  Building antenna list.  ID:{1}.  Comm:{2}", name, gameObject.GetInstanceID(), Comm);
-            antennaList = DiscoverAntennas();
-            // It knows nothing about any ModuleDataTransmitters onboard.  It only seems to know its position and transform.
-            // It registers OnLinkCreateSignalModifier to GetSignalStrengthModifier.
-            // It registers OnNetworkPostUpdate and OnNetworkPreUpdate back to this CommNetVessel.
-            if (!(Comm is RACommNode vcn))
-            {
-                vcn = new RACommNode(Comm);
-                vcn.OnLinkCreateSignalModifier += GetSignalStrengthModifier;
-                vcn.OnNetworkPreUpdate += OnNetworkPreUpdate;
-                vcn.OnNetworkPostUpdate += OnNetworkPostUpdate;
-                vcn.ParentVessel = Vessel;
-                vcn.RAAntennaList = new List<RealAntenna>(GatherRealAntennas(antennaList));
-                vcn.RAAntennaList.Sort();
-                vcn.RAAntennaList.Reverse();
-                Debug.LogFormat(ModTag + "Replacing original commNode, now have {0}", vcn);
-                Comm = vcn;
-            }
-            base.OnNetworkInitialized();
-        }
+        public override IScienceDataTransmitter GetBestTransmitter() =>
+            (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
 
         protected override void OnStart()
         {
+            if (vessel.vesselType == VesselType.Flag || vessel.vesselType <= VesselType.Unknown)
+            {
+                vessel.vesselModules.Remove(this);
+                vessel.connection = null;
+                Destroy(this);
+            }
+            else
+            {
+                antennaList = DiscoverAntennas();
+                comm = new RACommNode(transform)
+                {
+                    OnNetworkPreUpdate = new Action(OnNetworkPreUpdate),
+                    OnNetworkPostUpdate = new Action(OnNetworkPostUpdate),
+                    OnLinkCreateSignalModifier = new Func<CommNet.CommNode, double>(GetSignalStrengthModifier),
+                    ParentVessel = Vessel,
+                    RAAntennaList = new List<RealAntenna>(GatherRealAntennas(antennaList))
+                };
+                vessel.connection = this;
+                networkInitialised = false;
+                if (CommNet.CommNetNetwork.Initialized)
+                    OnNetworkInitialized();
+                GameEvents.CommNet.OnNetworkInitialized.Add(new EventVoid.OnEvent(OnNetworkInitialized));
+                if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
+                    GameEvents.onPlanetariumTargetChanged.Add(new EventData<MapObject>.OnEvent(OnMapFocusChange));
+            }
             Debug.LogFormat(ModTag + "OnStart() for {0}. ID:{1}.  Comm:{2}", name, gameObject.GetInstanceID(), Comm);
-            base.OnStart();
             GameEvents.onVesselWasModified.Add(new EventData<Vessel>.OnEvent(OnVesselModified));
         }
 
         protected override void UpdateComm()
         {
-            base.UpdateComm();  // Need base to set some features of the node I don't know about yet.
+            if (comm.name != gameObject.name)
+                comm.name = gameObject.name;
+            if (comm.displayName != vessel.GetDisplayName())
+                comm.displayName = vessel.GetDisplayName();
+            comm.isControlSource = false;
+            comm.isControlSourceMultiHop = false;
+            comm.antennaRelay.power = comm.antennaTransmit.power = 0.0;
+            hasScienceAntenna = (antennaList.Count > 0);
+            if (vessel.loaded) _determineControlLoaded(); else _determineControlUnloaded();
+        }
+
+        private int _countControllingCrew()
+        {
+            int numControl = 0;
+            foreach (ProtoCrewMember crewMember in vessel.GetVesselCrew())
+            {
+                if (crewMember.HasEffect<FullVesselControlSkill>() && !crewMember.inactive)
+                    ++numControl;
+            }
+            return numControl;
+        }
+
+        private void _determineControlUnloaded()
+        {
+            int numControl = _countControllingCrew();
+            int index = 0;
+            foreach (ProtoPartSnapshot protoPartSnapshot in vessel.protoVessel.protoPartSnapshots)
+            {
+                index++;
+                Part part = protoPartSnapshot.partInfo.partPrefab;
+                foreach (PartModule module in part.Modules)
+                {
+                    if ((module is CommNet.ModuleProbeControlPoint probeControlPoint) && probeControlPoint.CanControlUnloaded(protoPartSnapshot.FindModule(module, index)))
+                    {
+                        if (numControl >= probeControlPoint.minimumCrew || probeControlPoint.minimumCrew <= 0)
+                            comm.isControlSource = true;
+                        if (probeControlPoint.multiHop)
+                            comm.isControlSourceMultiHop = true;
+                    }
+                }
+            }
+        }
+        private void _determineControlLoaded()
+        {
+            int numControl = _countControllingCrew();
+            foreach (Part part in vessel.Parts)
+            {
+                foreach (PartModule module in part.Modules)
+                {
+                    if ((module is CommNet.ModuleProbeControlPoint probeControlPoint) && probeControlPoint.CanControl())
+                    {
+                        if (numControl >= probeControlPoint.minimumCrew || probeControlPoint.minimumCrew <= 0)
+                            comm.isControlSource = true;
+                        if (probeControlPoint.multiHop)
+                            comm.isControlSourceMultiHop = true;
+                    }
+                }
+            }
         }
 
         internal List<RealAntenna> GatherRealAntennas(List<ModuleRealAntenna> src)
@@ -70,7 +122,6 @@ namespace RealAntennas
             if (Vessel == null) return new List<ModuleRealAntenna>();
             if (Vessel.loaded) return Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList();
             // Grr, now we have to go scan ProtoParts...
-            Debug.LogFormat(ModTag + "Discovering antennas for unloaded CommNet vessel {0}, protoVessel {1}", name, Vessel.protoVessel);
             List<ModuleRealAntenna> antList = new List<ModuleRealAntenna>();
 
             if (Vessel.protoVessel != null)
@@ -82,7 +133,6 @@ namespace RealAntennas
                         Part prefab = part.partInfo.partPrefab;
                         ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
                         raModule.Configure(snap.moduleValues);
-                        Debug.LogFormat("Gathered the RA module: {0}", raModule);
                         antList.Add(raModule);
                     }
                 }
@@ -99,8 +149,6 @@ namespace RealAntennas
             {
                 vcn.RAAntennaList.Clear();
                 vcn.RAAntennaList.AddRange(GatherRealAntennas(antennaList));
-                vcn.RAAntennaList.Sort();
-                vcn.RAAntennaList.Reverse();
             }
         }
     }

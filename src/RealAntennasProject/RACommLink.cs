@@ -34,8 +34,10 @@ namespace RealAntennas
         public override void Update(double signalStrength)
         {
             this.signalStrength = signalStrength;
-            strengthAR = strengthBR = strengthRR = signalStrength;
-            signal = CommNet.NodeUtilities.ConvertSignalStrength(this.signalStrength);
+            strengthAR = aCanRelay ? signalStrength : 0;
+            strengthBR = bCanRelay ? signalStrength : 0;
+            strengthRR = bothRelay ? signalStrength : 0;
+            signal = CommNet.NodeUtilities.ConvertSignalStrength(Math.Ceiling(4 * this.signalStrength));
         }
     }
 }

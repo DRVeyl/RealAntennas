@@ -15,33 +15,11 @@ namespace RealAntennas
 
         protected override void Start()
         {
-            Debug.LogFormat(ModTag + "CommNetScenario Start() IN {0}/{1}", HighLogic.LoadedScene, HighLogic.LoadedScene.displayDescription());
+            Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
 
-            Debug.LogFormat(ModTag + "Cleaning and rebuilding CommNetHome and CommNetBody");
             this.ui = gameObject.AddComponent<CommNetUI>();
             this.network = gameObject.AddComponent<RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
-
-            ConfigNode RACommNetParams = null;
-            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
-                RACommNetParams = n;
-
-            foreach (CelestialBody body in FindObjectsOfType<CelestialBody>())
-            {
-                //                GameObject newObject = new GameObject(body.name);
-                //RACommNetBody customBody = newObject.AddComponent<RACommNetBody>();
-                CommNetBody customBody = body.GetComponent<CommNetBody>();
-                Debug.LogFormat("{0} transform {1} @ {2}", customBody.gameObject, customBody.transform, customBody.transform.position);
-                Debug.Log(RATools.TransformWalk(customBody.transform));
-                if (RACommNetParams != null)
-                {
-                    if (RACommNetParams.GetNode("CELESTIALBODY", "name", body.name) is ConfigNode bodyNode)
-                    {
-                        BuildHome(bodyNode, body);
-                    }
-                }
-            }
-            Debug.Log(ModTag + "RealAntennas CommNet Scenario loading done!");
         }
 
         public override void OnAwake()
@@ -53,14 +31,12 @@ namespace RealAntennas
                 {
                     RealAntennas.Network.CommNetPatcher.UnloadCommNet();
                     DestroyNetwork();
-                    /*
                     Debug.LogFormat("Rebuilding CommNetBody and CommNetHome list");
                     UnloadHomes();
                     BuildHomes();
-                    */
+                    Debug.LogFormat("Ignore CommNetScenario ERR immediately following this.");
                 }
             }
-            UnloadHomes();
             base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
 
@@ -75,12 +51,26 @@ namespace RealAntennas
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
         }
 
+        private void BuildHomes()
+        {
+            ConfigNode RACommNetParams = null;
+            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
+                RACommNetParams = n;
+
+            foreach (CelestialBody body in FindObjectsOfType<CelestialBody>())
+            {
+                if ((RACommNetParams != null) && RACommNetParams.GetNode("CELESTIALBODY", "name", body.name) is ConfigNode bodyNode)
+                {
+                    BuildHome(bodyNode, body);
+                }
+            }
+        }
+
         private void UnloadHomes()
         {
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                Debug.LogFormat("Going to destroy {0}", home);
-                Debug.Log(RATools.TransformWalk(home.transform));
+                Debug.LogFormat("Immediately destroying {0}", home);
                 DestroyImmediate(home);
             }
         }
@@ -95,11 +85,8 @@ namespace RealAntennas
                 {
                     GameObject newHome = new GameObject(body.name);
                     RACommNetHome home = newHome.AddComponent<RACommNetHome>();
-                    //RACommNetHome home = body.gameObject.AddComponent<RACommNetHome>();
-                    //RACommNetHome home = body.GetComponent<CommNetBody>().gameObject.AddComponent<RACommNetHome>();
                     home.Configure(gsNode, body);
                     Debug.LogFormat(ModTag + "Built: {0}", home);
-                    Debug.Log(RATools.TransformWalk(home.transform));
                 }
             }
         }

@@ -24,9 +24,7 @@ namespace RealAntennas
                 return conn;
             }
             Debug.LogFormat(ModTag + "Adding {0}", conn);
-            CommNode res = base.Add(conn);
-            Debug.LogFormat("Result was {0}", res);
-            return res;
+            return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
         {
@@ -102,13 +100,9 @@ namespace RealAntennas
             link.aCanRelay = true;
             link.bCanRelay = true;      // All antennas can relay.
             link.bothRelay = link.aCanRelay && link.bCanRelay;
-            // WIP: Set link strength to the achieved percentage of the maximum possible data rate for the fwd link.
-            double scaledCI = FwdDataRate / bestFwdAntPair[0].DataRate;
-            link.strengthAR = link.aCanRelay ? scaledCI : 0;
-            link.strengthBR = link.bCanRelay ? scaledCI : 0;
-            link.strengthRR = link.bothRelay ? scaledCI : 0;
-            link.SetSignalStrength(scaledCI);
-            link.signal = (SignalStrength) Convert.ToInt32(Math.Ceiling(4 * scaledCI));
+            // WIP: Set link strength to the achieved percentage of the maximum possible data rate for some link.
+            double scaledCI = Math.Max(FwdDataRate / bestFwdAntPair[0].DataRate, RevDataRate / bestRevAntPair[0].DataRate);
+            link.Update(scaledCI);
             return true;
         }
 
@@ -132,14 +126,10 @@ namespace RealAntennas
         protected override CommLink Connect(CommNode a, CommNode b, double distance)
         {
             a.TryGetValue(b, out CommLink foundLink);
-            if (foundLink != null)
-            {
-                foundLink.Update(distance);
-            }
-            else
+            if (foundLink == null)
             {
                 foundLink = new RACommLink();
-                foundLink.Set(a, b, distance);
+                foundLink.Set(a, b, 0, 0);
                 Links.Add(foundLink);
                 a.Add(b, foundLink);
                 b.Add(a, foundLink);
@@ -158,7 +148,7 @@ namespace RealAntennas
         {
             CommPath path = new CommPath();
             if ((start == null) || !FindHome(start, path)) return 0;
-            double data_rate = 1e10;
+            double data_rate = double.MaxValue;
             foreach (CommLink l in path)
             {
                 RACommLink link = l.start[l.end] as RACommLink;
@@ -170,12 +160,6 @@ namespace RealAntennas
 
 
         // Instrumentation functions, no useful overrides below.  Delete when no longer instrumenting.
-
-        public override Occluder Add(Occluder conn)
-        {
-            Debug.LogFormat(ModTag + "Adding Occluder at {0} radius {1}", conn.position, conn.radius);
-            return base.Add(conn);
-        }
 
         public override void Rebuild()
         {

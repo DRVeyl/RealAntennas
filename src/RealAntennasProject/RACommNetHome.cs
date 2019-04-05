@@ -9,7 +9,6 @@ namespace RealAntennas
     {
         protected static readonly string ModTag = "[RealAntennasCommNetHome] ";
         protected ConfigNode config = null;
-        protected string bodyName = string.Empty;
 
         public void SetTransformFromConfig(ConfigNode node, CelestialBody body)
         {
@@ -29,7 +28,6 @@ namespace RealAntennas
             isKSC = true;
             isPermanent = true;
             config = node;
-            bodyName = body.name;
             SetTransformFromConfig(config, body);
         }
         protected override void CreateNode()
@@ -47,8 +45,6 @@ namespace RealAntennas
             comm.name = nodeName;
             comm.displayName = displaynodeName;
             comm.antennaRelay.Update(!isPermanent ? GameVariables.Instance.GetDSNRange(ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) : antennaPower, GameVariables.Instance.GetDSNRangeCurve(), false);
-            //          comm.antennaTransmit = null;
-            comm.antennaTransmit.Update(comm.antennaRelay.power, comm.antennaRelay.rangeCurve, comm.antennaRelay.combined);
             Vector3d pos = (nodeTransform == null) ? transform.position : nodeTransform.position;
             body.GetLatLonAlt(pos, out lat, out lon, out alt);
 
@@ -57,18 +53,6 @@ namespace RealAntennas
             RealAntenna ant = new RealAntennaDigital(name);
             ant.LoadFromConfigNode(config);
             t.RAAntennaList = new List<RealAntenna> { ant };
-            Debug.LogFormat(ModTag + "CreateNode() {0} on {1} @ {2} resulted in {3}", this, body, transform.position, comm);
-        }
-
-        protected override void Start()
-        {
-            Debug.LogFormat(ModTag + "OnStart() for {0}", this);
-            //this.body = this.GetComponentInParent<CelestialBody>();
-            body = FlightGlobals.GetBodyByName(bodyName);
-            if (nodeTransform == null) nodeTransform = transform;
-            Configure(config, body);
-            if (CommNetNetwork.Initialized) OnNetworkInitialized();
-            GameEvents.CommNet.OnNetworkInitialized.Add(new EventVoid.OnEvent(OnNetworkInitialized));
         }
     }
 }

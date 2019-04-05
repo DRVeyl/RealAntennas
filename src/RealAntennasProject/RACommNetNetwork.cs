@@ -14,7 +14,7 @@ namespace RealAntennas
         {
             foreach (Vessel v in FlightGlobals.Vessels)
             {
-                if (!(v.Connection is RACommNetVessel ra))
+                if (v.Connection != null && !(v.Connection is RACommNetVessel ra))
                 {
                     Debug.LogFormat(ModTag + "Rebuilding CommVessel on {0}.  (Was {1} of type {2})", v, v.Connection, v.Connection.GetType());
                     CommNetVessel temp = v.Connection;
