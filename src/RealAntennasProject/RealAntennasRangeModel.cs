@@ -15,7 +15,9 @@ namespace RealAntennas
         public bool InRange(double aPower, double bPower, double sqrDistance) => true;
 
         public double RSSI(RealAntenna tx, RealAntenna rx, double distance, double frequency = 1e9)
-            => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - 0 + rx.Gain;
+            => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx,rx) + rx.Gain;
+
+        public double PointingLoss(RealAntenna tx, RealAntenna rx) => tx.PointingLoss(rx) + rx.PointingLoss(tx);
 
         public double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)

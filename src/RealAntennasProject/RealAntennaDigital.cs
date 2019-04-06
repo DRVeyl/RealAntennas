@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace RealAntennas
 {
@@ -23,20 +24,22 @@ namespace RealAntennas
 
         public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
 
-        public override double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
+        public override double BestDataRateToPeer(RealAntenna rx, double noiseTemp)
         {
             double dataRate = 0;
-            if (BestPeerModulator(rx, distance, noiseTemp, out RAModulator mod))
+            if (BestPeerModulator(rx, noiseTemp, out RAModulator mod))
             {
                 dataRate = mod.DataRate;
             }
             return dataRate;
         }
 
-        private bool BestPeerModulator(RealAntenna rx, double distance, double noiseTemp, out RAModulator mod)
+        private bool BestPeerModulator(RealAntenna rx, double noiseTemp, out RAModulator mod)
         {
             mod = null;
             RealAntennaDigital tx = this;
+            Vector3 toSource = rx.Position - tx.Position;
+            double distance = toSource.magnitude;
             if (!(rx is RealAntennaDigital)) return false;
 
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;

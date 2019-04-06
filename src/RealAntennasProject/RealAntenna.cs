@@ -20,12 +20,22 @@ namespace RealAntennas
         public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
         public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
         public virtual double RequiredCI() => 1;
+        public virtual double MaxPointingLoss => 200;
+
+        public CommNet.CommNode ParentNode { get; set; }
         protected static readonly string ModTag = "[RealAntenna] ";
         private readonly double minimumSpotRadius = 1e3;
         private readonly double maxOmniGain = 8;
 
         public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
-        public virtual bool CanTarget => Shape != AntennaShape.Omni;
+        public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
+        public Vector3 Position => ParentNode.position;
+        public Vector3 ToTarget {
+            get {
+                if (!(CanTarget && Target != null)) return Vector3.zero;
+                return (Target is Vessel v) ? v.transform.position - Position : (Vector3)(Target as CelestialBody).position - Position;
+            }
+        }
 
         public string TargetID { get; set; }
         private ITargetable _findTargetFromID(string id)
@@ -56,10 +66,7 @@ namespace RealAntennas
                 if (!CanTarget) _internalSet(null, string.Empty, string.Empty);
                 else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
                 else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
-                else
-                {
-                    Debug.LogWarningFormat("Tried to set antenna target to {0} and failed", value);
-                }
+                else Debug.LogWarningFormat("Tried to set antenna target to {0} and failed", value);
             }
         }
 
@@ -72,6 +79,24 @@ namespace RealAntennas
         // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
         // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
         public virtual double MinimumDistance => (Shape == AntennaShape.Omni || Beamwidth >= 90 ? 0 : minimumSpotRadius / Math.Tan(Beamwidth));
+        public virtual double PointingLoss(RealAntenna peer)
+        {
+            double loss = 0;
+            if (CanTarget && ToTarget != Vector3.zero)
+            {
+                float fError = Vector3.Angle(peer.Position - this.Position, ToTarget);
+                float angle3dB = Convert.ToSingle(Beamwidth / 2);
+                if (fError > Beamwidth) loss = MaxPointingLoss;
+                else
+                {
+                    loss = fError < (Beamwidth / 2) ? Mathf.Lerp(0, 3, fError / angle3dB) :
+                                                      Mathf.Lerp(3, 10, (fError - angle3dB) / angle3dB);
+                }
+            }
+//            Debug.LogFormat("PointingLoss from {0} on {1} to Target {2}[{3}] to {4} results {5}",
+//                this, this.ParentNode, this.Target, this.ToTarget, peer.ParentNode, loss);
+            return loss;
+        }
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }
@@ -82,9 +107,11 @@ namespace RealAntennas
             if (obj is RealAntenna ra) return DataRate.CompareTo(ra.DataRate);
             else throw new System.ArgumentException();
         }
-        public virtual double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
+        public virtual double BestDataRateToPeer(RealAntenna rx, double noiseTemp)
         {
             RealAntenna tx = this;
+            Vector3 toSource = rx.Position - tx.Position;
+            double distance = toSource.magnitude;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;

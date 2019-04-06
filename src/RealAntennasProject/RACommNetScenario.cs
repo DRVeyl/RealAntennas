@@ -17,7 +17,7 @@ namespace RealAntennas
         {
             Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
 
-            this.ui = gameObject.AddComponent<CommNetUI>();
+            ui = gameObject.AddComponent<Network.RACommNetUI>();
             this.network = gameObject.AddComponent<RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
         }

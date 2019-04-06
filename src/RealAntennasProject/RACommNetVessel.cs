@@ -9,8 +9,6 @@ namespace RealAntennas
     public class RACommNetVessel : CommNet.CommNetVessel
     {
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
-        public List<ModuleRealAntenna> antennaModuleList = new List<ModuleRealAntenna>();
-        public List<RealAntenna> antennaList = new List<RealAntenna>();
 
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
@@ -25,16 +23,14 @@ namespace RealAntennas
             }
             else
             {
-                antennaModuleList = DiscoverModuleAntennas();
-                antennaList = DiscoverAntennas();
                 comm = new RACommNode(transform)
                 {
                     OnNetworkPreUpdate = new Action(OnNetworkPreUpdate),
                     OnNetworkPostUpdate = new Action(OnNetworkPostUpdate),
                     OnLinkCreateSignalModifier = new Func<CommNet.CommNode, double>(GetSignalStrengthModifier),
                     ParentVessel = Vessel,
-                    RAAntennaList = antennaList
                 };
+                (comm as RACommNode).RAAntennaList = DiscoverAntennas();
                 vessel.connection = this;
                 networkInitialised = false;
                 if (CommNet.CommNetNetwork.Initialized)
@@ -56,7 +52,7 @@ namespace RealAntennas
             comm.isControlSource = false;
             comm.isControlSourceMultiHop = false;
             comm.antennaRelay.power = comm.antennaTransmit.power = 0.0;
-            hasScienceAntenna = (antennaList.Count > 0);
+            hasScienceAntenna = (comm as RACommNode).RAAntennaList.Count > 0;
             if (vessel.loaded) _determineControlLoaded(); else _determineControlUnloaded();
         }
 
@@ -111,12 +107,10 @@ namespace RealAntennas
 
         protected void OnVesselModified(Vessel data)
         {
-            antennaModuleList = DiscoverModuleAntennas();
-            antennaList = DiscoverAntennas();
             if (Comm is RACommNode vcn)
             {
                 vcn.RAAntennaList.Clear();
-                vcn.RAAntennaList.AddRange(antennaList);
+                vcn.RAAntennaList.AddRange(DiscoverAntennas());
             }
         }
 
@@ -145,7 +139,7 @@ namespace RealAntennas
                     {
                         Part prefab = part.partInfo.partPrefab;
                         ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
-                        RealAntenna ra = new RealAntennaDigital(raModule.name);
+                        RealAntenna ra = new RealAntennaDigital(raModule.name) {ParentNode = Comm};
                         ra.LoadFromConfigNode(snap.moduleValues);
                         antList.Add(ra);
                     }

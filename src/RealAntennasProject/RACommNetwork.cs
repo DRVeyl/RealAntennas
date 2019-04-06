@@ -72,8 +72,8 @@ namespace RealAntennas
                 RACommNetScenario.RangeModel.NoiseTemperature(rac_b, rac_a.position)
             };
 
-            double FwdDataRate = BestDataRate(fwd_pairing, distance, noiseTemps[1], out RealAntenna[] bestFwdAntPair);
-            double RevDataRate = BestDataRate(rev_pairing, distance, noiseTemps[0], out RealAntenna[] bestRevAntPair);
+            double FwdDataRate = BestDataRate(fwd_pairing, noiseTemps[1], out RealAntenna[] bestFwdAntPair);
+            double RevDataRate = BestDataRate(rev_pairing, noiseTemps[0], out RealAntenna[] bestRevAntPair);
 
             if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
             {
@@ -106,13 +106,13 @@ namespace RealAntennas
             return true;
         }
 
-        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, double distance, double noiseTemp, out RealAntenna[] bestPair)
+        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, double noiseTemp, out RealAntenna[] bestPair)
         {
             bestPair = new RealAntenna[2];
             double dataRate = 0;
             foreach (RealAntenna[] antPair in pairList)
             {
-                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1], distance, noiseTemp);
+                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1], noiseTemp);
                 if (dataRate < candidateRate)
                 {
                     bestPair[0] = antPair[0];
