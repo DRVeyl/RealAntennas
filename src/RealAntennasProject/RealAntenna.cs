@@ -20,22 +20,23 @@ namespace RealAntennas
         public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
         public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
         public virtual double RequiredCI() => 1;
+        protected static readonly string ModTag = "[RealAntenna] ";
         private readonly double minimumSpotRadius = 1e3;
         private readonly double maxOmniGain = 8;
 
         public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni;
 
-        private string TargetID { get; set; }
+        public string TargetID { get; set; }
         private ITargetable _findTargetFromID(string id)
         {
             if (FlightGlobals.fetch && CanTarget)
             {
-                if (string.IsNullOrEmpty(TargetID)) return FlightGlobals.GetHomeBody();
-                if (FlightGlobals.GetBodyByName(TargetID) is CelestialBody body) return body;
+                if (string.IsNullOrEmpty(id)) return FlightGlobals.GetHomeBody();
+                if (FlightGlobals.GetBodyByName(id) is CelestialBody body) return body;
                 try
                 {
-                    if (FlightGlobals.FindVessel(new Guid(TargetID)) is Vessel v) return v;
+                    if (FlightGlobals.FindVessel(new Guid(id)) is Vessel v) return v;
                 }
                 catch (FormatException) { }
             }
@@ -49,12 +50,7 @@ namespace RealAntennas
         private ITargetable _target = null;
         public ITargetable Target
         {
-            get
-            {
-                if (!CanTarget) return null;
-                if (_target == null) _target = _findTargetFromID(TargetID);
-                return _target;
-            }
+            get => _target;
             set
             {
                 if (!CanTarget) _internalSet(null, string.Empty, string.Empty);
@@ -79,7 +75,7 @@ namespace RealAntennas
 
         public string Name { get; set; }
         public ModuleRealAntenna Parent { get; internal set; }
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB]";
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB]{(CanTarget ? $" ->{Target}" : null)}";
 
         public int CompareTo(object obj)
         {
@@ -111,7 +107,14 @@ namespace RealAntennas
             TxPower = double.Parse(config.GetValue("TxPower"));
             TechLevel = int.Parse(config.GetValue("TechLevel"));
             Frequency = double.Parse(config.GetValue("Frequency"));
-            if (config.HasValue("targetID")) TargetID = config.GetValue("targetID");
+            if (config.HasValue("targetID"))
+            {
+                TargetID = config.GetValue("targetID");
+                if (CanTarget && (_target == null))
+                {
+                    Target = _findTargetFromID(TargetID);
+                }
+            }
         }
     }
 

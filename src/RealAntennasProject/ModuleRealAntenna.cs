@@ -24,7 +24,7 @@ namespace RealAntennas
         public float SymbolRate;    // Symbol Rate in Samples/second
 
         [KSPField(isPersistant = true)]
-        public int ModulationBits;    // Constellation size (bits, 0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
+        public int ModulationBits;    // Constellation size (bits, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
 
         [KSPField(isPersistant = true)]
         public int MinModulationBits;    // Minimum constellation size (bits)
@@ -74,6 +74,7 @@ namespace RealAntennas
                 Fields["_antennaTargetString"].guiActive = false;
                 Events["AntennaTargetGUI"].active = false;
             }
+            TargetID = RAAntenna.TargetID;
             GUI.ParentPart = part;
             GUI.ParentPartModule = this;
             GUI.Start();
@@ -87,9 +88,9 @@ namespace RealAntennas
 
         public void Configure(ConfigNode node)
         {
-            RAAntenna.LoadFromConfigNode(node);
             RAAntenna.Name = name;
             RAAntenna.Parent = this;
+            RAAntenna.LoadFromConfigNode(node);
         }
 
         public override string GetInfo()
@@ -130,20 +131,6 @@ namespace RealAntennas
         {
             SetTransmissionParams();
             return base.CanTransmit();
-        }
-
-        public override bool IsBusy()
-        {
-            Debug.LogFormat(ModTag + "IsBusy() for {0}", this);
-            return base.IsBusy();
-        }
-
-        public override void OnUpdate()
-        {
-            //            Debug.LogFormat(ModTag + "OnUpdate() start");
-            // Could update rates here, but way too heavy-weight.
-            base.OnUpdate();
-            //            Debug.LogFormat(ModTag + "OnUpdate() stop");
         }
 
         protected override List<ScienceData> queueVesselData(List<IScienceDataContainer> experiments)

@@ -12,10 +12,7 @@ namespace RealAntennas
         public override double RequiredCI() => modulator.RequiredCI();
         public RAModulator modulator;
 
-        // beamwidth = sqrt(52525*efficiency / g)   G = 10*log(g) => g = 10^(G/10)
-
-        protected static readonly string ModTag = "[RealAntenna] ";
-        public static readonly string ModuleName = "RealAntenna";
+        protected static new readonly string ModTag = "[RealAntennaDigital] ";
 
         public RealAntennaDigital() : this("New RealAntennaDigital") { }
         public RealAntennaDigital(string name)
@@ -24,7 +21,8 @@ namespace RealAntennas
             modulator = new RAModulator();
         }
 
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]";
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
+
         public override double BestDataRateToPeer(RealAntenna rx, double distance, double noiseTemp)
         {
             double dataRate = 0;
@@ -71,10 +69,8 @@ namespace RealAntennas
 
         public override void LoadFromConfigNode(ConfigNode config)
         {
-            Gain = double.Parse(config.GetValue("Gain"));
-            TxPower = double.Parse(config.GetValue("TxPower"));
-            TechLevel = int.Parse(config.GetValue("TechLevel"));
             modulator.LoadFromConfigNode(config);
+            base.LoadFromConfigNode(config);
         }
     }
 }

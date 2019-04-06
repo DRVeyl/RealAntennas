@@ -9,7 +9,8 @@ namespace RealAntennas
     public class RACommNetVessel : CommNet.CommNetVessel
     {
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
-        public List<ModuleRealAntenna> antennaList = new List<ModuleRealAntenna>();
+        public List<ModuleRealAntenna> antennaModuleList = new List<ModuleRealAntenna>();
+        public List<RealAntenna> antennaList = new List<RealAntenna>();
 
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
@@ -24,6 +25,7 @@ namespace RealAntennas
             }
             else
             {
+                antennaModuleList = DiscoverModuleAntennas();
                 antennaList = DiscoverAntennas();
                 comm = new RACommNode(transform)
                 {
@@ -31,7 +33,7 @@ namespace RealAntennas
                     OnNetworkPostUpdate = new Action(OnNetworkPostUpdate),
                     OnLinkCreateSignalModifier = new Func<CommNet.CommNode, double>(GetSignalStrengthModifier),
                     ParentVessel = Vessel,
-                    RAAntennaList = new List<RealAntenna>(GatherRealAntennas(antennaList))
+                    RAAntennaList = antennaList
                 };
                 vessel.connection = this;
                 networkInitialised = false;
@@ -107,6 +109,17 @@ namespace RealAntennas
             }
         }
 
+        protected void OnVesselModified(Vessel data)
+        {
+            antennaModuleList = DiscoverModuleAntennas();
+            antennaList = DiscoverAntennas();
+            if (Comm is RACommNode vcn)
+            {
+                vcn.RAAntennaList.Clear();
+                vcn.RAAntennaList.AddRange(antennaList);
+            }
+        }
+
         internal List<RealAntenna> GatherRealAntennas(List<ModuleRealAntenna> src)
         {
             List<RealAntenna> l = new List<RealAntenna>();
@@ -117,13 +130,13 @@ namespace RealAntennas
             return l;
         }
 
-        protected List<ModuleRealAntenna> DiscoverAntennas()
-        {
-            if (Vessel == null) return new List<ModuleRealAntenna>();
-            if (Vessel.loaded) return Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList();
-            // Grr, now we have to go scan ProtoParts...
-            List<ModuleRealAntenna> antList = new List<ModuleRealAntenna>();
+        protected List<ModuleRealAntenna> DiscoverModuleAntennas() => (Vessel != null && Vessel.loaded) ? Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList() : null;
 
+        protected List<RealAntenna> DiscoverAntennas()
+        {
+            List<RealAntenna> antList = new List<RealAntenna>();
+            if (Vessel == null) return antList;
+            if (Vessel.loaded) return GatherRealAntennas(DiscoverModuleAntennas());
             if (Vessel.protoVessel != null)
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
@@ -132,24 +145,13 @@ namespace RealAntennas
                     {
                         Part prefab = part.partInfo.partPrefab;
                         ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
-                        raModule.Configure(snap.moduleValues);
-                        antList.Add(raModule);
+                        RealAntenna ra = new RealAntennaDigital(raModule.name);
+                        ra.LoadFromConfigNode(snap.moduleValues);
+                        antList.Add(ra);
                     }
                 }
             }
             return antList;
-        }
-
-        protected void OnVesselModified(Vessel data)
-        {
-            // Regenerate the antenna data.
-            Debug.LogFormat("OnVesselModified() for {0}, vessel {1}.  Discovering antennas!", this, data);
-            antennaList = DiscoverAntennas();
-            if (Comm is RACommNode vcn)
-            {
-                vcn.RAAntennaList.Clear();
-                vcn.RAAntennaList.AddRange(GatherRealAntennas(antennaList));
-            }
         }
     }
 }
