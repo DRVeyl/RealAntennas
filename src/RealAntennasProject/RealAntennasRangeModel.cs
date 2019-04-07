@@ -30,7 +30,7 @@ namespace RealAntennas
             return sensitivity_dbm;
         }
 
-        public double NoiseTemperature(RACommNode rx, Vector3d origin)
+        public double NoiseTemperature(RealAntenna rx, Vector3d origin)
         {
             // Calculating sensitivity from [fake] effective temperature and bandwidth
             // How do we actually get temperature of an unloaded vessel?
@@ -60,35 +60,28 @@ namespace RealAntennas
             //  Antenna temperature is basically the notion of "sky" temperature + rain temperature, or 3-4K in deep space.
             //
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
-            if (rx.ParentBody != null)
+            if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
             {
-                Vector3d normal = rx.GetSurfaceNormalVector();
-                Vector3d to_origin = origin - rx.position;
+                Vector3d normal = rxNode.GetSurfaceNormalVector();
+                Vector3d to_origin = origin - rx.Position;
                 double angle = Vector3d.Angle(normal, to_origin);   // Declination to incoming signal (0=vertical, 90=horizon)
 //                Debug.LogFormat(ModTag + "AoA offset from vertical: {0}", angle);
-                foreach (CelestialBody child in rx.ParentBody.orbitingBodies)
+                foreach (CelestialBody child in rxNode.ParentBody.orbitingBodies)
                 {
-                    double childAngle = Vector3d.Angle(to_origin, child.position - rx.position);
-                    double childDistance = Vector3d.Distance(rx.position, child.position);
+                    double childAngle = Vector3d.Angle(to_origin, child.position - rx.Position);
+                    double childDistance = Vector3d.Distance(rx.Position, child.position);
 //                    Debug.LogFormat(ModTag + "Offset from Origin to sibling {0}: {1} deg and distance {2}", child, childAngle, childDistance);
                 }
-                CelestialBody refBody = rx.ParentBody;
+                CelestialBody refBody = rxNode.ParentBody;
                 while (refBody != Planetarium.fetch.Sun)
                 {
                     refBody = refBody.referenceBody;
-                    double parentAngle = Vector3d.Angle(to_origin, refBody.position - rx.position);
-                    double parentDistance = Vector3d.Distance(rx.position, refBody.position);
+                    double parentAngle = Vector3d.Angle(to_origin, refBody.position - rx.Position);
+                    double parentDistance = Vector3d.Distance(rx.Position, refBody.position);
 //                    Debug.LogFormat(ModTag + "Offset from Origin to {0}: {1} deg and distance {2}", refBody, parentAngle, parentDistance);
                 }
             }
             return 290;
         }
-        public double ConvertCIToScaleFactor(double CI)
-        {
-            if (CI < 0) return 0;
-            if (CI > 20) return 1;
-            return (CI / 20);
-        }
-
     }
 }

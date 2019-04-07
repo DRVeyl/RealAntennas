@@ -10,7 +10,7 @@ namespace RealAntennas
         public override double DataRate => modulator.DataRate;
         public override double NoiseFigure => modulator.NoiseFigure;
         public override double Bandwidth => modulator.Bandwidth;          // RF bandwidth required.
-        public override double RequiredCI() => modulator.RequiredCI();
+        public override double RequiredCI => modulator.RequiredCI();
         public RAModulator modulator;
 
         protected static new readonly string ModTag = "[RealAntennaDigital] ";
@@ -24,17 +24,17 @@ namespace RealAntennas
 
         public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
 
-        public override double BestDataRateToPeer(RealAntenna rx, double noiseTemp)
+        public override double BestDataRateToPeer(RealAntenna rx)
         {
             double dataRate = 0;
-            if (BestPeerModulator(rx, noiseTemp, out RAModulator mod))
+            if (BestPeerModulator(rx, out RAModulator mod))
             {
                 dataRate = mod.DataRate;
             }
             return dataRate;
         }
 
-        private bool BestPeerModulator(RealAntenna rx, double noiseTemp, out RAModulator mod)
+        private bool BestPeerModulator(RealAntenna rx, out RAModulator mod)
         {
             mod = null;
             RealAntennaDigital tx = this;
@@ -51,7 +51,7 @@ namespace RealAntennas
             int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
 
             double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, tx.Frequency);
-            double Noise = RACommNetScenario.RangeModel.NoiseFloor(rx, noiseTemp);
+            double Noise = NoiseFloor(tx.Position);
             double CI = RSSI - Noise;
 
             if (CI < txMod.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.

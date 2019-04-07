@@ -67,13 +67,9 @@ namespace RealAntennas
                 from first in rac_a.RAAntennaList
                 from second in rac_b.RAAntennaList
                 select new[] { second, first };
-            double[] noiseTemps = {
-                RACommNetScenario.RangeModel.NoiseTemperature(rac_a, rac_b.position),
-                RACommNetScenario.RangeModel.NoiseTemperature(rac_b, rac_a.position)
-            };
 
-            double FwdDataRate = BestDataRate(fwd_pairing, noiseTemps[1], out RealAntenna[] bestFwdAntPair);
-            double RevDataRate = BestDataRate(rev_pairing, noiseTemps[0], out RealAntenna[] bestRevAntPair);
+            double FwdDataRate = BestDataRate(fwd_pairing, out RealAntenna[] bestFwdAntPair);
+            double RevDataRate = BestDataRate(rev_pairing, out RealAntenna[] bestRevAntPair);
 
             if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
             {
@@ -91,10 +87,10 @@ namespace RealAntennas
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
 
             double FwdRSSI = RACommNetScenario.RangeModel.RSSI(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
-            link.FwdCI = FwdRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.FwdAntennaRx, noiseTemps[1]);
+            link.FwdCI = FwdRSSI - link.FwdAntennaRx.NoiseFloor(link.FwdAntennaTx.Position);
 
             double RevRSSI = RACommNetScenario.RangeModel.RSSI(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
-            link.RevCI = RevRSSI - RACommNetScenario.RangeModel.NoiseFloor(link.RevAntennaRx, noiseTemps[0]);
+            link.RevCI = RevRSSI - link.RevAntennaRx.NoiseFloor(link.RevAntennaTx.Position);
 
             // TryConnect() is responsible for setting link parameters like below.
             link.aCanRelay = true;
@@ -106,13 +102,13 @@ namespace RealAntennas
             return true;
         }
 
-        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, double noiseTemp, out RealAntenna[] bestPair)
+        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, out RealAntenna[] bestPair)
         {
             bestPair = new RealAntenna[2];
             double dataRate = 0;
             foreach (RealAntenna[] antPair in pairList)
             {
-                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1], noiseTemp);
+                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1]);
                 if (dataRate < candidateRate)
                 {
                     bestPair[0] = antPair[0];
