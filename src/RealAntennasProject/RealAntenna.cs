@@ -21,6 +21,12 @@ namespace RealAntennas
         public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
         public virtual double RequiredCI() => 1;
         public virtual double MaxPointingLoss => 200;
+        public AnimationCurve gainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
+        {
+            postWrapMode = WrapMode.ClampForever,
+            preWrapMode = WrapMode.ClampForever
+        };
+            
 
         public CommNet.CommNode ParentNode { get; set; }
         protected static readonly string ModTag = "[RealAntenna] ";
@@ -78,23 +84,20 @@ namespace RealAntennas
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
         // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
         // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
-        public virtual double MinimumDistance => (Shape == AntennaShape.Omni || Beamwidth >= 90 ? 0 : minimumSpotRadius / Math.Tan(Beamwidth));
+        public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
         public virtual double PointingLoss(RealAntenna peer)
         {
             double loss = 0;
             if (CanTarget && ToTarget != Vector3.zero)
             {
                 float fError = Vector3.Angle(peer.Position - this.Position, ToTarget);
-                float angle3dB = Convert.ToSingle(Beamwidth / 2);
-                if (fError > Beamwidth) loss = MaxPointingLoss;
-                else
+                float fBW = Convert.ToSingle(Beamwidth);
+                loss = (fError > Beamwidth) ? MaxPointingLoss : -1 * gainCurve.Evaluate(fError / fBW);
+                if (fError <= Beamwidth)
                 {
-                    loss = fError < (Beamwidth / 2) ? Mathf.Lerp(0, 3, fError / angle3dB) :
-                                                      Mathf.Lerp(3, 10, (fError - angle3dB) / angle3dB);
+//                    Debug.LogFormat("{0} to {1} Pointing loss from error {2} BW {3} results {4}", this, peer, fError, Beamwidth, loss);
                 }
             }
-//            Debug.LogFormat("PointingLoss from {0} on {1} to Target {2}[{3}] to {4} results {5}",
-//                this, this.ParentNode, this.Target, this.ToTarget, peer.ParentNode, loss);
             return loss;
         }
 

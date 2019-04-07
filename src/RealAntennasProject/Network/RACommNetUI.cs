@@ -12,24 +12,12 @@ namespace RealAntennas.Network
     {
         public Color colorToTarget = XKCDColors.BananaYellow;
         public Color colorNormal = XKCDColors.BananaYellow;
-        public Color color3dB = XKCDColors.VividPurple;
-        public Color color10dB = XKCDColors.AquaMarine;
+        public Color color3dB = XKCDColors.LightPurple;
+        public Color color10dB = XKCDColors.DarkPurple;
 
         VectorLine targetLine = null;
         VectorLine cone3Line = null;
         VectorLine cone10Line = null;
-
-        protected virtual void CreateLine(string name, ref VectorLine l, List<Vector3> points)
-        {
-            if (l != null)
-                VectorLine.Destroy(ref l);
-            l = new VectorLine(name, points, this.lineWidth2D, Vectrosity.LineType.Discrete);
-            l.rectTransform.gameObject.layer = 31;
-            l.material = this.lineMaterial;
-            l.texture = this.lineTexture;
-            l.smoothColor = this.smoothColor;
-            l.UpdateImmediate = true;
-        }
 
         public void GatherAntennaCones(RACommNode node, ref List<Vector3> targetPoints, ref List<Vector3> cone3Points, ref List<Vector3> cone10Points)
         {
@@ -41,23 +29,16 @@ namespace RealAntennas.Network
                     targetPoints.Add(node.position);
                     targetPoints.Add(ra.Target.GetTransform().position);
 
-                    Vector3d perpToCamera = new Vector3d(1, 0, 0);
-//                    Vector3d perpToCamera = Vector3d.Cross(node.position - VectorLine.camTransformPosition,
-//                                                        ra.Target.GetTransform().position - VectorLine.camTransformPosition);
-                    perpToCamera.Normalize();
+                    //Vector3d perpToCamera = new Vector3d(1, 0, 0);
                     Vector3 toTarget = ra.Target.GetTransform().position - node.position;
-                    Vector3 leftbound3 = Vector3.RotateTowards(
-                        toTarget,
-                        perpToCamera,
-                        Convert.ToSingle(ra.Beamwidth * Math.PI / 180),
-                        0);
-                    Vector3 rightbound3 = Vector3.RotateTowards(
-                        toTarget,
-                        perpToCamera,
-                        -1 * Convert.ToSingle(ra.Beamwidth * Math.PI / 180),
-                        0);
-                    Vector3 leftbound10 = Vector3.RotateTowards(toTarget,perpToCamera,Convert.ToSingle(ra.Beamwidth/2 * Math.PI / 180),0);
-                    Vector3 rightbound10 = Vector3.RotateTowards(toTarget,perpToCamera,-1 * Convert.ToSingle(ra.Beamwidth/2 * Math.PI / 180),0);
+                    Vector3 perpToCamera = Vector3.Cross(toTarget, Vector3.up);
+                    perpToCamera.Normalize();
+                    float bw10 = Convert.ToSingle(ra.Beamwidth * Math.PI / 180);
+                    float bw3 = bw10 / 2;
+                    Vector3 leftbound10 = Vector3.RotateTowards(toTarget, perpToCamera, bw10, 0);
+                    Vector3 rightbound10 = Vector3.RotateTowards(toTarget, perpToCamera, -1 * bw10, 0);
+                    Vector3 leftbound3 = Vector3.RotateTowards(toTarget, perpToCamera, bw3, 0);
+                    Vector3 rightbound3 = Vector3.RotateTowards(toTarget, perpToCamera, -1 * bw3, 0);
 
                     float coneScale = Convert.ToSingle(1e7);
                     leftbound3.Normalize();
@@ -111,6 +92,9 @@ namespace RealAntennas.Network
                 case DisplayMode.FirstHop:
                     GatherAntennaCones(commNode as RACommNode, ref targetPoints, ref cone3Points, ref cone10Points);
                     break;
+                case CommNetUI.DisplayMode.VesselLinks:
+                    GatherAntennaCones(commNode as RACommNode, ref targetPoints, ref cone3Points, ref cone10Points);
+                    break;
                 case CommNetUI.DisplayMode.Path:
                     foreach (CommLink link in commPath)
                     {
@@ -158,6 +142,14 @@ namespace RealAntennas.Network
                 cone3Line.Draw();
                 cone10Line.Draw();
             }
+        }
+
+        public override void SwitchMode(int step)
+        {
+            targetLine.active = false;
+            cone3Line.active = false;
+            cone10Line.active = false;
+            base.SwitchMode(step);
         }
     }
 }

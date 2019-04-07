@@ -55,10 +55,10 @@ namespace RealAntennas
         void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
         public void OnGUI() => GUI.OnGUI();
 
-        public override bool CanComm()
+        public override void OnUpdate()
         {
             guiExtraInfo = RAAntenna.ToString();
-            return base.CanComm();
+            base.OnUpdate();
         }
 
         public override void OnStart(StartState state)
