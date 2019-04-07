@@ -119,6 +119,7 @@ namespace RealAntennas
             List<RealAntenna> l = new List<RealAntenna>();
             foreach (ModuleRealAntenna ant in src)
             {
+                ant.RAAntenna.ParentNode = Comm;
                 l.Add(ant.RAAntenna);
             }
             return l;
