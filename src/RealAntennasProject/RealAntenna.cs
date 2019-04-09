@@ -28,13 +28,15 @@ namespace RealAntennas
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
         // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
         // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
-        public virtual double RequiredCI => 1;
+        public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevel); 
+        public virtual double RequiredCI => Encoder.RequiredEbN0;
         public virtual double MaxPointingLoss => 200;
         public AnimationCurve gainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
         {
             postWrapMode = WrapMode.ClampForever,
             preWrapMode = WrapMode.ClampForever
         };
+
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
         public Vector3 Position => ParentNode.position;
@@ -110,7 +112,7 @@ namespace RealAntennas
             double Noise = NoiseFloor(tx.Position);
             double CI = RSSI - Noise;
 
-            return (CI > RequiredCI) ? DataRate : 0;
+            return (CI > Encoder.RequiredEbN0) ? DataRate * Encoder.CodingRate : 0;
         }
 
         public virtual void LoadFromConfigNode(ConfigNode config)

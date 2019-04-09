@@ -17,20 +17,10 @@ namespace RealAntennas
         // Given Bandwidth, DataRate and SpectralEfficiency, compute minimum C/I from Shannon-Hartley.
         // C = B log_2 (1 + SNR), where C=Channel Capacity and SNR is linear.  10*Log10(SNR) to convert to dB.
         // We will substitute C = (DateRate / SpectralEfficiency) to account for non-ideal performance
-        // Actually, let's just skip to digital land and specify required C/I (Es/No) as a function of modulation.
-        // And derive bandwidth as a function of the symbol rate and the spectral efficiency.
+        // Actually, let's just skip to digital land, let the Encoder specify required Eb/N0, and derive
+        // Derive:  Es/N0 as Eb/N0 + 3*bits   
+        //          bandwidth as a function of the symbol rate and the spectral efficiency.
 
-        // QPSK: 7-10.  16-QAM: 15-18.  64-QAM: 22-24.  256-QAM: 28-30dB Minimums
-        // These values are for a symbol error rate of 10^-2 (ouch!)
-        // Probably should shift to 6, 10, 14, 18, 21, 23.5, 27, 29, 31
-        public readonly double[] QAM_CI = { 6, 10, 14, 18, 21, 23.5, 27, 29, 31 };
-        public virtual double RequiredCI() => RequiredCI(ModulationBits);
-        public virtual double RequiredCI(int modulationBits)
-        {
-            // OOK: 2, BPSK: 5, QPSK: 8, 8PSK: 11, 16QAM: 16, 32QAM: 19, 64QAM: 22
-            if (modulationBits < QAM_CI.Length) return QAM_CI[modulationBits];
-            return QAM_CI[QAM_CI.Length - 1];
-        }
         public virtual bool Compatible(RAModulator other)
         {
             // Test frequency range and minimum modulation order
@@ -48,10 +38,10 @@ namespace RealAntennas
         {
             switch(bits)
             {
-                case 0: return "OOK";
                 case 1: return "BPSK";
                 case 2: return "QPSK";
                 case 3: return "8PSK";
+                case 4: return "16-PSK";
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }

@@ -7,10 +7,9 @@ namespace RealAntennas
     {
         public override double Frequency => modulator.Frequency;
         public override double SpectralEfficiency => modulator.SpectralEfficiency;
-        public override double DataRate => modulator.DataRate;
+        public override double DataRate => modulator.DataRate * Encoder.CodingRate;
         public override double NoiseFigure => modulator.NoiseFigure;
         public override double Bandwidth => modulator.Bandwidth;          // RF bandwidth required.
-        public override double RequiredCI => modulator.RequiredCI();
         public RAModulator modulator;
 
         protected static new readonly string ModTag = "[RealAntennaDigital] ";
@@ -29,7 +28,7 @@ namespace RealAntennas
             double dataRate = 0;
             if (BestPeerModulator(rx, out RAModulator mod))
             {
-                dataRate = mod.DataRate;
+                dataRate = mod.DataRate * Encoder.CodingRate;
             }
             return dataRate;
         }
@@ -53,21 +52,18 @@ namespace RealAntennas
             double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, tx.Frequency);
             double Noise = NoiseFloor(tx.Position);
             double CI = RSSI - Noise;
+            double margin = CI - RequiredCI;
 
-            if (CI < txMod.RequiredCI(minBits)) return false;   // Fast-Fail the easiest case.
+            int negotiatedBits = Math.Min(maxBits, Convert.ToInt32(Math.Floor(margin / 3)));
+            if (negotiatedBits < minBits) return false;
 
             // Link can close.  Load & config modulator with agreed SymbolRate and ModulationBits range.
             mod = new RAModulator(txMod)
             {
                 SymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate),
-                ModulationBits = maxBits
+                ModulationBits = negotiatedBits
             };
-
-            while (CI < mod.RequiredCI() && mod.ModulationBits > minBits)
-            {
-                mod.ModulationBits--;
-            }
-            return (CI >= mod.RequiredCI());
+            return true;
         }
 
         public override void LoadFromConfigNode(ConfigNode config)
