@@ -16,12 +16,11 @@ namespace RealAntennas
         public virtual double Frequency { get; set; }
         public virtual double PowerEfficiency => Math.Min(1, 0.5 + (TechLevel * 0.05));
         public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
-        public virtual double SpectralEfficiency => 1.01 - (1 / Math.Pow(2, TechLevel));
         public virtual double DataRate { get; }
-        public virtual double Bandwidth => DataRate / SpectralEfficiency;          // RF bandwidth required.
+        public virtual double Bandwidth => DataRate;          // RF bandwidth required.
         public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
-        public virtual double NoiseFloor(Vector3 origin) => RACommNetScenario.RangeModel.NoiseFloor(this, NoiseTemp(origin));
-        public virtual double NoiseTemp(Vector3 origin) => RACommNetScenario.RangeModel.NoiseTemperature(this, origin);
+        public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
+        public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
         public virtual double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
@@ -108,9 +107,13 @@ namespace RealAntennas
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;
 
-            double RSSI = RACommNetScenario.RangeModel.RSSI(tx, rx, distance, Frequency);
-            double Noise = NoiseFloor(tx.Position);
+            double RSSI = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
+            double temp = Physics.NoiseTemperature(rx, toSource);
+            double NoiseSpectralDensity = Physics.NoiseSpectralDensity(temp);
+
+            double Noise = NoiseFloor(toSource);
             double CI = RSSI - Noise;
+            double margin = CI - RequiredCI;
 
             return (CI > Encoder.RequiredEbN0) ? DataRate * Encoder.CodingRate : 0;
         }

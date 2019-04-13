@@ -56,6 +56,7 @@
     <Compile Include="Kerbalism\AntennaInfoRA.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="Network\RACommNetUI.cs" />
+    <Compile Include="Physics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Network\RACommLink.cs" />
     <Compile Include="RAModulator.cs" />

@@ -10,10 +10,14 @@ namespace RealAntennas
         public int MinModulationBits { get; set; }  // Min modulation supported
         public double NoiseFigure { get => 2 + ((10 - TechLevel) * 0.8); }  // Noise figure of receiver electronics in dB
         public int TechLevel { get; set; }
-        public double SpectralEfficiency { get => Math.Max(0.01, 1 - (1 / Math.Pow(2, TechLevel))); }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
-        public double Bandwidth { get => SymbolRate / SpectralEfficiency; }         // RF bandwidth required.
+        public int SymbolSteps => 10 + TechLevel;
+        public double MinSymbolRate => SymbolRate / Math.Pow(2, SymbolSteps);
 
+        // Voyager ~= 14 bits (115,200 down to 10 bps)
+        // NEAR:  5 bits (1.1kbps - 26.5kbps)
+        // MRO: Symbol rates (80 - 6000000 s/s) 16 bits  although it actually is lots of different ranges for different encoders.
+        // JUNO: Symbol rates 23 - 1.2M   ~= 16 bits
         // Given Bandwidth, DataRate and SpectralEfficiency, compute minimum C/I from Shannon-Hartley.
         // C = B log_2 (1 + SNR), where C=Channel Capacity and SNR is linear.  10*Log10(SNR) to convert to dB.
         // We will substitute C = (DateRate / SpectralEfficiency) to account for non-ideal performance
@@ -28,11 +32,14 @@ namespace RealAntennas
             if (other.Frequency > Frequency * 1.1) return false;
             if (MinModulationBits > other.ModulationBits) return false;
             if (other.MinModulationBits > ModulationBits) return false;
+            if (MinSymbolRate > other.SymbolRate) return false;
+            if (other.MinSymbolRate > SymbolRate) return false;
             return true;
         }
         public virtual bool SupportModulation(int bits) => bits >= MinModulationBits && bits <= ModulationBits;
+        public virtual bool SupportModulationRate(double rate) => rate >= MinSymbolRate && rate <= SymbolRate;
 
-        public override string ToString() => $"{BitsToString(ModulationBits)} {DataRate} bps";
+        public override string ToString() => $"{BitsToString(ModulationBits)} {DataRate:F1} bps";
 
         public virtual string BitsToString(int bits)
         {
