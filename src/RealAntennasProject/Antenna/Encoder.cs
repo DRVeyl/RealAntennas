@@ -10,7 +10,7 @@ namespace RealAntennas.Antenna
         // Reed-Solomon RS 255,223 sends 255 data symbols then 32 parity symbols.
         // https://deepspace.jpl.nasa.gov/dsndocs/810-005/Binder/810-005_Binder_Change42.pdf
         // 810-005, Module 208, Rev B, Page 30, Figure 14.  For calculating BER ~= 10^-5.
-        private static readonly double RSMult = 255 / (255 + 32);
+        private static readonly double RSMult = 255.0 / (255 + 32);
         public readonly double CodingRate;
         public readonly double RequiredEbN0;
         public static Encoder None = new Encoder(1, "None", 1, 10);
@@ -26,7 +26,9 @@ namespace RealAntennas.Antenna
             RequiredEbN0 = minEbN0;
         }
 
-        public Encoder BestMatching(Encoder a, Encoder b) => (a.Id > b.Id) ? b : a;
+        public override string ToString() => $"[{Name} Rate {CodingRate:F2} Eb/N0 {RequiredEbN0}]";
+
+        public static Encoder BestMatching(Encoder a, Encoder b) => (a.Id > b.Id) ? b : a;
         public static Encoder GetFromTechLevel(int level)
         {
             if (level <= 1) return Encoder.None;

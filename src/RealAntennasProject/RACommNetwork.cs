@@ -70,7 +70,7 @@ namespace RealAntennas
 
             double FwdDataRate = BestDataRate(fwd_pairing, out RealAntenna[] bestFwdAntPair);
             double RevDataRate = BestDataRate(rev_pairing, out RealAntenna[] bestRevAntPair);
-
+            Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2:F2}/{3:F2}", rac_a, rac_b, FwdDataRate, RevDataRate);
             if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
             {
                 Disconnect(a, b);
@@ -86,10 +86,10 @@ namespace RealAntennas
             link.RevDataRate = RevDataRate;
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
 
-            double FwdRSSI = RACommNetScenario.RangeModel.RSSI(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
+            double FwdRSSI = Physics.ReceivedPower(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
             link.FwdCI = FwdRSSI - link.FwdAntennaRx.NoiseFloor(link.FwdAntennaTx.Position);
 
-            double RevRSSI = RACommNetScenario.RangeModel.RSSI(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
+            double RevRSSI = Physics.ReceivedPower(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
             link.RevCI = RevRSSI - link.RevAntennaRx.NoiseFloor(link.RevAntennaTx.Position);
 
             // TryConnect() is responsible for setting link parameters like below.
