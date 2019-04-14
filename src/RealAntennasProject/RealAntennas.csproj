@@ -54,6 +54,7 @@
     <Compile Include="Antenna\Encoder.cs" />
     <Compile Include="Enumeration.cs" />
     <Compile Include="Kerbalism\AntennaInfoRA.cs" />
+    <Compile Include="Kerbalism\Kerbalism.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="Network\RACommNetUI.cs" />
     <Compile Include="Physics.cs" />

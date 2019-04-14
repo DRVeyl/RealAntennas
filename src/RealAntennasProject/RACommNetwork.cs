@@ -140,6 +140,13 @@ namespace RealAntennas
             return res;
         }
 
+        public int HopsToHome(RACommNode start)
+        {
+            CommPath path = new CommPath();
+            if ((start == null) || !FindHome(start, path)) return -1;
+            return path.Count;
+        }
+
         public double MaxDataRateToHome(RACommNode start)
         {
             CommPath path = new CommPath();

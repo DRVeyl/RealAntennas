@@ -20,6 +20,8 @@ namespace RealAntennas
             ui = gameObject.AddComponent<Network.RACommNetUI>();
             this.network = gameObject.AddComponent<RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
+
+            RealAntennas.Kerbalism.Kerbalism.DetectKerbalismDLL();
         }
 
         public override void OnAwake()

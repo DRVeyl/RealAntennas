@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using CommNet;
 using System.Linq;
 using UnityEngine;
+using System.Reflection;
+using System.Security.Permissions;
 
 namespace RealAntennas
 {
@@ -10,6 +12,18 @@ namespace RealAntennas
     {
         public static double LinearScale(double x) => Math.Pow(10, x / 10);
         public static double LogScale(double x) => 10 * Math.Log10(x);
+
+        ///<summary> Sets the value of a field via reflection </summary>
+        public static void ReflectionValue<T>(object instance, string value_name, T value)
+        {
+            instance.GetType().GetField(value_name).SetValue(instance, value);
+        }
+
+        ///<summary> Returns the value of a field via reflection </summary>
+        public static T ReflectionValue<T>(object instance, string field_name)
+        {
+            return (T)instance.GetType().GetField(field_name).GetValue(instance);
+        }
         public static string TransformWalk(Transform t)
         {
             string s = string.Empty;
