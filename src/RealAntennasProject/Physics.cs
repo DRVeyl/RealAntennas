@@ -19,6 +19,15 @@ namespace RealAntennas
             => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx, rx) + rx.Gain;
 
         public static double PointingLoss(RealAntenna tx, RealAntenna rx) => tx.PointingLoss(rx) + rx.PointingLoss(tx);
+        public static double MinimumTheoreticalEbN0(double SpectralEfficiency)
+        {
+            // Given SpectralEfficiency in bits/sec/Hz (= Channel Capacity / Bandwidth)
+            // Solve Shannon Hartley for Eb/N0 >= (2^(C/B) - 1) / (C/B)
+            return RATools.LogScale(Math.Pow(2, SpectralEfficiency) - 1) / SpectralEfficiency;
+            // 1=> 0dB, 2=> 1.7dB, 3=> 3.7dB, 4=> 5.7dB, 5=> 8dB, 6=> 10.2dB, 7=> 12.6dB, 8=> 15dB
+            // 9=> 17.6dB, 10=> 20.1dB, 11=> 22.7dB, 20=> 47.2dB
+            // 0.5 => -0.8dB.  Rate 1/2 BPSK Turbo code is EbN0 = +1dB, so about 1.8 above Shannon?
+        }
         public static double NoiseFloor(RealAntenna rx, double noiseTemp) => NoiseSpectralDensity(noiseTemp) + (10 * Math.Log10(rx.Bandwidth));
         public static double NoiseSpectralDensity(double noiseTemp) => boltzmann_dBm + (10 * Math.Log10(noiseTemp));
         public static double NoiseTemperature(RealAntenna rx, Vector3d origin)
