@@ -22,6 +22,7 @@ namespace RealAntennas
         public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
         public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
         public virtual double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
+        public virtual double GainAtAngle(float angle) => Gain + PointingLoss(angle);
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
@@ -73,15 +74,11 @@ namespace RealAntennas
             if (CanTarget && ToTarget != Vector3.zero)
             {
                 float fError = Vector3.Angle(peer.Position - this.Position, ToTarget);
-                float fBW = Convert.ToSingle(Beamwidth);
-                loss = (fError > Beamwidth) ? MaxPointingLoss : -1 * gainCurve.Evaluate(fError / fBW);
-                if (fError <= Beamwidth)
-                {
-//                    Debug.LogFormat("{0} to {1} Pointing loss from error {2} BW {3} results {4}", this, peer, fError, Beamwidth, loss);
-                }
+                loss = PointingLoss(fError);
             }
             return loss;
         }
+        public virtual double PointingLoss(float angle) => (angle > Beamwidth) ? MaxPointingLoss : -1 * gainCurve.Evaluate(angle / Convert.ToSingle(Beamwidth));
 
         protected static readonly string ModTag = "[RealAntenna] ";
         public override string ToString() => $"[+RA] {Name} [{Gain}dB]{(CanTarget ? $" ->{Target}" : null)}";

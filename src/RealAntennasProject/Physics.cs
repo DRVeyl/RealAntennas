@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using UnityEngine;
 
 namespace RealAntennas
 {
@@ -19,6 +17,57 @@ namespace RealAntennas
             => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx, rx) + rx.Gain;
 
         public static double PointingLoss(RealAntenna tx, RealAntenna rx) => tx.PointingLoss(rx) + rx.PointingLoss(tx);
+        public static double c = 2.998e8;
+        public static double SunTemp(double frequency) => 5672 * Math.Pow(frequency / c, .24517);   // QUIET Sun Temp, active can be 2-3x higher
+        public static double AtmosphereMeanEffectiveTemp(double CD) => 255 + (25 * CD); // 0 <= CD <= 1
+        public static double AtmosphereNoiseTemperature(double elevationAngle, double frequency=1e9)
+        {
+            float CD = 0.5f;
+            double Atheta = AtmosphereAttenuation(CD, elevationAngle, frequency);
+            double LossFactor = RATools.LinearScale(Atheta);  // typical values = 1.01 to 2.0 (A = 0.04 dB to 3 dB) 
+            double meanTemp = AtmosphereMeanEffectiveTemp(CD);            double result = meanTemp * (1 - (1 / LossFactor));//            Debug.LogFormat("AtmosphereNoiseTemperature calc for elevation {0:F2} freq {1:F2}GHz yielded attenuation {2:F2}, LossFactor {3:F2} and mean temp {4:F2} for result {5:F2}", elevationAngle, frequency/1e9, Atheta, LossFactor, meanTemp, result);            return result;
+        }
+        public static double AtmosphereAttenuation(float CD, double elevationAngle, double frequency=1e9)
+        {
+            double AirMasses = (1 / Math.Sin(RATools.DegToRad(Math.Abs(elevationAngle))));
+            return AtmosphereZenithAttenuation(CD, frequency) * AirMasses;
+        }
+        public static double AtmosphereZenithAttenuation(float CD, double frequency = 1e9)
+        {
+            // This would be a gigantic table lookup per ground station.
+            if (frequency < 3e9) return 0.035;          // S/C/L band, didn't really vary by CD
+            else if (frequency < 10e9)                  // X-Band, varied 0.4 to 0.6
+            {
+                return Mathf.Lerp(0.4f, 0.6f, CD);
+            }
+            else if (frequency < 27e9)                  // Ka-Band, varied .116-.239, .124-.384, .121-.407
+            {
+                return Mathf.Lerp(0.121f, 0.384f, CD);
+            }
+            else                                      // K-Band, 0.084-.226, .086-.375, .084-.373
+            {
+                return Mathf.Lerp(0.084f, 0.373f, CD);
+            }
+        }
+        public static double BodyNoiseTemp(RealAntenna rx, CelestialBody body, Vector3d toPeer)
+        {
+            // toPeer is needed to assess pointing of an isHome RealAntenna
+            if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
+            Vector3 toBody = body.position - rx.Position;
+            double angle = rx.ParentNode.isHome ? Vector3.Angle(toPeer, toBody) : Vector3.Angle(rx.ToTarget, toBody);
+            if (rx.GainAtAngle(Convert.ToSingle(angle)) < 0) return 0;  // Pointed too far away
+            double bw = rx.Beamwidth;
+            double t = body.GetTemperature(1);
+            double d = body.Radius * 2;
+            double Rsqr = (rx.Position - body.position).sqrMagnitude;
+            double G = RATools.LinearScale(rx.Gain);
+            double angleRatio = angle / bw;
+            double result = (t * G * d * d / (16 * Rsqr)) * Math.Pow(Math.E, -2.77 * angleRatio * angleRatio);
+//            Debug.LogFormat("Planetary Body Noise Power Estimator: Body {0} base temp {1:F0} diameter {2:F0}km at {3:F2}Mm Gain {4:F1} vs HPBW {5:F1} incident angle {6:F1} yields {7:F1}K", body, t, d/1000, (rx.Position - body.position).magnitude/1e6, G, bw, angle, result);
+            return result;
+        }
+
+
         public static double MinimumTheoreticalEbN0(double SpectralEfficiency)
         {
             // Given SpectralEfficiency in bits/sec/Hz (= Channel Capacity / Bandwidth)
@@ -35,9 +84,8 @@ namespace RealAntennas
             // Calculating antenna temperature
             return  AntennaMicrowaveTemp(rx, origin) +
                     AtmosphericTemp(rx, origin) +
-                    SunTemp(rx, origin) +
                     CosmicBackgroundTemp(rx, origin) +
-                    OtherBodyTemp(rx, origin);
+                    AllBodyTemps(rx, origin);
 
             //
             // https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.372-7-200102-S!!PDF-E.pdf
@@ -64,33 +112,50 @@ namespace RealAntennas
             //  Antenna temperature is basically the notion of "sky" temperature + rain temperature, or 3-4K in deep space.
             //
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
+        }
+        private static double AntennaMicrowaveTemp(RealAntenna rx, Vector3d origin) => 0;
+        private static double AtmosphericTemp(RealAntenna rx, Vector3d origin)
+        {
             if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
             {
                 Vector3d normal = rxNode.GetSurfaceNormalVector();
                 Vector3d to_origin = origin - rx.Position;
-                double angle = Vector3d.Angle(normal, to_origin);   // Declination to incoming signal (0=vertical, 90=horizon)
-                                                                    //                Debug.LogFormat(ModTag + "AoA offset from vertical: {0}", angle);
-                foreach (CelestialBody child in rxNode.ParentBody.orbitingBodies)
-                {
-                    double childAngle = Vector3d.Angle(to_origin, child.position - rx.Position);
-                    double childDistance = Vector3d.Distance(rx.Position, child.position);
-                    //                    Debug.LogFormat(ModTag + "Offset from Origin to sibling {0}: {1} deg and distance {2}", child, childAngle, childDistance);
-                }
-                CelestialBody refBody = rxNode.ParentBody;
-                while (refBody != Planetarium.fetch.Sun)
-                {
-                    refBody = refBody.referenceBody;
-                    double parentAngle = Vector3d.Angle(to_origin, refBody.position - rx.Position);
-                    double parentDistance = Vector3d.Distance(rx.Position, refBody.position);
-                    //                    Debug.LogFormat(ModTag + "Offset from Origin to {0}: {1} deg and distance {2}", refBody, parentAngle, parentDistance);
-                }
+                double angle = Vector3d.Angle(normal, to_origin);
+                double elevation = Math.Max(0,90.0 - angle);
+                return AtmosphereNoiseTemperature(elevation, rx.Frequency);
             }
-            return 290;
+            return 287;
         }
-        private static double AntennaMicrowaveTemp(RealAntenna rx, Vector3d origin) => 0;
-        private static double AtmosphericTemp(RealAntenna rx, Vector3d origin) => 0;
-        private static double SunTemp(RealAntenna rx, Vector3d origin) => 0;
-        private static double CosmicBackgroundTemp(RealAntenna rx, Vector3d origin) => 3;
-        private static double OtherBodyTemp(RealAntenna rx, Vector3d origin) => 287;
+        private static double CosmicBackgroundTemp(RealAntenna rx, Vector3d origin)
+        {
+            double CMB = 2.725;
+            double lossFactor = 1;
+            if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
+            {
+                float CD = 0.5f;
+                Vector3d normal = rxNode.GetSurfaceNormalVector();
+                Vector3d to_origin = origin - rx.Position;
+                double angle = Vector3d.Angle(normal, to_origin);
+                double elevation = Math.Max(0, 90.0 - angle);
+                lossFactor = RATools.LinearScale(AtmosphereAttenuation(CD, elevation, rx.Frequency));
+            }
+            return CMB / lossFactor;
+        }
+
+
+        private static double AllBodyTemps(RealAntenna rx, Vector3d origin)
+        {
+            if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
+            double temp = 0;
+            RACommNode node = rx.ParentNode as RACommNode;
+            Vector3d toPeer = origin - rx.Position;
+            foreach (CelestialBody body in FlightGlobals.Bodies)
+            {
+                if (node.isHome) temp = node.ParentBody.Equals(body) ? temp : temp + BodyNoiseTemp(rx, body, toPeer);
+                else temp += BodyNoiseTemp(rx, body, toPeer);
+            }
+            Debug.LogFormat("AllBodyTemps() calculated {0:F1}K", temp);
+            return temp;
+        }
     }
 }

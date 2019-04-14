@@ -52,13 +52,13 @@ namespace RealAntennas
             double minSymbolRate = Math.Max(txMod.MinSymbolRate, rxMod.MinSymbolRate);
 
             double RxPower = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
-            double temp = Physics.NoiseTemperature(rx, toSource);
+            double temp = Physics.NoiseTemperature(rx, tx.Position);
             double N0 = Physics.NoiseSpectralDensity(temp);     // In dBm
             double minEb = encoder.RequiredEbN0 + N0;           // in dBm
             double maxBitRateLog = RxPower - minEb;                // in dB*Hz
             double maxBitRate = RATools.LinearScale(maxBitRateLog);
-            Debug.LogFormat(ModTag + "{0} to {1} RxP {2:F2} learned maxRate {3:F2} vs symbol rates {4:F4}-{5:F2}",
-                tx, rx, RxPower, maxBitRate, minSymbolRate, maxSymbolRate);
+            Debug.LogFormat(ModTag + "{0} to {1} RxP {2:F2} temp {6:F2} learned maxRate {3:F2} vs symbol rates {4:F4}-{5:F2}",
+                tx, rx, RxPower, maxBitRate, minSymbolRate, maxSymbolRate, temp);
             // We cannot slow our modulation enough to achieve the required Eb/N0, so fail.
             if (maxBitRate < minSymbolRate) return false;
             double targetRate = 0;

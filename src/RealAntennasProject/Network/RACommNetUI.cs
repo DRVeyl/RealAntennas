@@ -1,8 +1,6 @@
 ﻿using CommNet;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 using Vectrosity;
 
@@ -14,6 +12,9 @@ namespace RealAntennas.Network
         public Color colorNormal = XKCDColors.BananaYellow;
         public Color color3dB = XKCDColors.LightPurple;
         public Color color10dB = XKCDColors.DarkPurple;
+        public bool drawTarget = false;
+        public bool drawCone3 = true;
+        public bool drawCone10 = true;
 
         VectorLine targetLine = null;
         VectorLine cone3Line = null;
@@ -63,6 +64,11 @@ namespace RealAntennas.Network
             }
         }
 
+        protected override void Start()
+        {
+            base.Start();
+            if (MapView.fetch is MapView x) x.max3DlineDrawDist = 100;  // Bad hack that basically disables 3D drawing.
+        }
 
         protected override void UpdateDisplay()
         {
@@ -113,25 +119,28 @@ namespace RealAntennas.Network
             CreateLine(ref targetLine, targetPoints);
             targetLine.name = "RACommNetUIVectorToTarget";
             targetLine.SetColor(colorToTarget);
-            targetLine.active = true;
+            targetLine.active = drawTarget;
 
             ScaledSpace.LocalToScaledSpace(cone3Points);
             CreateLine(ref cone3Line, cone3Points);
             cone3Line.name = "RACommNetUIVectorCone3dB";
+//            cone3Line.material = MapView.DottedLinesMaterial;
             cone3Line.SetColor(color3dB);
-            cone3Line.active = true;
+            cone3Line.active = drawCone3;
 
             ScaledSpace.LocalToScaledSpace(cone10Points);
             CreateLine(ref cone10Line, cone10Points);
             cone10Line.name = "RACommNetUIVectorCone10dB";
             cone10Line.SetColor(color10dB);
-            cone10Line.active = true;
+            cone10Line.active = drawCone10;
             float width = draw3dLines ? lineWidth3D : lineWidth2D;
             targetLine.SetWidth(width);
             cone3Line.SetWidth(width);
             cone10Line.SetWidth(width);
+            Debug.LogFormat("Drawing lines in {0} with width {1} cone3Color {2}", draw3dLines ? "3D" : "2D", width, cone3Line.GetColor(0));
             if (this.draw3dLines)
             {
+                // Why do these calls NOT work?  Nothing renders.
                 targetLine.Draw3D();
                 cone3Line.Draw3D();
                 cone10Line.Draw3D();

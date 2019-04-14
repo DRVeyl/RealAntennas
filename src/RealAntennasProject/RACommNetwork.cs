@@ -87,10 +87,13 @@ namespace RealAntennas
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
 
             double FwdRSSI = Physics.ReceivedPower(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
-            link.FwdCI = FwdRSSI - link.FwdAntennaRx.NoiseFloor(link.FwdAntennaTx.Position);
+            //link.FwdCI = FwdRSSI - link.FwdAntennaRx.NoiseFloor(link.FwdAntennaTx.Position);
+            // HACK FwdCI as an awkward measurement of signal quality.
+            link.FwdCI = FwdDataRate / bestFwdAntPair[0].DataRate;
 
             double RevRSSI = Physics.ReceivedPower(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
-            link.RevCI = RevRSSI - link.RevAntennaRx.NoiseFloor(link.RevAntennaTx.Position);
+            //link.RevCI = RevRSSI - link.RevAntennaRx.NoiseFloor(link.RevAntennaTx.Position);
+            link.RevCI = RevDataRate / bestRevAntPair[0].DataRate;
 
             // TryConnect() is responsible for setting link parameters like below.
             link.aCanRelay = true;

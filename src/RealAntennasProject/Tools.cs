@@ -12,6 +12,8 @@ namespace RealAntennas
     {
         public static double LinearScale(double x) => Math.Pow(10, x / 10);
         public static double LogScale(double x) => 10 * Math.Log10(x);
+        public static double RadToDeg(double x) => x * 180 / Math.PI;
+        public static double DegToRad(double x) => x * Math.PI / 180;
 
         ///<summary> Sets the value of a field via reflection </summary>
         public static void ReflectionValue<T>(object instance, string value_name, T value)
