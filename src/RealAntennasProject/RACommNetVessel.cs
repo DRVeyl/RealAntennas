@@ -13,6 +13,16 @@ namespace RealAntennas
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
 
+        public double UnloadedPowerDraw()
+        {
+            double ec = 0;
+            foreach (RealAntenna ra in DiscoverAntennas())
+            {
+                ec += ra.PowerDrawLinear * 1e-6 * 0.1;  // mW->kW conversion 1e-6, Standby power SWAG 10%
+            }
+            return ec;
+        }
+
         protected override void OnStart()
         {
             if (vessel.vesselType == VesselType.Flag || vessel.vesselType <= VesselType.Unknown)

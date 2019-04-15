@@ -55,10 +55,21 @@ namespace RealAntennas
         void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
         public void OnGUI() => GUI.OnGUI();
 
-        public override void OnUpdate()
+        public override void OnActive()
+        {
+            Debug.LogFormat("{0} OnActive()", this);
+            base.OnActive();
+        }
+
+        public override void OnFixedUpdate()
         {
             guiExtraInfo = RAAntenna.ToString();
-            base.OnUpdate();
+            base.OnFixedUpdate();
+            string err = string.Empty;
+            double req = PowerDrawLinear * 1e-6 * 0.1;
+            // Consume some standby power.  Default OnLoad() set a resource consumption rate=1.
+            resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
+            Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
         }
 
         public override void OnStart(StartState state)
@@ -78,6 +89,8 @@ namespace RealAntennas
             GUI.ParentPart = part;
             GUI.ParentPartModule = this;
             GUI.Start();
+            Debug.LogFormat("Forcing part {0} active.", part);
+            part.force_activate();
         }
 
         public override void OnLoad(ConfigNode node)

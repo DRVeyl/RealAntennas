@@ -25,7 +25,10 @@ namespace RealAntennas
             float CD = 0.5f;
             double Atheta = AtmosphereAttenuation(CD, elevationAngle, frequency);
             double LossFactor = RATools.LinearScale(Atheta);  // typical values = 1.01 to 2.0 (A = 0.04 dB to 3 dB) 
-            double meanTemp = AtmosphereMeanEffectiveTemp(CD);            double result = meanTemp * (1 - (1 / LossFactor));//            Debug.LogFormat("AtmosphereNoiseTemperature calc for elevation {0:F2} freq {1:F2}GHz yielded attenuation {2:F2}, LossFactor {3:F2} and mean temp {4:F2} for result {5:F2}", elevationAngle, frequency/1e9, Atheta, LossFactor, meanTemp, result);            return result;
+            double meanTemp = AtmosphereMeanEffectiveTemp(CD);
+            double result = meanTemp * (1 - (1 / LossFactor));
+//            Debug.LogFormat("AtmosphereNoiseTemperature calc for elevation {0:F2} freq {1:F2}GHz yielded attenuation {2:F2}, LossFactor {3:F2} and mean temp {4:F2} for result {5:F2}", elevationAngle, frequency/1e9, Atheta, LossFactor, meanTemp, result);
+            return result;
         }
         public static double AtmosphereAttenuation(float CD, double elevationAngle, double frequency=1e9)
         {
@@ -81,11 +84,13 @@ namespace RealAntennas
         public static double NoiseSpectralDensity(double noiseTemp) => boltzmann_dBm + (10 * Math.Log10(noiseTemp));
         public static double NoiseTemperature(RealAntenna rx, Vector3d origin)
         {
-            // Calculating antenna temperature
-            return  AntennaMicrowaveTemp(rx, origin) +
-                    AtmosphericTemp(rx, origin) +
-                    CosmicBackgroundTemp(rx, origin) +
-                    AllBodyTemps(rx, origin);
+            double amt = AntennaMicrowaveTemp(rx, origin);
+            double atmos = AtmosphericTemp(rx, origin);
+            double cosmic = CosmicBackgroundTemp(rx, origin);
+            double allbody = AllBodyTemps(rx, origin);
+            double total = amt + atmos + cosmic + allbody;
+            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
+            return total;
 
             //
             // https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.372-7-200102-S!!PDF-E.pdf
@@ -126,6 +131,7 @@ namespace RealAntennas
             }
             return 287;
         }
+
         private static double CosmicBackgroundTemp(RealAntenna rx, Vector3d origin)
         {
             double CMB = 2.725;
@@ -142,7 +148,6 @@ namespace RealAntennas
             return CMB / lossFactor;
         }
 
-
         private static double AllBodyTemps(RealAntenna rx, Vector3d origin)
         {
             if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
@@ -151,10 +156,8 @@ namespace RealAntennas
             Vector3d toPeer = origin - rx.Position;
             foreach (CelestialBody body in FlightGlobals.Bodies)
             {
-                if (node.isHome) temp = node.ParentBody.Equals(body) ? temp : temp + BodyNoiseTemp(rx, body, toPeer);
-                else temp += BodyNoiseTemp(rx, body, toPeer);
+                temp += (node.isHome && node.ParentBody.Equals(body)) ? 0 : BodyNoiseTemp(rx, body, toPeer);
             }
-            Debug.LogFormat("AllBodyTemps() calculated {0:F1}K", temp);
             return temp;
         }
     }

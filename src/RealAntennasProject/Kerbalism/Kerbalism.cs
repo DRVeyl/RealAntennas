@@ -17,17 +17,20 @@ namespace RealAntennas.Kerbalism
                 raCNV.Comm is RACommNode node &&
                 KerbalismAssembly.GetType("KERBALISM.AntennaInfo") is Type KerbalismAntennaInfoType)
             {
-                double rate = 0, ec = 0, strength = 0, packetInterval = 1.0f;
+                double rate = 0, strength = 0, packetInterval = 1.0f;
+                double ec = v.loaded ? 0 : raCNV.UnloadedPowerDraw();   // If loaded, individual modules will consume power
                 int status = 2;
+                bool powered = (bool) p1.GetType().GetField("powered").GetValue(p1);
+                bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
-                if (node.AntennaTowardsHome() is RealAntenna ra)
+                if (powered && transmitting && node.AntennaTowardsHome() is RealAntenna ra)
                 {
                     CommNet.CommPath path = new CommNet.CommPath();
                     (node.Net as RACommNetwork).FindHome(node, path);
                     status = !raCNV.IsConnectedHome ? 2 : path.Count == 1 ? 0 : 1;
                     rate = (node.Net as RACommNetwork).MaxDataRateToHome(node) / 8e6;    // Convert rate from bps to MBps
-                    ec = ra.PowerDrawLinear * packetInterval * 1e-6;    // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW -> kW conversion
+                    ec += ra.PowerDrawLinear * packetInterval * 1e-6;    // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW -> kW conversion
                     if (node[path.First.end] is RACommLink link)
                     {
                         strength = link.start.Equals(node) ? link.FwdCI : link.RevCI;
