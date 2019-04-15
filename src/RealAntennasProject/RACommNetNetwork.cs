@@ -29,7 +29,6 @@ namespace RealAntennas
             GameEvents.OnGameSettingsApplied.Add(new EventVoid.OnEvent(this.ResetNetwork));
             //CommNetNetwork.Reset();       // Don't call this way, it will invoke the parent class' ResetNetwork()
             ResetNetwork();
-            //            base.Awake();
         }
 
         protected new void ResetNetwork()

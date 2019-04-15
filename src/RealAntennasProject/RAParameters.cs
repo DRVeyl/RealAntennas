@@ -9,9 +9,6 @@
         public override int SectionOrder => 1;
         public override bool HasPresets => true;
 
-        [GameParameters.CustomParameterUI("Calculate Antenna Temperature", toolTip = "WIP: Calculate antenna temperature based on pointing, or default to general body.")]
-        public bool calcAntennaTemp = true;
-
         [GameParameters.CustomParameterUI("All Antennas Relay", toolTip = "Turning this off does nothing.")]
         public bool allAntennasRelay = true;
 

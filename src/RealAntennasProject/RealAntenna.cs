@@ -22,7 +22,7 @@ namespace RealAntennas
         public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
         public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
         public virtual double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
-        public virtual double GainAtAngle(float angle) => Gain + PointingLoss(angle);
+        public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(angle, Beamwidth);
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
@@ -30,12 +30,6 @@ namespace RealAntennas
         // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
         public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevel); 
         public virtual double RequiredCI => Encoder.RequiredEbN0;
-        public virtual double MaxPointingLoss => 200;
-        public AnimationCurve gainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
-        {
-            postWrapMode = WrapMode.ClampForever,
-            preWrapMode = WrapMode.ClampForever
-        };
 
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
@@ -68,17 +62,6 @@ namespace RealAntennas
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public virtual double PowerDrawLinear => RATools.LinearScale(TxPower) / PowerEfficiency;
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
-        public virtual double PointingLoss(RealAntenna peer)
-        {
-            double loss = 0;
-            if (CanTarget && ToTarget != Vector3.zero)
-            {
-                float fError = Vector3.Angle(peer.Position - this.Position, ToTarget);
-                loss = PointingLoss(fError);
-            }
-            return loss;
-        }
-        public virtual double PointingLoss(float angle) => (angle > Beamwidth) ? MaxPointingLoss : -1 * gainCurve.Evaluate(angle / Convert.ToSingle(Beamwidth));
 
         protected static readonly string ModTag = "[RealAntenna] ";
         public override string ToString() => $"[+RA] {Name} [{Gain}dB]{(CanTarget ? $" ->{Target}" : null)}";

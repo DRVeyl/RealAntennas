@@ -55,12 +55,6 @@ namespace RealAntennas
         void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
         public void OnGUI() => GUI.OnGUI();
 
-        public override void OnActive()
-        {
-            Debug.LogFormat("{0} OnActive()", this);
-            base.OnActive();
-        }
-
         public override void OnFixedUpdate()
         {
             guiExtraInfo = RAAntenna.ToString();
@@ -89,7 +83,7 @@ namespace RealAntennas
             GUI.ParentPart = part;
             GUI.ParentPartModule = this;
             GUI.Start();
-            Debug.LogFormat("Forcing part {0} active.", part);
+            Debug.LogFormat(ModTag + "Forcing part {0} active.", part);
             part.force_activate();
         }
 

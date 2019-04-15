@@ -7,16 +7,26 @@ namespace RealAntennas
     {
         public static readonly double boltzmann_dBW = 10 * Math.Log10(1.38064852e-23);      //-228.59917;
         public static readonly double boltzmann_dBm = boltzmann_dBW + 30;
+        public static readonly double MaxPointingLoss = 200;
         private static readonly double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
+        public static AnimationCurve AntennaGainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
+        {
+            postWrapMode = WrapMode.ClampForever,
+            preWrapMode = WrapMode.ClampForever
+        };
 
         public static double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;
 
         public static double ReceivedPower(RealAntenna tx, RealAntenna rx, double distance, double frequency = 1e9)
-            => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx, rx) + rx.Gain;
+            => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx, rx.Position) - PointingLoss(rx, tx.Position) + rx.Gain;
 
-        public static double PointingLoss(RealAntenna tx, RealAntenna rx) => tx.PointingLoss(rx) + rx.PointingLoss(tx);
+        public static double PointingLoss(double angle, double beamwidth) 
+            => (angle > beamwidth) ? MaxPointingLoss : -1 * AntennaGainCurve.Evaluate(Convert.ToSingle(angle / beamwidth));
+        public static double PointingLoss(RealAntenna ant, Vector3 origin) 
+            => (ant.CanTarget && ant.ToTarget != Vector3.zero) ? PointingLoss(Vector3.Angle(origin - ant.Position, ant.ToTarget), ant.Beamwidth) : 0;
+
         public static double c = 2.998e8;
         public static double SunTemp(double frequency) => 5672 * Math.Pow(frequency / c, .24517);   // QUIET Sun Temp, active can be 2-3x higher
         public static double AtmosphereMeanEffectiveTemp(double CD) => 255 + (25 * CD); // 0 <= CD <= 1
