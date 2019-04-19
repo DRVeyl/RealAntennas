@@ -12,9 +12,9 @@ namespace RealAntennas
 
         public void SetTransformFromConfig(ConfigNode node, CelestialBody body)
         {
-            double lat = double.Parse(node.GetValue("Latitude"));
-            double lon = double.Parse(node.GetValue("Longitude"));
-            double alt = double.Parse(node.GetValue("Height"));
+            double lat = double.Parse(node.GetValue("lat"));
+            double lon = double.Parse(node.GetValue("lon"));
+            double alt = double.Parse(node.GetValue("alt"));
             Vector3d vec = body.GetWorldSurfacePosition(lat, lon, alt);
             transform.SetPositionAndRotation(vec, Quaternion.identity);
             transform.SetParent(body.transform);

@@ -55,15 +55,30 @@ namespace RealAntennas
 
         private void BuildHomes()
         {
-            ConfigNode RACommNetParams = null;
-            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
-                RACommNetParams = n;
+            ConfigNode KopernicusNode = null;
+            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("Kopernicus"))
+                KopernicusNode = n;
 
-            foreach (CelestialBody body in FindObjectsOfType<CelestialBody>())
+            if (KopernicusNode != null)
             {
-                if ((RACommNetParams != null) && RACommNetParams.GetNode("CELESTIALBODY", "name", body.name) is ConfigNode bodyNode)
+                foreach (ConfigNode bodyNode in KopernicusNode.GetNodes("Body"))
                 {
-                    BuildHome(bodyNode, body);
+                    string t = bodyNode.GetValue("name");
+                    string name = t.Equals("Kerbin") ? FlightGlobals.GetHomeBodyName() : t;
+
+                    if (FlightGlobals.GetBodyByName(name) is CelestialBody body &&
+                        bodyNode.GetNode("PQS") is ConfigNode pqsNode &&
+                        pqsNode.GetNode("Mods") is ConfigNode pqsModNode)
+                    {
+                        foreach (ConfigNode cityNode in pqsModNode.GetNodes("City2"))
+                        {
+                            bool result = false;
+                            if (cityNode.TryGetValue("RACommNetStation", ref result) && result)
+                            {
+                                BuildHome(cityNode, body);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -78,19 +93,10 @@ namespace RealAntennas
         }
         private void BuildHome(ConfigNode node, CelestialBody body)
         {
-            ConfigNode gsTopNode = null;
-            foreach (ConfigNode n in node.GetNodes("GroundStations"))
-                gsTopNode = n;
-            if (gsTopNode != null)
-            {
-                foreach (ConfigNode gsNode in gsTopNode.GetNodes("STATION"))
-                {
-                    GameObject newHome = new GameObject(body.name);
-                    RACommNetHome home = newHome.AddComponent<RACommNetHome>();
-                    home.Configure(gsNode, body);
-                    Debug.LogFormat(ModTag + "Built: {0}", home);
-                }
-            }
+            GameObject newHome = new GameObject(body.name);
+            RACommNetHome home = newHome.AddComponent<RACommNetHome>();
+            home.Configure(node, body);
+            Debug.LogFormat(ModTag + "Built: {0}", home);
         }
         private void LoadTempCurves(ConfigNode bodyNode)
         {
