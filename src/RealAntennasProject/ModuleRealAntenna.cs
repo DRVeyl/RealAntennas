@@ -13,14 +13,16 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power", guiUnits = " dBm", guiFormat = "F1")]
         public double TxPower;       // Transmit Power in dBm (milliwatts)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0")]
-        public int TechLevel = 0;
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0"),
+        UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" })]
+        public int TechLevel = 1;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Frequency", guiUnits = " Hz", guiFormat = "N0")]
-        public double Frequency;     // Frequency in Hz
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
+         UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "VHF-Band", "UHF-Band", "S-Band", "X-Band", "K-Band", "Ka-Band" })]
+        public string RFBand = "S";
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Symbol Rate", guiUnits = " S/s", guiFormat = "F0"),
-        UI_FloatEdit(scene = UI_Scene.Editor, minValue = 1000f, incrementLarge = 10000f, incrementSmall = 1000f, incrementSlide = 10f, sigFigs = 6, unit = " S/s", suppressEditorShipModified = true)]
+        UI_FloatEdit(scene = UI_Scene.Editor, sigFigs = 0, unit = " S/s", suppressEditorShipModified = true)]
         public float SymbolRate;    // Symbol Rate in Samples/second
 
         [KSPField(isPersistant = true)]
@@ -46,7 +48,7 @@ namespace RealAntennas
         public string AntennaTargetString { get => _antennaTargetString; set => _antennaTargetString = value; }
 
         [KSPField(isPersistant = true)]
-        private string targetID = string.Empty;
+        private string targetID = "None";
         public string TargetID { get => targetID; set => targetID = value; }
 
         public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
@@ -54,6 +56,48 @@ namespace RealAntennas
         [KSPEvent(active = true, guiActive = true, guiActiveUnfocused = false, guiActiveEditor = false, externalToEVAOnly = false, guiName = "Antenna Targeting")]
         void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
         public void OnGUI() => GUI.OnGUI();
+
+        private List<string> availableBands = new List<string>() { "S" };
+
+        public override void OnAwake()
+        {
+            base.OnAwake();
+            UI_ChooseOption op = (UI_ChooseOption)(Fields["TechLevel"].uiControlEditor);
+            op.onFieldChanged = new Callback<BaseField, object>(OnTechLevelChange);
+        }
+
+        private void ConfigOptions(int level)
+        {
+            availableBands.Clear();
+            foreach (Antenna.BandInfo bi in Antenna.BandInfo.GetFromTechLevel(level))
+            {
+                availableBands.Add(bi.Name);
+            }
+
+            UI_ChooseOption op = (UI_ChooseOption)Fields["RFBand"].uiControlEditor;
+            op.options = availableBands.ToArray();
+
+            UI_FloatEdit fe = (UI_FloatEdit)Fields["SymbolRate"].uiControlEditor;
+            float maxrate = Antenna.BandInfo.All[RFBand].MaxSymbolRate(TechLevel);
+            fe.minValue = maxrate / 1000;
+            fe.maxValue = maxrate;
+            fe.incrementLarge = maxrate / 10;
+            fe.incrementSmall = maxrate / 100;
+            fe.incrementSlide = maxrate / 1000;
+    }
+
+    private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
+        {
+            ConfigOptions(TechLevel);
+            UI_ChooseOption op = (UI_ChooseOption)(Fields["RFBand"].uiControlEditor);
+            if (op.options.IndexOf(RFBand) < 0)
+            {
+                RFBand = op.options[op.options.Length - 1];
+                Debug.LogFormat("Tried to force RFBand to {0}", RFBand);
+            }
+            SymbolRate = Math.Min(SymbolRate, Antenna.BandInfo.All[RFBand].MaxSymbolRate(TechLevel));
+            SymbolRate = Math.Max(SymbolRate, Antenna.BandInfo.All[RFBand].MaxSymbolRate(TechLevel) / 1000);
+        }
 
         public override void OnFixedUpdate()
         {
@@ -73,7 +117,7 @@ namespace RealAntennas
             { if (Events["StartTransmission"] is BaseEvent be) be.active = false; }
             { if (Events["StopTransmission"] is BaseEvent be) be.active = false; }
             if (Actions["StartTransmissionAction"] is BaseAction ba) ba.active = false;
-            if (Fields["powerText"] is BaseField bf) bf.guiActive = false;      // "Antenna Rating"
+            if (Fields["powerText"] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
             if (!RAAntenna.CanTarget)
             {
                 Fields["_antennaTargetString"].guiActive = false;
@@ -83,8 +127,9 @@ namespace RealAntennas
             GUI.ParentPart = part;
             GUI.ParentPartModule = this;
             GUI.Start();
-            Debug.LogFormat(ModTag + "Forcing part {0} active.", part);
-            part.force_activate();
+            //            Debug.LogFormat(ModTag + "Forcing part {0} active.", part);
+            //            part.force_activate();
+            ConfigOptions(TechLevel);
         }
 
         public override void OnLoad(ConfigNode node)

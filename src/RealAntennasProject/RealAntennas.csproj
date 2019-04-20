@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Antenna\AntennaGUI.cs" />
+    <Compile Include="Antenna\BandInfo.cs" />
     <Compile Include="Antenna\Encoder.cs" />
     <Compile Include="Enumeration.cs" />
     <Compile Include="Kerbalism\Kerbalism.cs" />

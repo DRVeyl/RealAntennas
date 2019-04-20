@@ -13,7 +13,10 @@ namespace RealAntennas
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public virtual int TechLevel { get; set; }
-        public virtual double Frequency { get; set; }
+        public Antenna.BandInfo RFBand;
+        public virtual double SymbolRate { get; set; }
+        public virtual double MinSymbolRate => SymbolRate / 1000;
+        public virtual double Frequency => RFBand.Frequency;
         public virtual double PowerEfficiency => Math.Min(1, 0.5 + (TechLevel * 0.05));
         public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
         public virtual double DataRate { get; }
@@ -52,7 +55,7 @@ namespace RealAntennas
             get => _target;
             set
             {
-                if (!CanTarget) _internalSet(null, string.Empty, string.Empty);
+                if (!CanTarget) _internalSet(null, "None", "None");
                 else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
                 else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
                 else Debug.LogWarningFormat("Tried to set antenna target to {0} and failed", value);
@@ -64,7 +67,7 @@ namespace RealAntennas
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
 
         protected static readonly string ModTag = "[RealAntenna] ";
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB]{(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB] [{RFBand}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)
@@ -73,16 +76,20 @@ namespace RealAntennas
             DataRate = dataRate;
         }
 
+        public virtual bool Compatible(RealAntenna other) => RFBand == other.RFBand;
+
         public int CompareTo(object obj)
         {
             if (obj is RealAntenna ra) return DataRate.CompareTo(ra.DataRate);
             else throw new System.ArgumentException();
         }
+
         public virtual double BestDataRateToPeer(RealAntenna rx)
         {
             RealAntenna tx = this;
             Vector3 toSource = rx.Position - tx.Position;
             double distance = toSource.magnitude;
+            if (!Compatible(rx)) return 0;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;
@@ -103,7 +110,8 @@ namespace RealAntennas
             Gain = double.Parse(config.GetValue("Gain"));
             TxPower = double.Parse(config.GetValue("TxPower"));
             TechLevel = int.Parse(config.GetValue("TechLevel"));
-            Frequency = double.Parse(config.GetValue("Frequency"));
+            SymbolRate = double.Parse(config.GetValue("SymbolRate"));
+            RFBand = Antenna.BandInfo.All[config.GetValue("RFBand")];
             if (config.HasValue("targetID"))
             {
                 TargetID = config.GetValue("targetID");
@@ -119,6 +127,7 @@ namespace RealAntennas
             if (FlightGlobals.fetch && CanTarget)
             {
                 if (string.IsNullOrEmpty(id)) return FlightGlobals.GetHomeBody();
+                if (string.Equals("None", id)) return FlightGlobals.GetHomeBody();
                 if (FlightGlobals.GetBodyByName(id) is CelestialBody body) return body;
                 try
                 {

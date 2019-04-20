@@ -5,9 +5,10 @@ namespace RealAntennas
 {
     public class RealAntennaDigital : RealAntenna
     {
-        public override double Frequency => modulator.Frequency;
         public override double DataRate => modulator.DataRate * Encoder.CodingRate;
         public override double NoiseFigure => modulator.NoiseFigure;
+        public override double SymbolRate => modulator.SymbolRate;
+        public override double MinSymbolRate => modulator.MinSymbolRate;
         public RAModulator modulator;
 
         protected static new readonly string ModTag = "[RealAntennaDigital] ";
@@ -19,7 +20,7 @@ namespace RealAntennas
             modulator = new RAModulator();
         }
 
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain}dB {RFBand} {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
 
         public override double BestDataRateToPeer(RealAntenna rx)
         {
@@ -37,13 +38,14 @@ namespace RealAntennas
             mod = null;
             RealAntennaDigital tx = this;
             encoder = Antenna.Encoder.BestMatching(tx.Encoder, rx.Encoder);
-            Vector3 toSource = rx.Position - tx.Position;
-            double distance = toSource.magnitude;
             if (!(rx is RealAntennaDigital)) return false;
-
-            RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
+            if (!Compatible(rx)) return false;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return false;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return false;
+
+            Vector3 toSource = rx.Position - tx.Position;
+            double distance = toSource.magnitude;
+            RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
             if (!txMod.Compatible(rxMod)) return false;
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
