@@ -33,7 +33,7 @@ namespace RealAntennas.Kerbalism
                     ec += ra.PowerDrawLinear * packetInterval * 1e-6;    // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW -> kW conversion
                     if (node[path.First.end] is RACommLink link)
                     {
-                        strength = link.start.Equals(node) ? link.FwdCI : link.RevCI;
+                        strength = link.start.Equals(node) ? link.FwdMetric : link.RevMetric;
                     }
                     foreach (CommNet.CommLink clink in path)
                     {

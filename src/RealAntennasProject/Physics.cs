@@ -99,7 +99,7 @@ namespace RealAntennas
             double cosmic = CosmicBackgroundTemp(rx, origin);
             double allbody = AllBodyTemps(rx, origin);
             double total = amt + atmos + cosmic + allbody;
-            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
+//            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
             return total;
 
             //

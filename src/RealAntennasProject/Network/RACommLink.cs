@@ -13,15 +13,22 @@ namespace RealAntennas
         public RealAntenna RevAntennaRx { get; set; }
         public double FwdCost { get => CostFunc(FwdDataRate); }
         public double RevCost { get => CostFunc(RevDataRate); }
-        public double FwdCI { get; set; }
-        public double RevCI { get; set; }
+        public double FwdMetric { get; set; }
+        public double RevMetric { get; set; }
 
         public override string ToString()
         {
-            return $"{start.name} ({FwdCI:F1} dB) -to- {end.name} ({RevCI:F1} dB) : {cost:F3} ({signal})";
+            return $"{start.name} -to- {end.name} : {FwdMetric:F2}/{RevMetric:F2} : {PrettyPrintRate(FwdDataRate)}/{PrettyPrintRate(RevDataRate)} / {cost:F3} ({signal})";
         }
 
         public virtual double CostFunc(double datarate) => CostScaler / Math.Pow(datarate, 2);
+        private string PrettyPrintRate(double rate)
+        {
+            if (rate > 1e9) return $"{rate / 1e9:F2} Gbps";
+            else if (rate > 1e6) return $"{rate / 1e6:F2} Mbps";
+            else if (rate > 1e3) return $"{rate / 1e3:F1} Kbps";
+            else return $"{rate:F0} bps";
+        }
 
         public override void Set(CommNet.CommNode a, CommNet.CommNode b, double datarate, double signalStrength)
         {

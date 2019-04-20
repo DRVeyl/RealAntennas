@@ -78,6 +78,10 @@ namespace RealAntennas
             }
 
             RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
+            link.aCanRelay = true;
+            link.bCanRelay = true;      // All antennas can relay.
+            link.bothRelay = link.aCanRelay && link.bCanRelay;
+
             link.FwdAntennaTx = bestFwdAntPair[0];
             link.FwdAntennaRx = bestFwdAntPair[1];
             link.RevAntennaTx = bestRevAntPair[0];
@@ -86,22 +90,29 @@ namespace RealAntennas
             link.RevDataRate = RevDataRate;
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
 
-            double FwdRSSI = Physics.ReceivedPower(link.FwdAntennaTx, link.FwdAntennaRx, distance, link.FwdAntennaTx.Frequency);
-            //link.FwdCI = FwdRSSI - link.FwdAntennaRx.NoiseFloor(link.FwdAntennaTx.Position);
-            // HACK FwdCI as an awkward measurement of signal quality.
-            link.FwdCI = FwdDataRate / bestFwdAntPair[0].DataRate;
+            Antenna.Encoder FwdEncoder = Antenna.Encoder.BestMatching(bestFwdAntPair[0].Encoder, bestFwdAntPair[1].Encoder);
+            Antenna.Encoder RevEncoder = Antenna.Encoder.BestMatching(bestRevAntPair[0].Encoder, bestRevAntPair[1].Encoder);
+            double FwdBestSymRate = Math.Min(bestFwdAntPair[0].SymbolRate, bestFwdAntPair[1].SymbolRate);
+            double RevBestSymRate = Math.Min(bestRevAntPair[0].SymbolRate, bestRevAntPair[1].SymbolRate);
+            double FwdMinSymRate = Math.Max(bestFwdAntPair[0].MinSymbolRate, bestFwdAntPair[1].MinSymbolRate);
+            double RevMinSymRate = Math.Max(bestRevAntPair[0].MinSymbolRate, bestRevAntPair[1].MinSymbolRate);
+            double FwdBestDataRate = FwdBestSymRate * FwdEncoder.CodingRate;
+            double RevBestDataRate = RevBestSymRate * RevEncoder.CodingRate;
+            double FwdMinDataRate = FwdMinSymRate * FwdEncoder.CodingRate;
+            double RevMinDataRate = RevMinSymRate * RevEncoder.CodingRate;
+            double FwdSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestSymRate / FwdMinSymRate), 2));
+            double RevSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestSymRate / RevMinSymRate), 2));
 
-            double RevRSSI = Physics.ReceivedPower(link.RevAntennaTx, link.RevAntennaRx, distance, link.RevAntennaTx.Frequency);
-            //link.RevCI = RevRSSI - link.RevAntennaRx.NoiseFloor(link.RevAntennaTx.Position);
-            link.RevCI = RevDataRate / bestRevAntPair[0].DataRate;
+            float FwdRatio = Convert.ToSingle(FwdBestDataRate / FwdDataRate);
+            float RevRatio = Convert.ToSingle(RevBestDataRate / RevDataRate);
+            double Fwdlog2 = Math.Floor(Mathf.Log(FwdRatio, 2));
+            double Revlog2 = Math.Floor(Mathf.Log(RevRatio, 2));
+            link.FwdMetric = 1 - (Fwdlog2 / (FwdSymSteps+1));
+            link.RevMetric = 1 - (Revlog2 / (RevSymSteps+1));
+//            Debug.LogFormat("Think we have taken {0} of {1} steps on FWD", Fwdlog2, FwdSymSteps);
+//            Debug.LogFormat("Think we have taken {0} of {1} steps on REV", Revlog2, RevSymSteps);
 
-            // TryConnect() is responsible for setting link parameters like below.
-            link.aCanRelay = true;
-            link.bCanRelay = true;      // All antennas can relay.
-            link.bothRelay = link.aCanRelay && link.bCanRelay;
-            // WIP: Set link strength to the achieved percentage of the maximum possible data rate for some link.
-            double scaledCI = Math.Max(FwdDataRate / bestFwdAntPair[0].DataRate, RevDataRate / bestRevAntPair[0].DataRate);
-            link.Update(scaledCI);
+            link.Update(Math.Min(link.FwdMetric, link.RevMetric));
             return true;
         }
 
