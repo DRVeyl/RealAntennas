@@ -15,6 +15,14 @@ namespace RealAntennas
         public static double RadToDeg(double x) => x * 180 / Math.PI;
         public static double DegToRad(double x) => x * Math.PI / 180;
 
+        public static string PrettyPrintDataRate(double rate)
+        {
+            if (rate > 1e9) return $"{rate / 1e9:F2} Gbps";
+            else if (rate > 1e6) return $"{rate / 1e6:F2} Mbps";
+            else if (rate > 1e3) return $"{rate / 1e3:F1} Kbps";
+            else return $"{rate:F0} bps";
+        }
+
         ///<summary> Sets the value of a field via reflection </summary>
         public static void ReflectionValue<T>(object instance, string value_name, T value)
         {
