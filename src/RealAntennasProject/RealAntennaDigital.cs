@@ -28,7 +28,6 @@ namespace RealAntennas
             if (BestPeerModulator(rx, out RAModulator mod, out Antenna.Encoder encoder))
             {
                 dataRate = mod.DataRate * encoder.CodingRate;
-                Debug.LogFormat(ModTag + "Proposed [{0}] w/Encoder {1} gives bitrate {2:F1}", mod, encoder, dataRate);
             }
             return dataRate;
         }
@@ -59,8 +58,8 @@ namespace RealAntennas
             double minEb = encoder.RequiredEbN0 + N0;           // in dBm
             double maxBitRateLog = RxPower - minEb;                // in dB*Hz
             double maxBitRate = RATools.LinearScale(maxBitRateLog);
-            Debug.LogFormat(ModTag + "{0} to {1} RxP {2:F2} temp {6:F2} learned maxRate {3:F2} vs symbol rates {4:F4}-{5:F2}",
-                tx, rx, RxPower, maxBitRate, minSymbolRate, maxSymbolRate, temp);
+            string debugStr = string.Format(ModTag + "{0} to {1} RxP {2:F2} temp {6:F2} learned maxRate {3} vs symbol rates {4}-{5}",
+                tx, rx, RxPower, RATools.PrettyPrint(maxBitRate)+"bps", RATools.PrettyPrint(minSymbolRate)+"Sps", RATools.PrettyPrint(maxSymbolRate)+"Sps", temp);
             // We cannot slow our modulation enough to achieve the required Eb/N0, so fail.
             if (maxBitRate < minSymbolRate) return false;
             double targetRate = 0;
@@ -75,8 +74,7 @@ namespace RealAntennas
                 double log2 = Math.Floor(Mathf.Log(ratio, 2));
                 targetRate = maxSymbolRate * Math.Pow(2, log2);
                 negotiatedBits = 1;
-                Debug.LogFormat(ModTag + "Selected rate {0:F4} for max bitrate {1:F4} (MaxSymbolRate {2:F1} * log2 {3})",
-                    targetRate, maxBitRate, maxSymbolRate, log2);
+                debugStr += $" Selected rate {RATools.PrettyPrint(targetRate)}bps (MaxSymbolRate * log2 {log2})";
             } else
             {
                 // We need to go to SNR here and rely a bit more on Shannon-Hartley
@@ -85,7 +83,7 @@ namespace RealAntennas
                 double margin = CI - encoder.RequiredEbN0;
                 targetRate = maxSymbolRate;
                 negotiatedBits = Math.Min(maxBits, Convert.ToInt32(1 + Math.Floor(margin / 3)));
-                Debug.LogFormat(ModTag + "Noise {0:F2} CI {1:F2} margin {2:F1}", Noise, CI, margin);
+                debugStr += $" Noise {Noise:F2} CI {CI:F2} margin {margin:F1}";
             }
             // Link can close.  Load & config modulator with agreed SymbolRate and ModulationBits range.
             mod = new RAModulator(txMod)
@@ -94,6 +92,8 @@ namespace RealAntennas
                 ModulationBits = negotiatedBits,
                 MinModulationBits = negotiatedBits
             };
+            Debug.LogFormat(debugStr);
+            Debug.LogFormat(ModTag + "Proposed [{0}] w/Encoder {1} gives bitrate {2:F1}bps", mod, encoder, RATools.PrettyPrint(mod.DataRate * encoder.CodingRate));
             return true;
 
             // Energy/bit (Eb) = Received Power / datarate

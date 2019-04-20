@@ -70,7 +70,7 @@ namespace RealAntennas
 
             double FwdDataRate = BestDataRate(fwd_pairing, out RealAntenna[] bestFwdAntPair);
             double RevDataRate = BestDataRate(rev_pairing, out RealAntenna[] bestRevAntPair);
-            Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2:F2}/{3:F2}", rac_a, rac_b, FwdDataRate, RevDataRate);
+            Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2}/{3}", rac_a, rac_b, RATools.PrettyPrint(FwdDataRate)+"bps", RATools.PrettyPrint(RevDataRate)+"bps");
             if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
             {
                 Disconnect(a, b);
