@@ -121,7 +121,30 @@ namespace RealAntennas
                 }
             }
         }
-        
+
+        public virtual void ProcessUpgrades(float tsLevel, ConfigNode node)
+        {
+            foreach (ConfigNode upgradeNode in node.GetNodes("UPGRADE"))
+            {
+                int upgradeLevel = Int32.Parse(upgradeNode.GetValue("TechLevel"));
+                if (upgradeLevel <= tsLevel)
+                {
+                    UpgradeFromConfigNode(upgradeNode);
+                }
+            }
+        }
+
+        public virtual void UpgradeFromConfigNode(ConfigNode config)
+        {
+            Debug.LogFormat("Applying upgrade for {0}", config);
+            double d=0;
+            string s = string.Empty;
+            if (config.TryGetValue("Gain", ref d)) Gain = d;
+            if (config.TryGetValue("TxPower", ref d)) TxPower = d;
+            if (config.TryGetValue("SymbolRate", ref d)) SymbolRate = d;
+            if (config.TryGetValue("RFBand", ref s)) RFBand = Antenna.BandInfo.All[s];
+        }
+
         private ITargetable _findTargetFromID(string id)
         {
             if (FlightGlobals.fetch && CanTarget)

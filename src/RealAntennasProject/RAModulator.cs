@@ -6,7 +6,6 @@ namespace RealAntennas
     {
         public double SymbolRate { get; set; }      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
-        public int MinModulationBits { get; set; }  // Min modulation supported
         public double NoiseFigure { get => 2 + ((10 - TechLevel) * 0.8); }  // Noise figure of receiver electronics in dB
         public int TechLevel { get; set; }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
@@ -26,14 +25,11 @@ namespace RealAntennas
 
         public virtual bool Compatible(RAModulator other)
         {
-            // Test frequency range and minimum modulation order
-            if (MinModulationBits > other.ModulationBits) return false;
-            if (other.MinModulationBits > ModulationBits) return false;
             if (MinSymbolRate > other.SymbolRate) return false;
             if (other.MinSymbolRate > SymbolRate) return false;
             return true;
         }
-        public virtual bool SupportModulation(int bits) => bits >= MinModulationBits && bits <= ModulationBits;
+        public virtual bool SupportModulation(int bits) => bits <= ModulationBits;
         public virtual bool SupportModulationRate(double rate) => rate >= MinSymbolRate && rate <= SymbolRate;
 
         public override string ToString() => $"{BitsToString(ModulationBits)} {RATools.PrettyPrintDataRate(DataRate)}";
@@ -49,20 +45,18 @@ namespace RealAntennas
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }
-        public RAModulator() : this(1, 0, 0, 0) { }
-        public RAModulator(RAModulator orig) : this(orig.SymbolRate, orig.ModulationBits, orig.MinModulationBits, orig.TechLevel) { }
-        public RAModulator(double symbolRate, int modulationBits, int minModulationBits, int techLevel)
+        public RAModulator() : this(1, 0, 0) { }
+        public RAModulator(RAModulator orig) : this(orig.SymbolRate, orig.ModulationBits, orig.TechLevel) { }
+        public RAModulator(double symbolRate, int modulationBits, int techLevel)
         {
             SymbolRate = symbolRate;
             ModulationBits = modulationBits;
-            MinModulationBits = minModulationBits;
             TechLevel = techLevel;
         }
         public void Copy(RAModulator orig)
         {
             SymbolRate = orig.SymbolRate;
             ModulationBits = orig.ModulationBits;
-            MinModulationBits = orig.MinModulationBits;
             TechLevel = orig.TechLevel;
         }
 
@@ -70,7 +64,6 @@ namespace RealAntennas
         {
             SymbolRate = double.Parse(config.GetValue("SymbolRate"));
             ModulationBits = int.Parse(config.GetValue("ModulationBits"));
-            MinModulationBits = int.Parse(config.GetValue("MinModulationBits"));
             TechLevel = int.Parse(config.GetValue("TechLevel"));
         }
     }

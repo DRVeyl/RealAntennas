@@ -48,7 +48,6 @@ namespace RealAntennas
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
             if (!txMod.Compatible(rxMod)) return false;
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
-            int minBits = Math.Max(txMod.MinModulationBits, rxMod.MinModulationBits);
             double maxSymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate);
             double minSymbolRate = Math.Max(txMod.MinSymbolRate, rxMod.MinSymbolRate);
 
@@ -90,7 +89,6 @@ namespace RealAntennas
             {
                 SymbolRate = targetRate,
                 ModulationBits = negotiatedBits,
-                MinModulationBits = negotiatedBits
             };
             Debug.LogFormat(debugStr);
             Debug.LogFormat(ModTag + "Proposed [{0}] w/Encoder {1} gives bitrate {2:F1}bps", mod, encoder, RATools.PrettyPrint(mod.DataRate * encoder.CodingRate));

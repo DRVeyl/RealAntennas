@@ -24,13 +24,13 @@ namespace RealAntennas.Kerbalism
                 bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
-                if (powered && transmitting && node.AntennaTowardsHome() is RealAntenna ra)
+                if (powered && node.AntennaTowardsHome() is RealAntenna ra)
                 {
                     CommNet.CommPath path = new CommNet.CommPath();
                     (node.Net as RACommNetwork).FindHome(node, path);
                     status = !raCNV.IsConnectedHome ? 2 : path.Count == 1 ? 0 : 1;
                     rate = (node.Net as RACommNetwork).MaxDataRateToHome(node) / 8e6;    // Convert rate from bps to MBps
-                    ec += ra.PowerDrawLinear * packetInterval * 1e-6;    // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW -> kW conversion
+                    if (transmitting) ec += ra.PowerDrawLinear * packetInterval * 1e-6;    // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW -> kW conversion
                     if (node[path.First.end] is RACommLink link)
                     {
                         strength = link.start.Equals(node) ? link.FwdMetric : link.RevMetric;

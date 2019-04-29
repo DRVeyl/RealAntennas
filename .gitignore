@@ -17,3 +17,4 @@
 *.CopyComplete
 *.cache
 /src/RealAntennasProject/obj/Debug/RealAntennasProject.csproj.FileListAbsolute.txt
+/src/.vs/RealAntennasProject/v16

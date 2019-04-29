@@ -50,9 +50,26 @@ namespace RealAntennas
 
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
-            RealAntenna ant = new RealAntennaDigital(name) { ParentNode = comm };
-            ant.LoadFromConfigNode(config);
-            t.RAAntennaList = new List<RealAntenna> { ant };
+            float tsLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
+            // Config node contains a list of antennas to build.
+            Debug.LogFormat("Building all antennas for tech level {0} from {1}", tsLevel, config);
+            t.RAAntennaList = new List<RealAntenna> { };
+            foreach (ConfigNode antNode in config.GetNodes("Antenna")) 
+            {
+                Debug.LogFormat("Building an antenna for {0}", antNode);
+                int targetLevel = Int32.Parse(antNode.GetValue("TechLevel"));
+                if (tsLevel >= targetLevel)
+                {
+                    RealAntenna ant = new RealAntennaDigital(name) { ParentNode = comm };
+                    ant.LoadFromConfigNode(antNode);
+                    ant.ProcessUpgrades(tsLevel, antNode);
+                    t.RAAntennaList.Add(ant);
+                }
+                else
+                {
+                    Debug.LogFormat("Skipped because current techLevel {0} is less than required {1}", tsLevel, targetLevel);
+                }
+            }
         }
     }
 }
