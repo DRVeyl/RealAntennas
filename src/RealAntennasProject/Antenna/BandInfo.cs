@@ -36,9 +36,9 @@ namespace RealAntennas.Antenna
         public static List<BandInfo> GetFromTechLevel(int level)
         {
             List<BandInfo> bi = new List<BandInfo>() { BandInfo.VHF, BandInfo.UHF, BandInfo.S };
-            if (level > 3) bi.Add(BandInfo.X);
-            if (level > 5) bi.Add(BandInfo.K);
-            if (level > 7) bi.Add(BandInfo.Ka);
+            if (level > 6) bi.Add(BandInfo.X);
+            if (level > 9) bi.Add(BandInfo.K);
+            if (level > 9) bi.Add(BandInfo.Ka);
             return bi;
         }
         public static List<BandInfo> ListAll() => new List<BandInfo>() { UHF, VHF, S, X, K, Ka };

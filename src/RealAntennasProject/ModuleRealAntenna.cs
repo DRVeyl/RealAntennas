@@ -29,7 +29,7 @@ namespace RealAntennas
         public int ModulationBits;    // Constellation size (bits, 1=BPSK, 2=QPSK, 3=8-PSK, 4++ = 16-QAM)
 
         [KSPField(isPersistant = true)]
-        public int MinModulationBits;    // Minimum constellation size (bits)
+        public double AMWTemp;    // Antenna Microwave Temperature
 
         public double PowerEfficiency { get => RAAntenna.PowerEfficiency; }
         public double PowerDraw { get => RATools.LogScale(PowerDrawLinear); }

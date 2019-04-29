@@ -6,7 +6,6 @@ namespace RealAntennas
     public class RealAntennaDigital : RealAntenna
     {
         public override double DataRate => modulator.DataRate * Encoder.CodingRate;
-        public override double NoiseFigure => modulator.NoiseFigure;
         public override double SymbolRate => modulator.SymbolRate;
         public override double MinSymbolRate => modulator.MinSymbolRate;
         public RAModulator modulator;

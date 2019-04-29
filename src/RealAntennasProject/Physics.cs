@@ -70,7 +70,7 @@ namespace RealAntennas
             double angle = rx.ParentNode.isHome ? Vector3.Angle(toPeer, toBody) : Vector3.Angle(rx.ToTarget, toBody);
             if (rx.GainAtAngle(Convert.ToSingle(angle)) < 0) return 0;  // Pointed too far away
             double bw = rx.Beamwidth;
-            double t = body.GetTemperature(1);
+            double t = body.GetTemperature(1);      // TODO: Get the BLACKBODY temperature!
             double d = body.Radius * 2;
             double Rsqr = (rx.Position - body.position).sqrMagnitude;
             double G = RATools.LinearScale(rx.Gain);
@@ -94,7 +94,7 @@ namespace RealAntennas
         public static double NoiseSpectralDensity(double noiseTemp) => boltzmann_dBm + (10 * Math.Log10(noiseTemp));
         public static double NoiseTemperature(RealAntenna rx, Vector3d origin)
         {
-            double amt = AntennaMicrowaveTemp(rx, origin);
+            double amt = AntennaMicrowaveTemp(rx);
             double atmos = AtmosphericTemp(rx, origin);
             double cosmic = CosmicBackgroundTemp(rx, origin);
             double allbody = AllBodyTemps(rx, origin);
@@ -128,7 +128,7 @@ namespace RealAntennas
             //
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
         }
-        private static double AntennaMicrowaveTemp(RealAntenna rx, Vector3d origin) => 0;
+        private static double AntennaMicrowaveTemp(RealAntenna rx) => rx.AMWTemp;
         private static double AtmosphericTemp(RealAntenna rx, Vector3d origin)
         {
             if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
@@ -139,7 +139,7 @@ namespace RealAntennas
                 double elevation = Math.Max(0,90.0 - angle);
                 return AtmosphereNoiseTemperature(elevation, rx.Frequency);
             }
-            return 287;
+            return 0;
         }
 
         private static double CosmicBackgroundTemp(RealAntenna rx, Vector3d origin)

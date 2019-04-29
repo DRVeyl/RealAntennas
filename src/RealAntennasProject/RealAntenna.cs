@@ -21,7 +21,7 @@ namespace RealAntennas
         public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
         public virtual double DataRate { get; }
         public virtual double Bandwidth => DataRate;          // RF bandwidth required.
-        public virtual double NoiseFigure => 2 + ((10 - TechLevel) * 0.8);
+        public virtual double AMWTemp { get; set; }
         public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
         public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
         public virtual double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));

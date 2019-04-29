@@ -5,8 +5,7 @@ namespace RealAntennas
     public class RAModulator
     {
         public double SymbolRate { get; set; }      // Samples / sec.
-        public int ModulationBits { get; set; }     // Bits / symbol (0=OOK, 1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
-        public double NoiseFigure { get => 2 + ((10 - TechLevel) * 0.8); }  // Noise figure of receiver electronics in dB
+        public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int TechLevel { get; set; }
         public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
         public int SymbolSteps => 10 + TechLevel;
