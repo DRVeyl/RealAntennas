@@ -17,14 +17,14 @@ namespace RealAntennas
         public virtual double SymbolRate { get; set; }
         public virtual double MinSymbolRate => SymbolRate / 1000;
         public virtual double Frequency => RFBand.Frequency;
-        public virtual double PowerEfficiency => Math.Min(1, 0.5 + (TechLevel * 0.05));
+        public virtual double PowerEfficiency => Math.Min(0.4, 0.1 + (TechLevel * 0.03));
         public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
         public virtual double DataRate { get; }
         public virtual double Bandwidth => DataRate;          // RF bandwidth required.
         public virtual double AMWTemp { get; set; }
         public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
         public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
-        public virtual double Beamwidth => Math.Sqrt(52525 * AntennaEfficiency / RATools.LinearScale(Gain));
+        public virtual double Beamwidth => Math.Sqrt(52525 / RATools.LinearScale(Gain));
         public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(angle, Beamwidth);
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
