@@ -18,6 +18,9 @@
         [GameParameters.CustomFloatParameterUI("Maximum Min Dish Distance", toolTip = "Beyond this distance, a directional antenna can always point at a target.", minValue = 0f, maxValue = 1e7f, stepCount = 1000, displayFormat = "N1")]
         public float MaxMinDirectionalDistance = 1000;
 
+        [GameParameters.CustomIntParameterUI("Maximum Tech Level", displayFormat = "N0", gameMode = GameParameters.GameMode.SANDBOX | GameParameters.GameMode.SANDBOX, maxValue = 20, minValue = 1, stepSize = 1)]
+        public int MaxTechLevel = 10;
+
         public override void SetDifficultyPreset(GameParameters.Preset preset)
         {
             switch (preset)

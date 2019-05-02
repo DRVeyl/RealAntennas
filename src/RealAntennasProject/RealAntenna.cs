@@ -11,8 +11,8 @@ namespace RealAntennas
     {
         public string Name { get; set; }
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
-        public double refGain=0;
-        public double refFreq=0;
+        public double refGain = 0;
+        public double refFreq = 0;
         public double antennaDiameter = 0;
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public virtual int TechLevel { get; set; }
@@ -110,7 +110,6 @@ namespace RealAntennas
 
         public virtual void LoadFromConfigNode(ConfigNode config)
         {
-            Debug.LogFormat(ModTag + "LoadFromConfigNode called for config {0}", config);
             TechLevel = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 1;
             string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
             RFBand = Antenna.BandInfo.All[sRFBand];

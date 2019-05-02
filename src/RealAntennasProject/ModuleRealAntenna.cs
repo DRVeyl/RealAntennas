@@ -180,7 +180,7 @@ namespace RealAntennas
                                 "<b>Gain</b>: {0}\n" +
                                 "<b>Transmit Power</b>: {1:F1} dBm\n" +
                                 "<b>Power Consumption</b>: {2:F2} Watts\n" +
-                                "<b>Data Rate</b>: {3}\n", Gain, TxPower, PowerDrawLinear/1000, RATools.PrettyPrintDataRate(DataRate));
+                                "<b>Data Rate</b>: {3}\n", Gain, TxPower, PowerDrawLinear/1000, RATools.PrettyPrintDataRate(RAAntenna.DataRate));
         }
 
         public override string ToString() => RAAntenna.ToString();

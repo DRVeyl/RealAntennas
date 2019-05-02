@@ -22,7 +22,6 @@ namespace RealAntennas
                 double wavelength = Physics.c / freq;
                 gain = RATools.LogScale(9.87 * efficiency * diameter * diameter / (wavelength * wavelength));
             }
-            Debug.LogFormat("RA PHYSICS: GainFromDishDiamater(diameter={0}, freq={1}) returned {2}", diameter, freq, gain);
             return gain;
         } 
         public static double GainFromReference(double refGain, double refFreq, double newFreq)
@@ -33,7 +32,6 @@ namespace RealAntennas
                 gain = refGain;
                 gain += (refGain < 7) ? 0 : RATools.LogScale(newFreq / refFreq);
             }
-            Debug.LogFormat("RA PHYSICS: GainFromReference(refGain={0}, refFreq={1}, newFreq={2}) returned {3}", refGain, refFreq, newFreq, gain);
             return gain;
         }
         public static double PathLoss(double distance, double frequency = 1e9)

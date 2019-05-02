@@ -50,7 +50,8 @@ namespace RealAntennas
 
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
-            int tsLevel = Convert.ToInt32(ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation));
+
+            int tsLevel = (HighLogic.CurrentGame.Mode == Game.Modes.CAREER) ? Convert.ToInt32(ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) : HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             // Config node contains a list of antennas to build.
             Debug.LogFormat("Building all antennas for tech level {0} from {1}", tsLevel, config);
             t.RAAntennaList = new List<RealAntenna> { };
