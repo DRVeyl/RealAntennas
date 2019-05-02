@@ -7,12 +7,12 @@ namespace RealAntennas
 {
     public class ModuleRealAntenna : ModuleDataTransmitter
     {
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power", guiUnits = " dBm", guiFormat = "F1"),
         UI_FloatRange(maxValue = 60f, minValue = 0f, scene =UI_Scene.Editor, stepIncrement = 1f, suppressEditorShipModified = true)]
-        public float TxPower;       // Transmit Power in dBm (milliwatts)
+        public float TxPower = 40f;       // Transmit Power in dBm (milliwatts)
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0"),
         UI_FloatRange(scene = UI_Scene.Editor, maxValue = 10f, minValue = 1f, stepIncrement = 1f, suppressEditorShipModified = true)]
@@ -22,6 +22,8 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
          UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "VHF-Band", "UHF-Band", "S-Band", "X-Band", "K-Band", "Ka-Band" })]
         public string RFBand = "S";
+
+        public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Symbol Rate", guiUnits = " S/s", guiFormat = "F0")]
         public double SymbolRate;    // Symbol Rate in Samples/second
@@ -40,6 +42,15 @@ namespace RealAntennas
         public static readonly string ModuleName = "ModuleRealAntenna";
         public RealAntenna RAAntenna = new RealAntennaDigital();
         public Antenna.AntennaGUI GUI = new Antenna.AntennaGUI();
+
+        [KSPField(isPersistant = true)]
+        public double antennaDiameter = 0;
+
+        [KSPField(isPersistant = true)]
+        public double refGain = 0;
+
+        [KSPField(isPersistant = true)]
+        public double refFreq = 0;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Extra Info")]
         public string guiExtraInfo = "";
@@ -153,6 +164,7 @@ namespace RealAntennas
         {
             Configure(node);
             base.OnLoad(node);
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(refGain, refFreq, RFBandInfo.Frequency);
         }
 
         public void Configure(ConfigNode node)

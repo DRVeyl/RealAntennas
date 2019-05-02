@@ -7,7 +7,7 @@ namespace RealAntennas
         public double SymbolRate { get; set; }      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int TechLevel { get; set; }
-        public double DataRate { get => SymbolRate * ModulationBits; }              // Data Rate in bits/sec.
+        public double DataRate => SymbolRate * ModulationBits;       // Data Rate in bits/sec.
         public int SymbolSteps => 10 + TechLevel;
         public double MinSymbolRate => SymbolRate / Math.Pow(2, SymbolSteps);
 
@@ -61,9 +61,7 @@ namespace RealAntennas
 
         public void LoadFromConfigNode(ConfigNode config)
         {
-            SymbolRate = double.Parse(config.GetValue("SymbolRate"));
-            ModulationBits = int.Parse(config.GetValue("ModulationBits"));
-            TechLevel = int.Parse(config.GetValue("TechLevel"));
+            ModulationBits = TechLevel;
         }
     }
 }

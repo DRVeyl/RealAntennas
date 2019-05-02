@@ -14,7 +14,28 @@ namespace RealAntennas
             postWrapMode = WrapMode.ClampForever,
             preWrapMode = WrapMode.ClampForever
         };
-
+        public static double GainFromDishDiamater(double diameter, double freq, double efficiency=1)
+        {
+            double gain = 0;
+            if (diameter > 0 && efficiency > 0)
+            {
+                double wavelength = Physics.c / freq;
+                gain = RATools.LogScale(9.87 * efficiency * diameter * diameter / (wavelength * wavelength));
+            }
+            Debug.LogFormat("RA PHYSICS: GainFromDishDiamater(diameter={0}, freq={1}) returned {2}", diameter, freq, gain);
+            return gain;
+        } 
+        public static double GainFromReference(double refGain, double refFreq, double newFreq)
+        {
+            double gain = 0;
+            if (refGain > 0)
+            {
+                gain = refGain;
+                gain += (refGain < 7) ? 0 : RATools.LogScale(newFreq / refFreq);
+            }
+            Debug.LogFormat("RA PHYSICS: GainFromReference(refGain={0}, refFreq={1}, newFreq={2}) returned {3}", refGain, refFreq, newFreq, gain);
+            return gain;
+        }
         public static double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;

@@ -21,7 +21,7 @@ namespace RealAntennas
             return $"{start.name} -to- {end.name} : {FwdMetric:F2}/{RevMetric:F2} : {RATools.PrettyPrintDataRate(FwdDataRate)}/{RATools.PrettyPrintDataRate(RevDataRate)} / {cost:F3} ({signal})";
         }
 
-        public virtual double CostFunc(double datarate) => CostScaler / Math.Pow(datarate, 2);
+        public virtual double CostFunc(double datarate) => 1 + (CostScaler / Math.Pow(datarate, 2));
 
         public override void Set(CommNet.CommNode a, CommNet.CommNode b, double datarate, double signalStrength)
         {

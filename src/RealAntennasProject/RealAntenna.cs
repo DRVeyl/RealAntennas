@@ -11,6 +11,9 @@ namespace RealAntennas
     {
         public string Name { get; set; }
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
+        public double refGain=0;
+        public double refFreq=0;
+        public double antennaDiameter = 0;
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public virtual int TechLevel { get; set; }
         public Antenna.BandInfo RFBand;
@@ -67,7 +70,7 @@ namespace RealAntennas
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
 
         protected static readonly string ModTag = "[RealAntenna] ";
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB] [{RFBand}] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi] [{RFBand}] [TL:{TechLevel:N0}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)
@@ -107,11 +110,17 @@ namespace RealAntennas
 
         public virtual void LoadFromConfigNode(ConfigNode config)
         {
-            Gain = double.Parse(config.GetValue("Gain"));
-            TxPower = double.Parse(config.GetValue("TxPower"));
-            TechLevel = int.Parse(config.GetValue("TechLevel"));
-            SymbolRate = double.Parse(config.GetValue("SymbolRate"));
-            RFBand = Antenna.BandInfo.All[config.GetValue("RFBand")];
+            Debug.LogFormat(ModTag + "LoadFromConfigNode called for config {0}", config);
+            TechLevel = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 1;
+            string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
+            RFBand = Antenna.BandInfo.All[sRFBand];
+            refGain = (config.HasValue("refGain")) ? double.Parse(config.GetValue("refGain")) : 0;
+            refFreq = (config.HasValue("refFreq")) ? double.Parse(config.GetValue("refFreq")) : 0;
+            antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(refGain, refFreq, RFBand.Frequency);
+            TxPower = (config.HasValue("TxPower")) ? double.Parse(config.GetValue("TxPower")) : 30f;
+            SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevel);
+            AMWTemp = (config.HasValue("AMWTemp")) ? double.Parse(config.GetValue("AMWTemp")) : 290f;
             if (config.HasValue("targetID"))
             {
                 TargetID = config.GetValue("targetID");
@@ -142,6 +151,7 @@ namespace RealAntennas
             if (config.TryGetValue("Gain", ref d)) Gain = d;
             if (config.TryGetValue("TxPower", ref d)) TxPower = d;
             if (config.TryGetValue("SymbolRate", ref d)) SymbolRate = d;
+            if (config.TryGetValue("AMWTemp", ref d)) AMWTemp = d;
             if (config.TryGetValue("RFBand", ref s)) RFBand = Antenna.BandInfo.All[s];
         }
 

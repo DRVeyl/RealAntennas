@@ -20,7 +20,7 @@ namespace RealAntennas
             modulator = new RAModulator();
         }
 
-        public override string ToString() => $"[+RA] {Name} [{Gain}dB {RFBand} {modulator}]{(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand} [TL:{TechLevel:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public override double BestDataRateToPeer(RealAntenna rx)
         {
@@ -106,8 +106,10 @@ namespace RealAntennas
 
         public override void LoadFromConfigNode(ConfigNode config)
         {
-            modulator.LoadFromConfigNode(config);
             base.LoadFromConfigNode(config);
+            modulator.TechLevel = TechLevel;
+            modulator.LoadFromConfigNode(config);
+            modulator.ModulationBits = TechLevel;
         }
     }
 }
