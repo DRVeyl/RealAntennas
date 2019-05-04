@@ -44,6 +44,7 @@ namespace RealAntennas
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }
+        public virtual int ModulationBitsFromTechLevel(double level) => Convert.ToInt32(Math.Ceiling(level / 2));
         public RAModulator() : this(1, 0, 0) { }
         public RAModulator(RAModulator orig) : this(orig.SymbolRate, orig.ModulationBits, orig.TechLevel) { }
         public RAModulator(double symbolRate, int modulationBits, int techLevel)
@@ -61,7 +62,11 @@ namespace RealAntennas
 
         public void LoadFromConfigNode(ConfigNode config)
         {
-            ModulationBits = TechLevel;
+            ModulationBits = (config.HasValue("ModulationBits")) ? int.Parse(config.GetValue("ModulationBits")) : ModulationBitsFromTechLevel(TechLevel);
+        }
+        public virtual void UpgradeFromConfigNode(ConfigNode config)
+        {
+            if (config.HasValue("ModulationBits")) ModulationBits = int.Parse(config.GetValue("ModulationBits"));
         }
     }
 }

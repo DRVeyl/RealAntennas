@@ -109,7 +109,11 @@ namespace RealAntennas
             base.LoadFromConfigNode(config);
             modulator.TechLevel = TechLevel;
             modulator.LoadFromConfigNode(config);
-            modulator.ModulationBits = TechLevel;
+        }
+        public override void UpgradeFromConfigNode(ConfigNode config)
+        {
+            base.UpgradeFromConfigNode(config);
+            modulator.UpgradeFromConfigNode(config);
         }
     }
 }

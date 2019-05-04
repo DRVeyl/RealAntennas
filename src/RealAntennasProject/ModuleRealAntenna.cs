@@ -111,6 +111,8 @@ namespace RealAntennas
             sTransmitterPower = $"{RATools.LinearScale(TxPower - 30):F2} Watts";
             sPowerConsumed = $"{PowerDrawLinear / 1000:F2} Watts";
             RAAntenna.TxPower = TxPower;
+            ModulationBits = (RAAntenna as RealAntennaDigital).modulator.ModulationBitsFromTechLevel(TechLevel);
+            (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
         }
         private void OnRFBandChange(BaseField f, object obj) => RecalculateFields();
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
@@ -178,9 +180,7 @@ namespace RealAntennas
         {
             return string.Format(ModTag + "\n" +
                                 "<b>Gain</b>: {0}\n" +
-                                "<b>Transmit Power</b>: {1:F1} dBm\n" +
-                                "<b>Power Consumption</b>: {2:F2} Watts\n" +
-                                "<b>Data Rate</b>: {3}\n", Gain, TxPower, PowerDrawLinear/1000, RATools.PrettyPrintDataRate(RAAntenna.DataRate));
+                                "<b>Data Rate</b>: {1}\n", Gain, RATools.PrettyPrintDataRate(RAAntenna.DataRate));
         }
 
         public override string ToString() => RAAntenna.ToString();
