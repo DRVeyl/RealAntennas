@@ -137,7 +137,7 @@ namespace RealAntennas.Network
             targetLine.SetWidth(width);
             cone3Line.SetWidth(width);
             cone10Line.SetWidth(width);
-            Debug.LogFormat("Drawing lines in {0} with width {1} cone3Color {2}", draw3dLines ? "3D" : "2D", width, cone3Line.GetColor(0));
+            //Debug.LogFormat("Drawing lines in {0} with width {1} cone3Color {2}", draw3dLines ? "3D" : "2D", width, cone3Line.GetColor(0));
             if (this.draw3dLines)
             {
                 // Why do these calls NOT work?  Nothing renders.

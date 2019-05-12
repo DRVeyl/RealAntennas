@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 // I see lots of comments that hate .Linq.  Is it really worse than doing a nested ForEach?
 
@@ -15,6 +16,9 @@ namespace RealAntennas
 
         private readonly float updatePeriod = 10.0f;
         private float lastRun = 0f;
+
+        private RealAntenna[] bestFwdAntPair = new RealAntenna[2];
+        private RealAntenna[] bestRevAntPair = new RealAntenna[2];
 
         public override CommNode Add(CommNode conn)
         {
@@ -56,24 +60,21 @@ namespace RealAntennas
             if ((rac_a == null) || (rac_b == null))
             {
                 Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not RACommNode!", a, b);
+                Profiler.EndSample();
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
             }
             // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
-            var fwd_pairing =
-                from first in rac_a.RAAntennaList
-                from second in rac_b.RAAntennaList
-                select new[] { first, second };
-            var rev_pairing =
-                from first in rac_a.RAAntennaList
-                from second in rac_b.RAAntennaList
-                select new[] { second, first };
+            Profiler.BeginSample("RACommNetwork TryConnect");
+            bestFwdAntPair[0] = null;
+            bestFwdAntPair[1] = null;
+            bestRevAntPair[0] = null;
+            bestRevAntPair[1] = null;
 
-            double FwdDataRate = BestDataRate(fwd_pairing, out RealAntenna[] bestFwdAntPair);
-            double RevDataRate = BestDataRate(rev_pairing, out RealAntenna[] bestRevAntPair);
-            Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2}/{3}", rac_a, rac_b, RATools.PrettyPrint(FwdDataRate)+"bps", RATools.PrettyPrint(RevDataRate)+"bps");
-            if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
+            //if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
+            if (!SelectBestAntennaPairs(rac_a.RAAntennaList, rac_b.RAAntennaList, bestFwdAntPair, bestRevAntPair, out double FwdDataRate, out double RevDataRate))
             {
                 Disconnect(a, b);
+                Profiler.EndSample();
                 return false;
             }
 
@@ -113,24 +114,36 @@ namespace RealAntennas
 //            Debug.LogFormat("Think we have taken {0} of {1} steps on REV", Revlog2, RevSymSteps);
 
             link.Update(Math.Min(link.FwdMetric, link.RevMetric));
+            Profiler.EndSample();
             return true;
         }
-
-        protected virtual double BestDataRate(IEnumerable<RealAntenna[]> pairList, out RealAntenna[] bestPair)
+        protected virtual bool SelectBestAntennaPairs(List<RealAntenna> fwdList, List<RealAntenna> revList, RealAntenna[] bestFwdAntPair, RealAntenna[] bestRevAntPair, out double FwdDataRate, out double RevDataRate)
         {
-            bestPair = new RealAntenna[2];
-            double dataRate = 0;
-            foreach (RealAntenna[] antPair in pairList)
+            Profiler.BeginSample("RACommNetwork SelectBestAntennaPairs");
+            FwdDataRate = RevDataRate = 0;
+            foreach (RealAntenna first in fwdList)
             {
-                double candidateRate = antPair[0].BestDataRateToPeer(antPair[1]);
-                if (dataRate < candidateRate)
+                foreach (RealAntenna second in revList)
                 {
-                    bestPair[0] = antPair[0];
-                    bestPair[1] = antPair[1];
-                    dataRate = candidateRate;
+                    double candidateFwdRate = first.BestDataRateToPeer(second);
+                    double candidateRevRate = second.BestDataRateToPeer(first);
+                    if (FwdDataRate < candidateFwdRate)
+                    {
+                        bestFwdAntPair[0] = first;
+                        bestFwdAntPair[1] = second;
+                        FwdDataRate = candidateFwdRate;
+                    }
+                    if (RevDataRate < candidateRevRate)
+                    {
+                        bestRevAntPair[0] = second;
+                        bestRevAntPair[1] = first;
+                        RevDataRate = candidateRevRate;
+                    }
                 }
             }
-            return dataRate;
+            Profiler.EndSample();
+            //Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2}/{3}", rac_a, rac_b, RATools.PrettyPrint(FwdDataRate)+"bps", RATools.PrettyPrint(RevDataRate)+"bps");
+            return (FwdDataRate >= double.Epsilon && RevDataRate >= double.Epsilon);
         }
 
         protected override CommLink Connect(CommNode a, CommNode b, double distance)
@@ -180,9 +193,11 @@ namespace RealAntennas
 
         public override void Rebuild()
         {
+            Profiler.BeginSample(ModTag + "Rebuild");
             //            Debug.Log(ModTrace + " Rebuild()");
             base.Rebuild();
             //            Debug.Log(ModTrace + " Rebuild() exit");
+            Profiler.EndSample();
         }
 
         protected string CommNodeWalk()

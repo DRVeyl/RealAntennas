@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace RealAntennas
 {
@@ -70,7 +71,7 @@ namespace RealAntennas
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
 
         protected static readonly string ModTag = "[RealAntenna] ";
-        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi] [{RFBand}] [TL:{TechLevel:N0}] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi] [{RFBand.Name}] [TL:{TechLevel:N0}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)

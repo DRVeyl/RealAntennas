@@ -3,4 +3,9 @@
   <PropertyGroup>
     <ReferencePath>C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\KSP_x64_Data\Managed\</ReferencePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartAction>Program</StartAction>
+    <StartProgram>C:\Program Files %28x86%29\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\KSP_x64_Dbg.exe</StartProgram>
+    <StartWorkingDirectory>C:\Program Files %28x86%29\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\</StartWorkingDirectory>
+  </PropertyGroup>
 </Project>

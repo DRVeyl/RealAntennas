@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ENABLE_PROFILER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -76,4 +76,11 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>"C:\Users\Joe\source\Tools\pdb2mdb\pdb2mdb.exe" "$(TargetFileName)"
+xcopy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\GameData\RealAntennas\Plugins\"
+xcopy /Y "$(TargetDir)$(TargetName).pdb" "C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\GameData\RealAntennas\Plugins\"
+xcopy /Y "$(TargetDir)$(TargetName).dll.mdb" "C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.6.1 Dev\GameData\RealAntennas\Plugins\"
+</PostBuildEvent>
+  </PropertyGroup>
 </Project>
