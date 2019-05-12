@@ -26,9 +26,9 @@ namespace RealAntennas
         public virtual double DataRate { get; }
         public virtual double Bandwidth => DataRate;          // RF bandwidth required.
         public virtual double AMWTemp { get; set; }
-        public virtual double NoiseFloor(Vector3 origin) => Physics.NoiseFloor(this, NoiseTemp(origin));
-        public virtual double NoiseTemp(Vector3 origin) => Physics.NoiseTemperature(this, origin);
         public virtual double Beamwidth => Math.Sqrt(52525 / RATools.LinearScale(Gain));
+
+        internal double cachedRemoteBodyNoiseTemp;
         public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(angle, Beamwidth);
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
@@ -41,7 +41,6 @@ namespace RealAntennas
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
         public Vector3 Position => ParentNode.position;
-
         public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
         private readonly double minimumSpotRadius = 1e3;
@@ -102,7 +101,7 @@ namespace RealAntennas
             double temp = Physics.NoiseTemperature(rx, toSource);
             double NoiseSpectralDensity = Physics.NoiseSpectralDensity(temp);
 
-            double Noise = NoiseFloor(toSource);
+            double Noise = Physics.NoiseFloor(this, Physics.NoiseTemperature(this, toSource));
             double CI = RSSI - Noise;
             double margin = CI - RequiredCI;
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace RealAntennas
 {
@@ -9,6 +10,7 @@ namespace RealAntennas
         public static readonly double boltzmann_dBm = boltzmann_dBW + 30;
         public static readonly double MaxPointingLoss = 200;
         private static readonly double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
+
         public static AnimationCurve AntennaGainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
         {
             postWrapMode = WrapMode.ClampForever,
@@ -43,7 +45,7 @@ namespace RealAntennas
 
         public static double PointingLoss(double angle, double beamwidth) 
             => (angle > beamwidth) ? MaxPointingLoss : -1 * AntennaGainCurve.Evaluate(Convert.ToSingle(angle / beamwidth));
-        public static double PointingLoss(RealAntenna ant, Vector3 origin) 
+        public static double PointingLoss(RealAntenna ant, Vector3 origin)
             => (ant.CanTarget && ant.ToTarget != Vector3.zero) ? PointingLoss(Vector3.Angle(origin - ant.Position, ant.ToTarget), ant.Beamwidth) : 0;
 
         public static double c = 2.998e8;
@@ -81,13 +83,13 @@ namespace RealAntennas
                 return Mathf.Lerp(0.084f, 0.373f, CD);
             }
         }
-        public static double BodyNoiseTemp(RealAntenna rx, CelestialBody body, Vector3d toPeer)
+        public static double BodyNoiseTemp(RealAntenna rx, CelestialBody body, Vector3d rxPointing)
         {
-            // toPeer is needed to assess pointing of an isHome RealAntenna
             if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
             Vector3 toBody = body.position - rx.Position;
-            double angle = rx.ParentNode.isHome ? Vector3.Angle(toPeer, toBody) : Vector3.Angle(rx.ToTarget, toBody);
-            if (rx.GainAtAngle(Convert.ToSingle(angle)) < 0) return 0;  // Pointed too far away
+            double angle = Vector3.Angle(rxPointing, toBody);
+            //            if (rx.GainAtAngle(Convert.ToSingle(angle)) < 0)
+            if (rx.Beamwidth < angle) return 0;  // Pointed too far away
             double bw = rx.Beamwidth;
             double t = body.GetTemperature(1);      // TODO: Get the BLACKBODY temperature!
             double d = body.Radius * 2;
@@ -95,10 +97,9 @@ namespace RealAntennas
             double G = RATools.LinearScale(rx.Gain);
             double angleRatio = angle / bw;
             double result = (t * G * d * d / (16 * Rsqr)) * Math.Pow(Math.E, -2.77 * angleRatio * angleRatio);
-//            Debug.LogFormat("Planetary Body Noise Power Estimator: Body {0} base temp {1:F0} diameter {2:F0}km at {3:F2}Mm Gain {4:F1} vs HPBW {5:F1} incident angle {6:F1} yields {7:F1}K", body, t, d/1000, (rx.Position - body.position).magnitude/1e6, G, bw, angle, result);
+            //            Debug.LogFormat("Planetary Body Noise Power Estimator: Body {0} base temp {1:F0} diameter {2:F0}km at {3:F2}Mm Gain {4:F1} vs HPBW {5:F1} incident angle {6:F1} yields {7:F1}K", body, t, d/1000, (rx.Position - body.position).magnitude/1e6, G, bw, angle, result);
             return result;
         }
-
 
         public static double MinimumTheoreticalEbN0(double SpectralEfficiency)
         {
@@ -116,9 +117,11 @@ namespace RealAntennas
             double amt = AntennaMicrowaveTemp(rx);
             double atmos = AtmosphericTemp(rx, origin);
             double cosmic = CosmicBackgroundTemp(rx, origin);
-            double allbody = AllBodyTemps(rx, origin);
+            //double allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : AllBodyTemps(rx, rx.ToTarget);
+            // Home Stations are directional, but treated as always pointing towards the peer.
+            double allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : rx.cachedRemoteBodyNoiseTemp;
             double total = amt + atmos + cosmic + allbody;
-//            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
+            //            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
             return total;
 
             //
@@ -177,15 +180,22 @@ namespace RealAntennas
             return CMB / lossFactor;
         }
 
-        private static double AllBodyTemps(RealAntenna rx, Vector3d origin)
+        public static double AllBodyTemps(RealAntenna rx, Vector3d rxPointing)
         {
-            if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
             double temp = 0;
-            RACommNode node = rx.ParentNode as RACommNode;
-            Vector3d toPeer = origin - rx.Position;
-            foreach (CelestialBody body in FlightGlobals.Bodies)
+            if (rx.Shape != AntennaShape.Omni)
             {
-                temp += (node.isHome && node.ParentBody.Equals(body)) ? 0 : BodyNoiseTemp(rx, body, toPeer);
+                Profiler.BeginSample("RA Physics AllBodyTemps MainLoop");
+                RACommNode node = rx.ParentNode as RACommNode;
+                // Note there are ~33 bodies in RSS.
+                foreach (CelestialBody body in FlightGlobals.Bodies)
+                {
+                    if (!node.isHome || !node.ParentBody.Equals(body))
+                    {
+                        temp += BodyNoiseTemp(rx, body, rxPointing);
+                    }
+                }
+                Profiler.EndSample();
             }
             return temp;
         }

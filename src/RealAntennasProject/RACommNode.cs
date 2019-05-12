@@ -21,6 +21,18 @@ namespace RealAntennas
         }
         public RACommNode(CommNet.CommNode cn) : this(cn.transform) { }
 
+        public override void NetworkPreUpdate()
+        {
+            base.NetworkPreUpdate();
+            if (!isHome)
+            {
+                foreach (RealAntenna ra in RAAntennaList)
+                {
+                    ra.cachedRemoteBodyNoiseTemp = Physics.AllBodyTemps(ra, ra.ToTarget);
+                }
+            }
+        }
+
         public Vector3d GetSurfaceNormalVector()
         {
             if (ParentBody == null) return Vector3d.zero;

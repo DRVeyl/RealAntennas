@@ -1,11 +1,8 @@
 ﻿using CommNet;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
-
-// I see lots of comments that hate .Linq.  Is it really worse than doing a nested ForEach?
 
 namespace RealAntennas
 {
@@ -60,7 +57,6 @@ namespace RealAntennas
             if ((rac_a == null) || (rac_b == null))
             {
                 Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not RACommNode!", a, b);
-                Profiler.EndSample();
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
             }
             // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
@@ -119,7 +115,6 @@ namespace RealAntennas
         }
         protected virtual bool SelectBestAntennaPairs(List<RealAntenna> fwdList, List<RealAntenna> revList, RealAntenna[] bestFwdAntPair, RealAntenna[] bestRevAntPair, out double FwdDataRate, out double RevDataRate)
         {
-            Profiler.BeginSample("RACommNetwork SelectBestAntennaPairs");
             FwdDataRate = RevDataRate = 0;
             foreach (RealAntenna first in fwdList)
             {
@@ -141,7 +136,6 @@ namespace RealAntennas
                     }
                 }
             }
-            Profiler.EndSample();
             //Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2}/{3}", rac_a, rac_b, RATools.PrettyPrint(FwdDataRate)+"bps", RATools.PrettyPrint(RevDataRate)+"bps");
             return (FwdDataRate >= double.Epsilon && RevDataRate >= double.Epsilon);
         }
@@ -188,15 +182,10 @@ namespace RealAntennas
             return data_rate;
         }
 
-
-        // Instrumentation functions, no useful overrides below.  Delete when no longer instrumenting.
-
         public override void Rebuild()
         {
-            Profiler.BeginSample(ModTag + "Rebuild");
-            //            Debug.Log(ModTrace + " Rebuild()");
+            Profiler.BeginSample("RealAntennas CommNetwork Rebuild");
             base.Rebuild();
-            //            Debug.Log(ModTrace + " Rebuild() exit");
             Profiler.EndSample();
         }
 

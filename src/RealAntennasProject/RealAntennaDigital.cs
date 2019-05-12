@@ -25,13 +25,11 @@ namespace RealAntennas
 
         public override double BestDataRateToPeer(RealAntenna rx)
         {
-            Profiler.BeginSample("RealAntennasDigital BestDataRateToPeer");
             double dataRate = (BestPeerModulator(rx, out double modRate, out double codeRate)) ? modRate * codeRate : 0;
-            Profiler.EndSample();
             return dataRate;
         }
 
-//        private bool BestPeerModulator(RealAntenna rx, RAModulator mod, out Antenna.Encoder encoder)
+        //        private bool BestPeerModulator(RealAntenna rx, RAModulator mod, out Antenna.Encoder encoder)
         private bool BestPeerModulator(RealAntenna rx, out double modRate, out double codeRate)
         {
             RealAntennaDigital tx = this;
@@ -52,7 +50,6 @@ namespace RealAntennas
             double maxSymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate);
             double minSymbolRate = Math.Max(txMod.MinSymbolRate, rxMod.MinSymbolRate);
 
-            Profiler.BeginSample("RealAntennasDigital BestPeerModulator Physics");
             double RxPower = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
             double temp = Physics.NoiseTemperature(rx, tx.Position);
             double N0 = Physics.NoiseSpectralDensity(temp);     // In dBm
@@ -61,12 +58,10 @@ namespace RealAntennas
             double maxBitRate = RATools.LinearScale(maxBitRateLog);
             string debugStr = string.Empty;
 #if DEBUG
-//            debugStr = string.Format(ModTag + $"{tx} to {rx} RxP {RxPower:F2} temp {temp:F2} learned maxRate {RATools.PrettyPrint(maxBitRate)}bps vs symbol rates {RATools.PrettyPrint(minSymbolRate)}Sps-{RATools.PrettyPrint(maxSymbolRate)}Sps");
+            //            debugStr = string.Format(ModTag + $"{tx} to {rx} RxP {RxPower:F2} temp {temp:F2} learned maxRate {RATools.PrettyPrint(maxBitRate)}bps vs symbol rates {RATools.PrettyPrint(minSymbolRate)}Sps-{RATools.PrettyPrint(maxSymbolRate)}Sps");
 #endif
-            Profiler.EndSample();
             // We cannot slow our modulation enough to achieve the required Eb/N0, so fail.
             if (maxBitRate < minSymbolRate) return false;
-            Profiler.BeginSample("RealAntennasDigital BestPeerModulator bottom");
             double targetRate;
             int negotiatedBits;
             if (maxBitRate <= maxSymbolRate)
@@ -102,7 +97,6 @@ namespace RealAntennas
             modRate = targetRate * negotiatedBits;
             //Debug.LogFormat(debugStr);
             //Debug.LogFormat(ModTag + "Proposed [{0}] w/Encoder {1} gives bitrate {2:F1}bps", mod, encoder, RATools.PrettyPrint(mod.DataRate * encoder.CodingRate));
-            Profiler.EndSample();
             return true;
 
             // Energy/bit (Eb) = Received Power / datarate
