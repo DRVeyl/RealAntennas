@@ -12,8 +12,8 @@ namespace RealAntennas
     {
         public string Name { get; set; }
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
-        public double refGain = 0;
-        public double refFreq = 0;
+        public double referenceGain = 0;
+        public double referenceFrequency = 0;
         public double antennaDiameter = 0;
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
         public virtual int TechLevel { get; set; }
@@ -113,10 +113,10 @@ namespace RealAntennas
             TechLevel = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 1;
             string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
             RFBand = Antenna.BandInfo.All[sRFBand];
-            refGain = (config.HasValue("refGain")) ? double.Parse(config.GetValue("refGain")) : 0;
-            refFreq = (config.HasValue("refFreq")) ? double.Parse(config.GetValue("refFreq")) : 0;
+            referenceGain = (config.HasValue("referenceGain")) ? double.Parse(config.GetValue("referenceGain")) : 0;
+            referenceFrequency = (config.HasValue("referenceFrequency")) ? double.Parse(config.GetValue("referenceFrequency")) : 0;
             antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;
-            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(refGain, refFreq, RFBand.Frequency);
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency, RFBand.Frequency);
             TxPower = (config.HasValue("TxPower")) ? double.Parse(config.GetValue("TxPower")) : 30f;
             SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevel);
             AMWTemp = (config.HasValue("AMWTemp")) ? double.Parse(config.GetValue("AMWTemp")) : 290f;

@@ -47,10 +47,10 @@ namespace RealAntennas
         public double antennaDiameter = 0;
 
         [KSPField(isPersistant = true)]
-        public double refGain = 0;
+        public double referenceGain = 0;
 
         [KSPField(isPersistant = true)]
-        public double refFreq = 0;
+        public double referenceFrequency = 0;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Extra Info")]
         public string guiExtraInfo = "";
@@ -166,7 +166,7 @@ namespace RealAntennas
         {
             Configure(node);
             base.OnLoad(node);
-            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(refGain, refFreq, RFBandInfo.Frequency);
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency, RFBandInfo.Frequency);
         }
 
         public void Configure(ConfigNode node)
