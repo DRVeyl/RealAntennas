@@ -166,7 +166,10 @@ namespace RealAntennas
         {
             Configure(node);
             base.OnLoad(node);
-            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency, RFBandInfo.Frequency);
+            // ReferenceFreq is in MHz...
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency*1e6, RFBandInfo.Frequency);
+            Debug.LogFormat("OnLoad {0}, diameter {1}/Freq {2}/Efficiency {3} | refGain {4} / refFreq {5} / Freq {6} results Gain {7}",
+                            this, antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency, referenceGain, referenceFrequency*1e6, RFBandInfo.Frequency, Gain);
         }
 
         public void Configure(ConfigNode node)

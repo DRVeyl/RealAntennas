@@ -116,7 +116,7 @@ namespace RealAntennas
             referenceGain = (config.HasValue("referenceGain")) ? double.Parse(config.GetValue("referenceGain")) : 0;
             referenceFrequency = (config.HasValue("referenceFrequency")) ? double.Parse(config.GetValue("referenceFrequency")) : 0;
             antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;
-            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency, RFBand.Frequency);
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBand.Frequency);
             TxPower = (config.HasValue("TxPower")) ? double.Parse(config.GetValue("TxPower")) : 30f;
             SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevel);
             AMWTemp = (config.HasValue("AMWTemp")) ? double.Parse(config.GetValue("AMWTemp")) : 290f;
@@ -147,7 +147,11 @@ namespace RealAntennas
             Debug.LogFormat("Applying upgrade for {0}", config);
             double d=0;
             string s = string.Empty;
-            if (config.TryGetValue("Gain", ref d)) Gain = d;
+            if (config.TryGetValue("referenceGain", ref d)) referenceGain = d;
+            if (config.TryGetValue("referenceFrequency", ref d)) referenceFrequency = d;
+            if (config.TryGetValue("antennaDiameter", ref d)) antennaDiameter = d;
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBand.Frequency);
+            //            if (config.TryGetValue("Gain", ref d)) Gain = d;
             if (config.TryGetValue("TxPower", ref d)) TxPower = d;
             if (config.TryGetValue("SymbolRate", ref d)) SymbolRate = d;
             if (config.TryGetValue("AMWTemp", ref d)) AMWTemp = d;
