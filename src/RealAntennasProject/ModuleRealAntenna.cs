@@ -128,12 +128,12 @@ namespace RealAntennas
             RecalculateFields();
         }
 
-        public override void OnFixedUpdate()
+        //public override void OnFixedUpdate()
+        public void FixedUpdate()
         {
             guiExtraInfo = RAAntenna.ToString();
-            base.OnFixedUpdate();
             string err = string.Empty;
-            double req = PowerDrawLinear * 1e-6 * 0.1;
+            double req = PowerDrawLinear * 1e-6 * 0.1 * Time.fixedDeltaTime;
             // Consume some standby power.  Default OnLoad() set a resource consumption rate=1.
             resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
             //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
