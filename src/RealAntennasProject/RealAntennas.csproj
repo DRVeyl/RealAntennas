@@ -64,14 +64,14 @@
     <Compile Include="RAParameters.cs" />
     <Compile Include="RealAntennaDigital.cs" />
     <Compile Include="RealAntenna.cs" />
-    <Compile Include="RACommNetHome.cs" />
+    <Compile Include="Network\RACommNetHome.cs" />
     <Compile Include="RACommNetScenario.cs" />
     <Compile Include="RACommNetVessel.cs" />
     <Compile Include="RACommNetwork.cs" />
-    <Compile Include="RealAntennasRangeModel.cs" />
+    <Compile Include="Network\RealAntennasRangeModel.cs" />
     <Compile Include="Network\ScenarioPatcher.cs" />
     <Compile Include="Tools.cs" />
-    <Compile Include="RACommNetNetwork.cs" />
+    <Compile Include="Network\RACommNetNetwork.cs" />
     <Compile Include="RACommNode.cs" />
   </ItemGroup>
   <ItemGroup />

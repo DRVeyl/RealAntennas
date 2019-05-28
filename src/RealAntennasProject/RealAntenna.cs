@@ -112,7 +112,7 @@ namespace RealAntennas
         {
             TechLevel = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 1;
             string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
-            RFBand = Antenna.BandInfo.All[sRFBand];
+            RFBand = Antenna.BandInfo.Get(sRFBand);
             referenceGain = (config.HasValue("referenceGain")) ? double.Parse(config.GetValue("referenceGain")) : 0;
             referenceFrequency = (config.HasValue("referenceFrequency")) ? double.Parse(config.GetValue("referenceFrequency")) : 0;
             antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;

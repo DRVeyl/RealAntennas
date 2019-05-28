@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace RealAntennas.Antenna
 {
@@ -8,19 +10,50 @@ namespace RealAntennas.Antenna
         public readonly double Frequency;
         public readonly string DisplayName;
         public readonly float ChannelWidth;
-        public static BandInfo VHF = new BandInfo(1, "VHF", "VHF-Band", 1, 150e6, 50e3f);
-        public static BandInfo UHF = new BandInfo(2, "UHF", "UHF-Band", 1, 430e6, 50e3f);
-        public static BandInfo S = new BandInfo(3, "S", "S-Band", 1, 2.25e9, 0.330e6f);
-        public static BandInfo X = new BandInfo(4, "X", "X-Band", 7, 8.45e9, 1.36e6f);
-        public static BandInfo K = new BandInfo(5, "K", "K-Band", 10, 26.250e9, 20e6f);
-        public static BandInfo Ka = new BandInfo(6, "Ka", "Ka-Band", 10, 32.0e9, 20e6f);
-        public static Dictionary<string, BandInfo> All = new Dictionary<string, BandInfo>() {
-            { VHF.Name, VHF },
-            { UHF.Name, UHF },
-            { S.Name, S },
-            { X.Name, X },
-            { K.Name, K },
-            { Ka.Name, Ka } };
+        public static bool initialized = false;
+        public static float[] MaxSymbolRateByTechLevel = { 32, 4e3f, 16e3f, 32e3f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f };
+        public static Dictionary<string, BandInfo> All = new Dictionary<string, BandInfo>();
+        public static BandInfo Get(string band)
+        {
+            if (!initialized)
+            {
+//                ConfigNode RAParamNode = GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams");
+                ConfigNode RAParamNode = null;
+                foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
+                    RAParamNode = n;
+
+                if (RAParamNode != null) Init(RAParamNode);
+            }
+            return All[band];
+        }
+        public static void Init(ConfigNode config)
+        {
+            Debug.LogFormat("RealAntennas.BandInfo init() on node {0}", config);
+            All.Clear();
+            int i = 0;
+            foreach (ConfigNode node in config.GetNodes("BandInfo"))
+            {
+                int tl = 0;
+                double freq = 0f;
+                float chan = 0f;
+                string nm = node.GetValue("name");
+                node.TryGetValue("TechLevel", ref tl);
+                node.TryGetValue("Frequency", ref freq);
+                node.TryGetValue("ChannelWidth", ref chan);
+                Debug.LogFormat($"RealAntennas.BandInfo adding band {nm} TL: {tl} Freq: {RATools.PrettyPrint(freq)}Hz Width: {RATools.PrettyPrint(chan)}Hz");
+                All.Add(nm, new BandInfo(i, nm, nm + "-Band", tl, freq, chan));
+                i += 1;
+            }
+            i = 0;
+            string[] sRates = config.GetValue("MaxSymbolRateByTechLevel").Split(new char[] { ',' });
+            foreach (string sRate in sRates)
+            {
+                Debug.LogFormat("(Unimplemented) MaxSymbolRate learning max rate {0} at TL {1}", sRate, i);
+                MaxSymbolRateByTechLevel[i] = Single.Parse(sRate);
+                i += 1;
+            }
+            initialized = true;
+        }
 
         public BandInfo(int id, string name, string dispName, int minLevel, double freq, float chanWidth)
             : base(id, name)
@@ -32,6 +65,7 @@ namespace RealAntennas.Antenna
         }
 
         public float MaxSymbolRate(int techLevel) => ChannelWidth * (1 + techLevel - minTechLevel);
+//        public float MaxSymbolRate(int techLevel) => Math.Max(ChannelWidth * (1 + techLevel - minTechLevel), MaxSymbolRateByTechLevel[techLevel-1]);
 
         public override string ToString() => $"[{DisplayName} {Frequency/1e6} MHz]";
 
@@ -44,6 +78,5 @@ namespace RealAntennas.Antenna
             }
             return l;
         }
-        public static List<BandInfo> ListAll() => new List<BandInfo>() { UHF, VHF, S, X, K, Ka };
     }
 }

@@ -11,7 +11,7 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNetwork] ";
         protected static readonly string ModTrace = ModTag + "[Trace] ";
 
-        private readonly float updatePeriod = 10.0f;
+        private readonly float updatePeriod = 60.0f;
         private float lastRun = 0f;
 
         private RealAntenna[] bestFwdAntPair = new RealAntenna[2];

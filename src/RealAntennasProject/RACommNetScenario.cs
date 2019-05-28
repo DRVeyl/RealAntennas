@@ -7,18 +7,18 @@ namespace RealAntennas
     public class RACommNetScenario : CommNetScenario
     {
         protected static readonly string ModTag = "[RealAntennasCommNetScenario] ";
-        public static new RealAntennasRangeModel RangeModel = new RealAntennasRangeModel();
+        public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
         public static bool Enabled => true;
 
-        private RACommNetNetwork network = null;
+        private Network.RACommNetNetwork network = null;
         private CommNetUI ui;
 
         protected override void Start()
         {
             Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
-
+            InitBandInfo();
             ui = gameObject.AddComponent<Network.RACommNetUI>();
-            this.network = gameObject.AddComponent<RACommNetNetwork>();
+            this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
 
             RealAntennas.Kerbalism.Kerbalism.DetectKerbalismDLL();
@@ -51,6 +51,15 @@ namespace RealAntennas
         private void DestroyNetwork()
         {
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
+        }
+
+        private void InitBandInfo()
+        {
+            ConfigNode RAParamNode = null;
+            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
+                RAParamNode = n;
+
+            if (RAParamNode != null) Antenna.BandInfo.Init(RAParamNode);
         }
 
         private void BuildHomes()
@@ -94,7 +103,7 @@ namespace RealAntennas
         private void BuildHome(ConfigNode node, CelestialBody body)
         {
             GameObject newHome = new GameObject(body.name);
-            RACommNetHome home = newHome.AddComponent<RACommNetHome>();
+            Network.RACommNetHome home = newHome.AddComponent<Network.RACommNetHome>();
             home.Configure(node, body);
             Debug.LogFormat(ModTag + "Built: {0}", home);
         }
