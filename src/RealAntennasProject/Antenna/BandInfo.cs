@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace RealAntennas.Antenna
 {
-    public class BandInfo : Enumeration
+    public class BandInfo : Enumeration, IEquatable<BandInfo>
     {
         public readonly int minTechLevel;
         public readonly double Frequency;
@@ -77,6 +77,25 @@ namespace RealAntennas.Antenna
                 if (level >= bi.minTechLevel) l.Add(bi);
             }
             return l;
+        }
+
+        public override bool Equals(object obj) => Equals(obj as BandInfo);
+
+        public bool Equals(BandInfo other)
+        {
+            return other != null &&
+                   base.Equals(other) &&
+                   Frequency == other.Frequency &&
+                   ChannelWidth == other.ChannelWidth;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = -1244118993;
+            hashCode = hashCode * -1521134295 + base.GetHashCode();
+            hashCode = hashCode * -1521134295 + Frequency.GetHashCode();
+            hashCode = hashCode * -1521134295 + ChannelWidth.GetHashCode();
+            return hashCode;
         }
     }
 }
