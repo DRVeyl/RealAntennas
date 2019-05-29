@@ -80,14 +80,19 @@ namespace RealAntennas.Antenna
         }
 
         public override bool Equals(object obj) => Equals(obj as BandInfo);
-
         public bool Equals(BandInfo other)
         {
-            return other != null &&
-                   base.Equals(other) &&
-                   Frequency == other.Frequency &&
-                   ChannelWidth == other.ChannelWidth;
+            if (other is null) return false;
+            return (Frequency == other.Frequency) && (ChannelWidth == other.ChannelWidth);
         }
+
+        public static bool operator ==(BandInfo lhs, BandInfo rhs)
+        {
+            if (lhs is null) return (rhs is null);
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(BandInfo lhs, BandInfo rhs) => !(lhs == rhs);
 
         public override int GetHashCode()
         {
