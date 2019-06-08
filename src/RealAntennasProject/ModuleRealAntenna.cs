@@ -20,7 +20,7 @@ namespace RealAntennas
         private int techLevel => Convert.ToInt32(TechLevel);
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
-         UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "VHF-Band", "UHF-Band", "S-Band", "X-Band", "K-Band", "Ka-Band" })]
+         UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "S-Band" })]
         public string RFBand = "S";
 
         public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
@@ -52,65 +52,63 @@ namespace RealAntennas
         [KSPField(isPersistant = true)]
         public double referenceFrequency = 0;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Extra Info")]
-        public string guiExtraInfo = "";
-
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmitter Power")]
-        public string sTransmitterPower = "";
+        public string sTransmitterPower = string.Empty;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power Consumption")]
-        public string sPowerConsumed = "";
+        public string sPowerConsumed = string.Empty;
 
         [KSPField(guiActive = true, guiName = "Antenna Target")]
-        private string _antennaTargetString = string.Empty;
-        public string AntennaTargetString { get => _antennaTargetString; set => _antennaTargetString = value; }
+        public string sAntennaTarget = string.Empty;
 
         [KSPField(isPersistant = true)]
-        private string targetID = "None";
-        public string TargetID { get => targetID; set => targetID = value; }
-
+        public string targetID = RealAntenna.DefaultTargetName;
         public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
         [KSPEvent(active = true, guiActive = true, guiActiveUnfocused = false, guiActiveEditor = false, externalToEVAOnly = false, guiName = "Antenna Targeting")]
         void AntennaTargetGUI() => GUI.showGUI = !GUI.showGUI;
         public void OnGUI() => GUI.OnGUI();
 
-        private List<string> availableBands = new List<string>() { "S" };
+        private static double StockRateModifier = 0.00001;
+        public static double InactivePowerConsumptionMult = 0.1;
 
         public override void OnAwake()
         {
             base.OnAwake();
-            UI_FloatRange t = (UI_FloatRange)(Fields["TechLevel"].uiControlEditor);
+            UI_FloatRange t = (UI_FloatRange)(Fields[nameof(TechLevel)].uiControlEditor);
             t.onFieldChanged = new Callback<BaseField, object>(OnTechLevelChange);
 
-            UI_ChooseOption op = (UI_ChooseOption)(Fields["RFBand"].uiControlEditor);
+            UI_ChooseOption op = (UI_ChooseOption)(Fields[nameof(RFBand)].uiControlEditor);
             op.onFieldChanged = new Callback<BaseField, object>(OnRFBandChange);
 
-            UI_FloatRange fr = (UI_FloatRange)Fields["TxPower"].uiControlEditor;
+            UI_FloatRange fr = (UI_FloatRange)Fields[nameof(TxPower)].uiControlEditor;
             fr.onFieldChanged = new Callback<BaseField, object>(OnTxPowerChange);
         }
 
         private void ConfigOptions()
         {
-            availableBands.Clear();
+            List<string> availableBands = new List<string>();
+            List<string> availableBandDisplayNames = new List<string>();
             foreach (Antenna.BandInfo bi in Antenna.BandInfo.GetFromTechLevel(techLevel))
             {
                 availableBands.Add(bi.Name);
+                availableBandDisplayNames.Add(bi.DisplayName);
             }
 
-            UI_ChooseOption op = (UI_ChooseOption)Fields["RFBand"].uiControlEditor;
+            UI_ChooseOption op = (UI_ChooseOption)Fields[nameof(RFBand)].uiControlEditor;
             op.options = availableBands.ToArray();
+            op.display = availableBandDisplayNames.ToArray();
         }
         private void RecalculateFields()
         {
             RAAntenna.TechLevel = techLevel;
-            SymbolRate = Antenna.BandInfo.All[RFBand].MaxSymbolRate(techLevel);
-            RAAntenna.SymbolRate = SymbolRate;
+            RAAntenna.TxPower = TxPower;
             RAAntenna.RFBand = Antenna.BandInfo.All[RFBand];
+            RAAntenna.SymbolRate = SymbolRate = RAAntenna.RFBand.MaxSymbolRate(techLevel);
 
+            Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBandInfo.Frequency);
             sTransmitterPower = $"{RATools.LinearScale(TxPower - 30):F2} Watts";
             sPowerConsumed = $"{PowerDrawLinear / 1000:F2} Watts";
-            RAAntenna.TxPower = TxPower;
             ModulationBits = (RAAntenna as RealAntennaDigital).modulator.ModulationBitsFromTechLevel(TechLevel);
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
         }
@@ -119,7 +117,7 @@ namespace RealAntennas
         private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
         {
             ConfigOptions();
-            UI_ChooseOption op = (UI_ChooseOption)(Fields["RFBand"].uiControlEditor);
+            UI_ChooseOption op = (UI_ChooseOption)(Fields[nameof(RFBand)].uiControlEditor);
             if (op.options.IndexOf(RFBand) < 0)
             {
                 RFBand = op.options[op.options.Length - 1];
@@ -128,13 +126,10 @@ namespace RealAntennas
             RecalculateFields();
         }
 
-        //public override void OnFixedUpdate()
         public void FixedUpdate()
         {
-            guiExtraInfo = RAAntenna.ToString();
             string err = string.Empty;
-            double req = PowerDrawLinear * 1e-6 * 0.1 * Time.fixedDeltaTime;
-            // Consume some standby power.  Default OnLoad() set a resource consumption rate=1.
+            double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
             resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
             //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
         }
@@ -142,22 +137,19 @@ namespace RealAntennas
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            { if (Events["TransmitIncompleteToggle"] is BaseEvent be) be.active = false; }
-            { if (Events["StartTransmission"] is BaseEvent be) be.active = false; }
-            { if (Events["StopTransmission"] is BaseEvent be) be.active = false; }
-            if (Actions["StartTransmissionAction"] is BaseAction ba) ba.active = false;
-            if (Fields["powerText"] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
+            { if (Events[nameof(TransmitIncompleteToggle)] is BaseEvent be) be.active = false; }
+            { if (Events[nameof(StartTransmission)] is BaseEvent be) be.active = false; }
+            { if (Events[nameof(StopTransmission)] is BaseEvent be) be.active = false; }
+            if (Actions[nameof(StartTransmissionAction)] is BaseAction ba) ba.active = false;
+            if (Fields[nameof(powerText)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
             if (!RAAntenna.CanTarget)
             {
-                Fields["_antennaTargetString"].guiActive = false;
-                Events["AntennaTargetGUI"].active = false;
+                Fields[nameof(sAntennaTarget)].guiActive = false;
+                Events[nameof(AntennaTargetGUI)].active = false;
             }
-            TargetID = RAAntenna.TargetID;
             GUI.ParentPart = part;
             GUI.ParentPartModule = this;
             GUI.Start();
-            //            Debug.LogFormat(ModTag + "Forcing part {0} active.", part);
-            //            part.force_activate();
             ConfigOptions();
             RecalculateFields();
         }
@@ -166,7 +158,6 @@ namespace RealAntennas
         {
             Configure(node);
             base.OnLoad(node);
-            // ReferenceFreq is in MHz...
             Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency*1e6, RFBandInfo.Frequency);
             Debug.LogFormat("OnLoad {0}, diameter {1}/Freq {2}/Efficiency {3} | refGain {4} / refFreq {5} / Freq {6} results Gain {7}",
                             this, antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency, referenceGain, referenceFrequency*1e6, RFBandInfo.Frequency, Gain);
@@ -179,21 +170,15 @@ namespace RealAntennas
             RAAntenna.LoadFromConfigNode(node);
         }
 
+        public override string GetModuleDisplayName() => "RealAntenna";
         public override string GetInfo()
         {
-            return string.Format(ModTag + "\n" +
-                                "<b>Gain</b>: {0}\n" +
-                                "<b>Data Rate</b>: {1}\n", Gain, RATools.PrettyPrintDataRate(RAAntenna.DataRate));
+            return $"{ModTag}\n" + 
+                   $"<b>Gain</b>: {Gain:F1} dBi\n" + 
+                   $"<b>Reference Frequency</b>: {RATools.PrettyPrint(RAAntenna.Frequency)}Hz\n";
         }
 
         public override string ToString() => RAAntenna.ToString();
-
-        public override void StopTransmission()
-        {
-            Debug.LogFormat(ModTag + "StopTransmission() start");
-            base.StopTransmission();
-            Debug.LogFormat(ModTag + "StopTransmission() exit");
-        }
 
         // StartTransmission -> CanTransmit()
         //                  -> OnStartTransmission() -> queueVesselData(), transmitQueuedData()
@@ -201,15 +186,13 @@ namespace RealAntennas
 
         internal void SetTransmissionParams()
         {
-            double data_rate = 0;
             if (this?.vessel?.Connection?.Comm is RACommNode node)
             {
-                data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
+                double data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
                 packetInterval = 0.1F;
-                packetSize = Convert.ToSingle(data_rate * packetInterval / 10000);
+                packetSize = Convert.ToSingle(data_rate * packetInterval * StockRateModifier);
                 packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
             }
-            Debug.LogFormat(ModTag + "SetTransmissionParams() for {0}: data_rate={1}", this, data_rate);
         }
 
         public override bool CanTransmit()
@@ -218,35 +201,10 @@ namespace RealAntennas
             return base.CanTransmit();
         }
 
-        protected override List<ScienceData> queueVesselData(List<IScienceDataContainer> experiments)
-        {
-            Debug.LogFormat(ModTag + "queueVesselData({0}) start", experiments);
-            return base.queueVesselData(experiments);
-        }
-
-        protected override IEnumerator transmitQueuedData(float transmitInterval, float dataPacketSize, Callback callback = null, bool sendData = true)
-        {
-            Debug.LogFormat(ModTag + "transmitQueuedData({0},{1},{2},{3}) start", transmitInterval, dataPacketSize, callback, sendData);
-            return base.transmitQueuedData(transmitInterval, dataPacketSize, callback, sendData);
-        }
-
-        protected override void AbortTransmission(string message)
-        {
-            Debug.LogFormat(ModTag + "AbortTransmission({0}) start", message);
-            base.AbortTransmission(message);
-            Debug.LogFormat(ModTag + "AbortTransmission() stop");
-        }
-
         public override void TransmitData(List<ScienceData> dataQueue)
         {
-            Debug.LogFormat(ModTag + "TransmitData({0}) start", dataQueue);
             SetTransmissionParams();
-            foreach (ScienceData sd in dataQueue)
-            {
-                Debug.LogFormat(ModTag + "Queue contents: {0} : {1}", sd.subjectID, sd.dataAmount);
-            }
             base.TransmitData(dataQueue);
-            Debug.LogFormat(ModTag + "TransmitData() stop");
         }
 
         public override void TransmitData(List<ScienceData> dataQueue, Callback callback)

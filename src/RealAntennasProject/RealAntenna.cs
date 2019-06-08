@@ -8,7 +8,7 @@ namespace RealAntennas
     {
         Auto, Omni, Dish
     }
-    public class RealAntenna : IComparable
+    public class RealAntenna
     {
         public string Name { get; set; }
         public virtual double Gain { get; set; }         // Physical directionality, measured in dBi
@@ -41,10 +41,8 @@ namespace RealAntennas
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
         public Vector3 Position => ParentNode.position;
-        public virtual AntennaShape Shape => Gain <= maxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
+        public virtual AntennaShape Shape => Gain <= MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
-        private readonly double minimumSpotRadius = 1e3;
-        private readonly double maxOmniGain = 8;
         public Vector3 ToTarget {
             get {
                 if (!(CanTarget && Target != null)) return Vector3.zero;
@@ -58,10 +56,10 @@ namespace RealAntennas
             get => _target;
             set
             {
-                if (!CanTarget) _internalSet(null, "None", "None");
+                if (!CanTarget) _internalSet(null, DefaultTargetName, DefaultTargetName);
                 else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
                 else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
-                else Debug.LogWarningFormat("Tried to set antenna target to {0} and failed", value);
+                else Debug.LogWarningFormat($"{ModTag} Tried to set antenna target to {value} and failed");
             }
         }
 
@@ -70,6 +68,10 @@ namespace RealAntennas
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
 
         protected static readonly string ModTag = "[RealAntenna] ";
+        public static readonly string DefaultTargetName = "None";
+        public static double MaxOmniGain = 5;
+        private readonly double minimumSpotRadius = 1e3;
+
         public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi] [{RFBand.Name}] [TL:{TechLevel:N0}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
@@ -80,12 +82,6 @@ namespace RealAntennas
         }
 
         public virtual bool Compatible(RealAntenna other) => RFBand == other.RFBand;
-
-        public int CompareTo(object obj)
-        {
-            if (obj is RealAntenna ra) return DataRate.CompareTo(ra.DataRate);
-            else throw new System.ArgumentException();
-        }
 
         public virtual double BestDataRateToPeer(RealAntenna rx)
         {
@@ -163,7 +159,7 @@ namespace RealAntennas
             if (FlightGlobals.fetch && CanTarget)
             {
                 if (string.IsNullOrEmpty(id)) return FlightGlobals.GetHomeBody();
-                if (string.Equals("None", id)) return FlightGlobals.GetHomeBody();
+                if (string.Equals(DefaultTargetName, id)) return FlightGlobals.GetHomeBody();
                 if (FlightGlobals.GetBodyByName(id) is CelestialBody body) return body;
                 try
                 {
@@ -177,7 +173,7 @@ namespace RealAntennas
         private void _internalSet(ITargetable tgt, string dispString, string tgtId)
         {
             _target = tgt; TargetID = tgtId;
-            if (Parent is ModuleRealAntenna) { Parent.AntennaTargetString = dispString; Parent.TargetID = tgtId; }
+            if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = dispString; Parent.targetID = tgtId; }
         }
     }
 
