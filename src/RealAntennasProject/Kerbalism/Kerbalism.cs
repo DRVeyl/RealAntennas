@@ -35,10 +35,11 @@ namespace RealAntennas.Kerbalism
                     {
                         strength = link.start.Equals(node) ? link.FwdMetric : link.RevMetric;
                     }
-                    foreach (CommNet.CommLink clink in path)
-                    {
-                        sList.Add(new string[1] { clink.end.name });
-                    }
+                    //                    foreach (CommNet.CommLink clink in path)
+                    //                    {
+                    //                        sList.Add(new string[1] { clink.end.name });
+                    //                    }
+                    sList.Add(new string[1] { path.First.end.name });
                     target_name = path.First.end.ToString();
                 }
 
@@ -64,13 +65,10 @@ namespace RealAntennas.Kerbalism
                 if (a.name.StartsWith("Kerbalism") && 
                     !a.name.StartsWith("KerbalismBoot") &&
                     a.assembly.GetType("KERBALISM.API") is Type KerbalismAPIType
-//                    a.assembly.GetType("KERBALISM.AntennaInfo") is Type KerbalismAntennaInfoType &&
                     )
                 {
                     KerbalismAssembly = a.assembly;
                     MethodInfo baseMethod = typeof(Kerbalism).GetMethod("MyCommHandler");
-//                    MethodInfo myGenericMethod = baseMethod.MakeGenericMethod(new Type[] { KerbalismAntennaInfoType });
-//                    var x = GenericDelegateFactory.CreateDelegateByParameter(KerbalismAntennaInfoType, typeof(Vessel), null, myGenericMethod);
                     var x = baseMethod;
                     var fInf = KerbalismAPIType.GetField("Comm", BindingFlags.Public | BindingFlags.Static);
                     var val = fInf.GetValue(null);

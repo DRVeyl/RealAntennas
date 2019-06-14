@@ -19,6 +19,9 @@ namespace RealAntennas
         private float TechLevel = 1f;
         private int techLevel => Convert.ToInt32(TechLevel);
 
+        [KSPField]
+        private int maxTechLevel = -1;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
          UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "S-Band" })]
         public string RFBand = "S";
@@ -128,10 +131,13 @@ namespace RealAntennas
 
         public void FixedUpdate()
         {
-            string err = string.Empty;
-            double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
-            resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
-            //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                string err = string.Empty;
+                double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
+                resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
+                //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
+            }
         }
 
         public override void OnStart(StartState state)
@@ -142,6 +148,11 @@ namespace RealAntennas
             { if (Events[nameof(StopTransmission)] is BaseEvent be) be.active = false; }
             if (Actions[nameof(StartTransmissionAction)] is BaseAction ba) ba.active = false;
             if (Fields[nameof(powerText)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
+
+            if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
+            if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
+            if (HighLogic.LoadedSceneIsEditor) TechLevel = maxTechLevel;
+
             if (!RAAntenna.CanTarget)
             {
                 Fields[nameof(sAntennaTarget)].guiActive = false;
