@@ -20,7 +20,7 @@ namespace RealAntennas
         private int techLevel => Convert.ToInt32(TechLevel);
 
         [KSPField]
-        private int maxTechLevel = -1;
+        private int maxTechLevel = 1;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
          UI_ChooseOption(scene = UI_Scene.Editor, options = new string[] { "S" }, display = new string[] { "S-Band" })]
