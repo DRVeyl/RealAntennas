@@ -80,6 +80,22 @@ namespace RealAntennas
             Name = name;
             DataRate = dataRate;
         }
+        public RealAntenna(RealAntenna orig)
+        {
+            Name = orig.Name;
+            Gain = orig.Gain;
+            referenceGain = orig.referenceGain;
+            referenceFrequency = orig.referenceFrequency;
+            antennaDiameter = orig.antennaDiameter;
+            TxPower = orig.TxPower;
+            TechLevel = orig.TechLevel;
+            RFBand = orig.RFBand;
+            SymbolRate = orig.SymbolRate;
+            AMWTemp = orig.AMWTemp;
+            Target = orig.Target;
+            Parent = orig.Parent;
+            ParentNode = orig.ParentNode;
+        }
 
         public virtual bool Compatible(RealAntenna other) => RFBand == other.RFBand;
 

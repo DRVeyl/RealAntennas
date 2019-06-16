@@ -16,6 +16,7 @@ namespace RealAntennas
 
         private RealAntenna[] bestFwdAntPair = new RealAntenna[2];
         private RealAntenna[] bestRevAntPair = new RealAntenna[2];
+        public List<CommNode> Nodes { get => nodes; }
 
         public override CommNode Add(CommNode conn)
         {

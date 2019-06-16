@@ -10,17 +10,16 @@ namespace RealAntennas
         public override double Bandwidth => SymbolRate * Encoder.CodingRate;
         public override double SymbolRate { get => modulator.SymbolRate; set => modulator.SymbolRate = value; }
         public override double MinSymbolRate => modulator.MinSymbolRate;
-        public RAModulator modulator;
+        public RAModulator modulator = new RAModulator();
 
         protected static new readonly string ModTag = "[RealAntennaDigital] ";
 
         public RealAntennaDigital() : this("New RealAntennaDigital") { }
-        public RealAntennaDigital(string name)
+        public RealAntennaDigital(string name) : base(name) { }
+        public RealAntennaDigital(RealAntenna orig) : base(orig)
         {
-            Name = name;
-            modulator = new RAModulator();
+            if (orig is RealAntennaDigital o) modulator = new RAModulator(o.modulator);
         }
-
         public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand} [TL:{TechLevel:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public override double BestDataRateToPeer(RealAntenna rx)

@@ -10,6 +10,7 @@ namespace RealAntennas
         public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
         public static bool Enabled => true;
 
+        public Network.RACommNetNetwork Network { get => network; }
         private Network.RACommNetNetwork network = null;
         private CommNetUI ui;
 

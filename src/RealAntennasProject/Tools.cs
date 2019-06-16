@@ -25,6 +25,24 @@ namespace RealAntennas
             else return $"{d:F0} ";
         }
 
+        public static RealAntenna HighestGainCompatibleDSNAntenna(List<CommNode> nodes, RealAntenna peer)
+        {
+            RealAntenna result = null;
+            double highestGain = 0;
+            foreach (RACommNode node in nodes)
+            {
+                foreach (RealAntenna ra in node.RAAntennaList)
+                {
+                    if (peer.Compatible(ra) && ra.Gain > highestGain)
+                    {
+                        highestGain = ra.Gain;
+                        result = ra;
+                    }
+                }
+            }
+            return result;
+        }
+
         ///<summary> Sets the value of a field via reflection </summary>
         public static void ReflectionValue<T>(object instance, string value_name, T value)
         {
