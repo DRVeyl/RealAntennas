@@ -22,9 +22,9 @@ namespace RealAntennas.Network
 
         public void Configure(ConfigNode node, CelestialBody body)
         {
-            nodeName = node.GetValue("name");
             name = node.GetValue("name");
-            displaynodeName = name;
+            nodeName = node.GetValue("objectName");
+            displaynodeName = nodeName;
             isKSC = true;
             isPermanent = true;
             config = node;
