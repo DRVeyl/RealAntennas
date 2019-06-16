@@ -56,7 +56,7 @@ namespace RealAntennas
             get => _target;
             set
             {
-                if (!CanTarget) _internalSet(null, DefaultTargetName, DefaultTargetName);
+                if (!CanTarget || value is null) _internalSet(null, DefaultTargetName, DefaultTargetName);
                 else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
                 else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
                 else Debug.LogWarningFormat($"{ModTag} Tried to set antenna target to {value} and failed");
