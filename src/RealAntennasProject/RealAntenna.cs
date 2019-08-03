@@ -156,7 +156,6 @@ namespace RealAntennas
 
         public virtual void UpgradeFromConfigNode(ConfigNode config)
         {
-            Debug.LogFormat("Applying upgrade for {0}", config);
             double d=0;
             string s = string.Empty;
             if (config.TryGetValue("referenceGain", ref d)) referenceGain = d;
