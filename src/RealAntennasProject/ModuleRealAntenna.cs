@@ -173,7 +173,7 @@ namespace RealAntennas
                     RACommNode remoteComm = new RACommNode(remoteObj.transform) { ParentVessel = vessel };
                     RealAntenna localAnt = new RealAntennaDigital(DSNAntenna) { ParentNode = localComm };
                     RealAntenna remoteAnt = new RealAntennaDigital(RAAntenna) { ParentNode = remoteComm };
-                    localAnt.ParentNode.transform.SetPositionAndRotation(home.GetRelSurfacePosition(0,0,0), Quaternion.identity);
+                    localAnt.ParentNode.transform.SetPositionAndRotation(home.position + home.GetRelSurfacePosition(0,0,0), Quaternion.identity);
                     Vector3 dir = home.GetRelSurfaceNVector(0, 0).normalized;
                     // Simplification: Use the current position of the homeworld, rather than choosing Ap/Pe/an average.
                     double maxAlt = (b == Planetarium.fetch.Sun) ? 0 : b.orbit.ApA;
