@@ -10,7 +10,7 @@ namespace RealAntennas
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power", guiUnits = " dBm", guiFormat = "F1"),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1"),
         UI_FloatRange(maxValue = 60f, minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
         public float TxPower = 40f;       // Transmit Power in dBm (milliwatts)
 
@@ -55,14 +55,14 @@ namespace RealAntennas
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning"),
          UI_Toggle(disabledText = "Disabled", enabledText = "Enabled", scene = UI_Scene.All)]
-        public bool PlanningEnabled = true;
+        public bool PlanningEnabled = false;
 
         [KSPField(guiActiveEditor = true, guiName = "Planning Peer")]
         public string sPlannerTarget = string.Empty;
         public ITargetable PlannerTarget;
 
-        [KSPField(guiActiveEditor = true, guiName = "Planning Altitude", guiUnits = " Mm"),
-         UI_FloatRange(maxValue = 1000, minValue = 1, scene = UI_Scene.All, stepIncrement = 10f)]
+        [KSPField(guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0"),
+         UI_FloatRange(maxValue = 1000, minValue = 1, stepIncrement = 10, scene = UI_Scene.All)]
         public float PlannerAltitude = 1;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Result")]
@@ -161,7 +161,7 @@ namespace RealAntennas
             {
                 CelestialBody home = Planetarium.fetch.Home;
                 RACommNetwork net = (RACommNetScenario.Instance as RACommNetScenario).Network.CommNet as RACommNetwork;
-
+                if (Fields[nameof(PlannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled && (b == home);
                 if (RATools.HighestGainCompatibleDSNAntenna(net.Nodes, RAAntenna) is RealAntenna DSNAntenna)
                 {
                     GameObject localObj = new GameObject("localAntenna");
@@ -201,6 +201,9 @@ namespace RealAntennas
                     localObj.DestroyGameObject();
                     remoteObj.DestroyGameObject();
                 }
+            } else
+            {
+                if (Fields[nameof(PlannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;
             }
         }
 
@@ -251,7 +254,7 @@ namespace RealAntennas
             paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(OnPlanningAltitudeChange);
         }
 
-        private void OnPlanningEnabledChange(BaseField f, object obj) => SetPlanningFields();
+        private void OnPlanningEnabledChange(BaseField f, object obj) { SetPlanningFields(); RecalculatePlannerFields(); }
         private void OnPlanningAltitudeChange(BaseField f, object obj) => RecalculatePlannerFields();
         private void OnRFBandChange(BaseField f, object obj) => RecalculateFields();
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
