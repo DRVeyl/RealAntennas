@@ -51,7 +51,7 @@ namespace RealAntennas.Kerbalism
                 p1.GetType().GetField("target_name").SetValue(p1, target_name);
                 p1.GetType().GetField("control_path").SetValue(p1, sList);
 
-                Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
+                //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
             }
 
             /*
