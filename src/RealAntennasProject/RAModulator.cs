@@ -8,7 +8,7 @@ namespace RealAntennas
         public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int TechLevel { get; set; }
         public double DataRate => SymbolRate * ModulationBits;       // Data Rate in bits/sec.
-        public int SymbolSteps => 10 + TechLevel;
+        public int SymbolSteps => (2 * TechLevel) + 1;
         public double MinSymbolRate => SymbolRate / Math.Pow(2, SymbolSteps);
 
         // Voyager ~= 14 bits (115,200 down to 10 bps)

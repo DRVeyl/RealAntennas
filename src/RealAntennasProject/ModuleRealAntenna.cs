@@ -137,6 +137,9 @@ namespace RealAntennas
                 double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
                 resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
                 //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
+
+                RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
+                //part.AddThermalFlux(req / Time.fixedDeltaTime);
             }
         }
 

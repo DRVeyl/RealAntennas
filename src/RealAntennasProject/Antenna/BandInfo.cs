@@ -64,8 +64,8 @@ namespace RealAntennas.Antenna
             ChannelWidth = chanWidth;
         }
 
-        public float MaxSymbolRate(int techLevel) => ChannelWidth * (1 + techLevel - minTechLevel);
-//        public float MaxSymbolRate(int techLevel) => Math.Max(ChannelWidth * (1 + techLevel - minTechLevel), MaxSymbolRateByTechLevel[techLevel-1]);
+        public float MaxSymbolRate(int techLevel) => ChannelWidth;
+        //        public float MaxSymbolRate(int techLevel) => Math.Max(ChannelWidth * (1 + techLevel - minTechLevel), MaxSymbolRateByTechLevel[techLevel-1]);
 
         public override string ToString() => $"[{DisplayName} {Frequency/1e6} MHz]";
 
