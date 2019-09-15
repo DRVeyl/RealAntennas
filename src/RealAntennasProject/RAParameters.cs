@@ -21,6 +21,9 @@
         [GameParameters.CustomIntParameterUI("Maximum Tech Level", displayFormat = "N0", gameMode = GameParameters.GameMode.SANDBOX | GameParameters.GameMode.SANDBOX, maxValue = 20, minValue = 1, stepSize = 1)]
         public int MaxTechLevel = 10;
 
+        [GameParameters.CustomFloatParameterUI("Default Packet Interval (s)", toolTip = "Default interval between science packets.  Increase if encountering bug with science not being credited.", minValue = 0.1f, maxValue = 5.0f, stepCount = 50, displayFormat = "N1")]
+        public float DefaultPacketInterval = 1.0f;
+
         public override void SetDifficultyPreset(GameParameters.Preset preset)
         {
             switch (preset)

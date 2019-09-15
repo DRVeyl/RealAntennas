@@ -40,7 +40,7 @@ namespace RealAntennas
             return ParentBody.GetSurfaceNVector(lat, lon);
         }
 
-        public override string ToString()
+        public virtual string DebugToString()
         {
             string s = string.Format("{0} : ", base.ToString());
             foreach (RealAntenna ra in RAAntennaList)
