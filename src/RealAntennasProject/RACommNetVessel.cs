@@ -148,9 +148,12 @@ namespace RealAntennas
                     {
                         Part prefab = part.partInfo.partPrefab;
                         ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
-                        RealAntenna ra = new RealAntennaDigital(raModule.name) {ParentNode = Comm};
-                        ra.LoadFromConfigNode(snap.moduleValues);
-                        antennaList.Add(ra);
+                        if (raModule.CanCommUnloaded(snap))
+                        {
+                            RealAntenna ra = new RealAntennaDigital(raModule.name) { ParentNode = Comm };
+                            ra.LoadFromConfigNode(snap.moduleValues);
+                            antennaList.Add(ra);
+                        }
                     }
                 }
             }
