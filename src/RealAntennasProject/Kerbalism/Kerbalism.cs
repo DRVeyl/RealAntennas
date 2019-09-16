@@ -35,12 +35,12 @@ namespace RealAntennas.Kerbalism
                     {
                         strength = link.start.Equals(node) ? link.FwdMetric : link.RevMetric;
                     }
-                    //                    foreach (CommNet.CommLink clink in path)
-                    //                    {
-                    //                        sList.Add(new string[1] { clink.end.name });
-                    //                    }
-                    sList.Add(new string[1] { path.First.end.name });
-                    target_name = path.First.end.ToString();
+                    foreach (CommNet.CommLink clink in path)
+                    {
+                        sList.Add(new string[1] { clink.end.name });
+                    }
+                    //sList.Add(new string[1] { path.First.end.name });
+                    target_name = path.First.end.name;
                 }
 
                 p1.GetType().GetField("linked").SetValue(p1, raCNV.IsConnectedHome); // Link Status
@@ -53,10 +53,6 @@ namespace RealAntennas.Kerbalism
 
                 //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
             }
-
-            /*
-            antennaInfo.control_path = control_path; // List<string[title, value, tooltip]> for display in the UI (value+tooltip are optional)
-            */
         }
         public static bool DetectKerbalismDLL()
         {
