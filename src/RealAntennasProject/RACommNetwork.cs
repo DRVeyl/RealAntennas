@@ -20,12 +20,12 @@ namespace RealAntennas
 
         public override CommNode Add(CommNode conn)
         {
-            if (!(conn is RACommNode))
+            if (!(conn is RACommNode c))
             {
                 Debug.LogWarningFormat(ModTag + "Wrong commnode type, so ignoring.");
                 return conn;
             }
-            Debug.LogFormat(ModTag + "Adding {0}", conn);
+            Debug.LogFormat(ModTag + "Adding {0}", c.DebugToString());
             return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
@@ -90,23 +90,33 @@ namespace RealAntennas
 
             Antenna.Encoder FwdEncoder = Antenna.Encoder.BestMatching(bestFwdAntPair[0].Encoder, bestFwdAntPair[1].Encoder);
             Antenna.Encoder RevEncoder = Antenna.Encoder.BestMatching(bestRevAntPair[0].Encoder, bestRevAntPair[1].Encoder);
+
+            RAModulator FwdAntennaTxMod = (link.FwdAntennaTx as RealAntennaDigital).modulator;
+            RAModulator FwdAntennaRxMod = (link.FwdAntennaRx as RealAntennaDigital).modulator;
+            RAModulator RevAntennaTxMod = (link.RevAntennaTx as RealAntennaDigital).modulator;
+            RAModulator RevAntennaRxMod = (link.RevAntennaRx as RealAntennaDigital).modulator;
+            int FwdMaxModSteps = Math.Min(FwdAntennaTxMod.ModulationBits, FwdAntennaRxMod.ModulationBits) - 1;
+            int RevMaxModSteps = Math.Min(RevAntennaTxMod.ModulationBits, RevAntennaRxMod.ModulationBits) - 1;
             double FwdBestSymRate = Math.Min(bestFwdAntPair[0].SymbolRate, bestFwdAntPair[1].SymbolRate);
             double RevBestSymRate = Math.Min(bestRevAntPair[0].SymbolRate, bestRevAntPair[1].SymbolRate);
             double FwdMinSymRate = Math.Max(bestFwdAntPair[0].MinSymbolRate, bestFwdAntPair[1].MinSymbolRate);
             double RevMinSymRate = Math.Max(bestRevAntPair[0].MinSymbolRate, bestRevAntPair[1].MinSymbolRate);
-            double FwdBestDataRate = FwdBestSymRate * FwdEncoder.CodingRate;
-            double RevBestDataRate = RevBestSymRate * RevEncoder.CodingRate;
+            double FwdBestDataRate = FwdBestSymRate * FwdEncoder.CodingRate * Math.Pow(2, FwdMaxModSteps);
+            double RevBestDataRate = RevBestSymRate * RevEncoder.CodingRate * Math.Pow(2, RevMaxModSteps);
             double FwdMinDataRate = FwdMinSymRate * FwdEncoder.CodingRate;
             double RevMinDataRate = RevMinSymRate * RevEncoder.CodingRate;
-            double FwdSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestSymRate / FwdMinSymRate), 2));
-            double RevSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestSymRate / RevMinSymRate), 2));
+            double FwdMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestSymRate / FwdMinSymRate), 2));
+            double RevMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestSymRate / RevMinSymRate), 2));
+            double FwdRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestDataRate / FwdDataRate), 2));
+            double RevRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestDataRate / RevDataRate), 2));
 
-            float FwdRatio = Convert.ToSingle(FwdBestDataRate / FwdDataRate);
-            float RevRatio = Convert.ToSingle(RevBestDataRate / RevDataRate);
-            double Fwdlog2 = Math.Floor(Mathf.Log(FwdRatio, 2));
-            double Revlog2 = Math.Floor(Mathf.Log(RevRatio, 2));
-            link.FwdMetric = 1 - (Fwdlog2 / (FwdSymSteps+1));
-            link.RevMetric = 1 - (Revlog2 / (RevSymSteps+1));
+            if (Convert.ToSingle(FwdBestDataRate / FwdDataRate) < 1.0)
+            {
+                Debug.LogWarningFormat($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
+            }
+
+            link.FwdMetric = 1 - (FwdRateSteps / (FwdMaxSymSteps + FwdMaxModSteps + 1));
+            link.RevMetric = 1 - (RevRateSteps / (RevMaxSymSteps + RevMaxModSteps + 1));
 //            Debug.LogFormat("Think we have taken {0} of {1} steps on FWD", Fwdlog2, FwdSymSteps);
 //            Debug.LogFormat("Think we have taken {0} of {1} steps on REV", Revlog2, RevSymSteps);
 
@@ -195,7 +205,7 @@ namespace RealAntennas
             string res = string.Format(ModTag + "CommNode walk\n");
             foreach (RACommNode item in nodes)
             {
-                res += string.Format(ModTag + "{0}\n", item);
+                res += string.Format(ModTag + "{0}\n", item.DebugToString());
             }
             return res;
         }

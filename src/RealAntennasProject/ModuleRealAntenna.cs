@@ -84,6 +84,7 @@ namespace RealAntennas
 
         private static double StockRateModifier = 0.00001;
         public static double InactivePowerConsumptionMult = 0.1;
+        public float defaultPacketInterval = 1.0f;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
@@ -117,6 +118,7 @@ namespace RealAntennas
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
             if (HighLogic.LoadedSceneIsEditor) TechLevel = maxTechLevel;
+            defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
 
             if (!RAAntenna.CanTarget)
             {
@@ -305,7 +307,7 @@ namespace RealAntennas
             if (this?.vessel?.Connection?.Comm is RACommNode node)
             {
                 double data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
-                packetInterval = 0.1F;
+                packetInterval = defaultPacketInterval;
                 packetSize = Convert.ToSingle(data_rate * packetInterval * StockRateModifier);
                 packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
             }
