@@ -10,7 +10,7 @@ namespace RealAntennas
     {
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
         List<RealAntenna> antennaList = new List<RealAntenna>();
-
+        private EventData<Vessel>.OnEvent OnVesselModifiedEvent = null;
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
 
@@ -51,7 +51,17 @@ namespace RealAntennas
                     GameEvents.onPlanetariumTargetChanged.Add(new EventData<MapObject>.OnEvent(OnMapFocusChange));
             }
             Debug.LogFormat(ModTag + "OnStart() for {0}. ID:{1}.  Comm:{2}", name, gameObject.GetInstanceID(), Comm);
-            GameEvents.onVesselWasModified.Add(new EventData<Vessel>.OnEvent(OnVesselModified));
+            if (OnVesselModifiedEvent == null)
+            {
+                OnVesselModifiedEvent = new EventData<Vessel>.OnEvent(OnVesselModified);
+                GameEvents.onVesselWasModified.Add(OnVesselModifiedEvent);
+            }
+        }
+
+        protected override void OnDestroy()
+        {
+            if (OnVesselModifiedEvent != null) GameEvents.onVesselWasModified.Remove(OnVesselModifiedEvent);
+            base.OnDestroy();
         }
 
         protected override void UpdateComm()
@@ -118,10 +128,11 @@ namespace RealAntennas
 
         protected void OnVesselModified(Vessel data)
         {
+            Debug.LogFormat($"OnVesselModified fired for {this} data {data}");
+            if (this == null || data != this.vessel) return;
             if (Comm is RACommNode node)
             {
-                node.RAAntennaList.Clear();
-                node.RAAntennaList.AddRange(DiscoverAntennas());
+                DiscoverAntennas();
             }
         }
 

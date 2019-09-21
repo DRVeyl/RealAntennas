@@ -210,6 +210,11 @@ namespace RealAntennas
             return res;
         }
 
+        public void CheckNodeConsistency()
+        {
+            Debug.LogWarningFormat($"{ModTag} CheckNodeConsistency()");
+        }
+
         protected string CommLinkWalk()
         {
             string res = string.Format(ModTag + "CommLink walk\n");
@@ -235,6 +240,7 @@ namespace RealAntennas
                     }
                 }
             }
+            CheckNodeConsistency();
             Debug.Log(CommNodeWalk());
             Debug.Log(CommLinkWalk());
         }
