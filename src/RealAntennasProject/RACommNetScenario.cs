@@ -17,7 +17,7 @@ namespace RealAntennas
         protected override void Start()
         {
             Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
-            InitBandInfo();
+            Initialize();
             ui = gameObject.AddComponent<Network.RACommNetUI>();
             this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
@@ -54,13 +54,17 @@ namespace RealAntennas
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
         }
 
-        private void InitBandInfo()
+        private void Initialize()
         {
             ConfigNode RAParamNode = null;
             foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
                 RAParamNode = n;
 
-            if (RAParamNode != null) Antenna.BandInfo.Init(RAParamNode);
+            if (RAParamNode != null)
+            {
+                Antenna.BandInfo.Init(RAParamNode);
+                Antenna.Encoder.Init(RAParamNode);
+            }
         }
 
         private void BuildHomes()
@@ -106,7 +110,7 @@ namespace RealAntennas
             GameObject newHome = new GameObject(body.name);
             Network.RACommNetHome home = newHome.AddComponent<Network.RACommNetHome>();
             home.Configure(node, body);
-            Debug.LogFormat(ModTag + "Built: {0}", home);
+            Debug.LogFormat($"{ModTag} Built: {home.name} {home.nodeName}");
         }
         private void LoadTempCurves(ConfigNode bodyNode)
         {

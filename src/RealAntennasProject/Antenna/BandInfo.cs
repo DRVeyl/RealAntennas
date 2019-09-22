@@ -13,6 +13,7 @@ namespace RealAntennas.Antenna
         public static bool initialized = false;
         public static float[] MaxSymbolRateByTechLevel = { 32, 4e3f, 16e3f, 32e3f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f };
         public static Dictionary<string, BandInfo> All = new Dictionary<string, BandInfo>();
+        protected static readonly string ModTag = "[RealAntennas.BandInfo] ";
         public static BandInfo Get(string band)
         {
             if (!initialized)
@@ -28,7 +29,7 @@ namespace RealAntennas.Antenna
         }
         public static void Init(ConfigNode config)
         {
-            Debug.LogFormat("RealAntennas.BandInfo init() on node {0}", config);
+            Debug.LogFormat($"{ModTag} Init()");
             All.Clear();
             int i = 0;
             foreach (ConfigNode node in config.GetNodes("BandInfo"))
@@ -40,7 +41,7 @@ namespace RealAntennas.Antenna
                 node.TryGetValue("TechLevel", ref tl);
                 node.TryGetValue("Frequency", ref freq);
                 node.TryGetValue("ChannelWidth", ref chan);
-                Debug.LogFormat($"RealAntennas.BandInfo adding band {nm} TL: {tl} Freq: {RATools.PrettyPrint(freq)}Hz Width: {RATools.PrettyPrint(chan)}Hz");
+                Debug.LogFormat($"{ModTag} Adding band {nm} TL: {tl} Freq: {RATools.PrettyPrint(freq)}Hz Width: {RATools.PrettyPrint(chan)}Hz");
                 All.Add(nm, new BandInfo(i, nm, nm + "-Band", tl, freq, chan));
                 i += 1;
             }
