@@ -56,6 +56,7 @@ namespace RealAntennas
                 OnVesselModifiedEvent = new EventData<Vessel>.OnEvent(OnVesselModified);
                 GameEvents.onVesselWasModified.Add(OnVesselModifiedEvent);
             }
+            this.overridePostUpdate = true;
         }
 
         protected override void OnDestroy()
