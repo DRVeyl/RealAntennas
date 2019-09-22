@@ -212,7 +212,10 @@ namespace RealAntennas
 
         public void CheckNodeConsistency()
         {
-            Debug.LogWarningFormat($"{ModTag} CheckNodeConsistency()");
+            foreach (var home in GameObject.FindObjectsOfType<Network.RACommNetHome>())
+            {
+                home.CheckNodeConsistency();
+            }
         }
 
         protected string CommLinkWalk()

@@ -9,12 +9,10 @@ namespace RealAntennas.Network
     {
         protected static readonly string ModTag = "[RealAntennasCommNetHome] ";
         protected ConfigNode config = null;
+        private readonly double DriftTolerance = 10000.0;
 
-        public void SetTransformFromConfig(ConfigNode node, CelestialBody body)
+        public void SetTransformFromLatLonAlt(double lat, double lon, double alt, CelestialBody body)
         {
-            double lat = double.Parse(node.GetValue("lat"));
-            double lon = double.Parse(node.GetValue("lon"));
-            double alt = double.Parse(node.GetValue("alt"));
             Vector3d vec = body.GetWorldSurfacePosition(lat, lon, alt);
             transform.SetPositionAndRotation(vec, Quaternion.identity);
             transform.SetParent(body.transform);
@@ -28,7 +26,10 @@ namespace RealAntennas.Network
             isKSC = true;
             isPermanent = true;
             config = node;
-            SetTransformFromConfig(config, body);
+            lat = double.Parse(node.GetValue("lat"));
+            lon = double.Parse(node.GetValue("lon"));
+            alt = double.Parse(node.GetValue("alt"));
+            SetTransformFromLatLonAlt(lat, lon, alt, body);
         }
         protected override void CreateNode()
         {
@@ -45,8 +46,8 @@ namespace RealAntennas.Network
             comm.name = nodeName;
             comm.displayName = displaynodeName;
             comm.antennaRelay.Update(!isPermanent ? GameVariables.Instance.GetDSNRange(ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) : antennaPower, GameVariables.Instance.GetDSNRangeCurve(), false);
-            Vector3d pos = (nodeTransform == null) ? transform.position : nodeTransform.position;
-            body.GetLatLonAlt(pos, out lat, out lon, out alt);
+//            Vector3d pos = (nodeTransform == null) ? transform.position : nodeTransform.position;
+//            body.GetLatLonAlt(pos, out lat, out lon, out alt);
 
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
@@ -72,6 +73,19 @@ namespace RealAntennas.Network
                 {
                     //Debug.LogFormat("Skipped because current techLevel {0} is less than required {1}", tsLevel, targetLevel);
                 }
+            }
+        }
+
+        public void CheckNodeConsistency()
+        {
+            Vector3d desiredPos = body.GetWorldSurfacePosition(lat, lon, alt);
+            Vector3d pos = (nodeTransform == null) ? transform.position : nodeTransform.position;
+            if (Vector3d.Distance(pos, desiredPos) > DriftTolerance)
+            {
+                double cLat, cLon, cAlt;
+                body.GetLatLonAlt(pos, out cLat, out cLon, out cAlt);
+                Debug.LogFormat($"{ModTag} {name} {nodeName} correcting position from current {cLat:F2}/{cLon:F2}/{cAlt:F0} to desired {lat:F2}/{lon:F2}/{alt:F0}");
+                transform.SetPositionAndRotation(desiredPos, Quaternion.identity);
             }
         }
     }
