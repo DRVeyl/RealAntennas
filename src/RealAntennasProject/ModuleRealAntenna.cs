@@ -136,9 +136,11 @@ namespace RealAntennas
             if (HighLogic.LoadedSceneIsFlight)
             {
                 string err = string.Empty;
-                double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
+                double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
                 resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
-                //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
+                //part.RequestResource("ElectricCharge", req * TimeWarp.fixedDeltaTime );    // Time.fixedDeltaTime does not change, it is fixed at 0.02s!
+                //Debug.LogFormat($"FixedUpdate() for {this}: Consuming {req:F8} ec.  Linear draw {PowerDrawLinear:F1} mW * {InactivePowerConsumptionMult:F2} at timestep {TimeWarp.fixedDeltaTime}s");
+                //Debug.LogFormat($"FixedUpdate() for {this} requesting rate {req:F8} ec/sec");
 
                 RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
