@@ -56,9 +56,9 @@ namespace RealAntennas
             get => _target;
             set
             {
-                if (!CanTarget || value is null) _internalSet(null, DefaultTargetName, DefaultTargetName);
-                else if (value is Vessel v) _internalSet(v, v.name, v.id.ToString());
-                else if (value is CelestialBody body) _internalSet(body, body.name, body.name);
+                if (!CanTarget || value is null) SetTarget(null, DefaultTargetName, DefaultTargetName);
+                else if (value is Vessel v) SetTarget(v, v.name, v.id.ToString());
+                else if (value is CelestialBody body) SetTarget(body, body.name, body.name);
                 else Debug.LogWarningFormat($"{ModTag} Tried to set antenna target to {value} and failed");
             }
         }
@@ -137,7 +137,7 @@ namespace RealAntennas
                 TargetID = config.GetValue("targetID");
                 if (CanTarget && (_target == null))
                 {
-                    Target = _findTargetFromID(TargetID);
+                    Target = FindTargetFromID(TargetID);
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace RealAntennas
             if (config.TryGetValue("RFBand", ref s)) RFBand = Antenna.BandInfo.All[s];
         }
 
-        private ITargetable _findTargetFromID(string id)
+        private ITargetable FindTargetFromID(string id)
         {
             if (FlightGlobals.fetch && CanTarget)
             {
@@ -185,7 +185,7 @@ namespace RealAntennas
             return null;
         }
 
-        private void _internalSet(ITargetable tgt, string dispString, string tgtId)
+        private void SetTarget(ITargetable tgt, string dispString, string tgtId)
         {
             _target = tgt; TargetID = tgtId;
             if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = dispString; Parent.targetID = tgtId; }

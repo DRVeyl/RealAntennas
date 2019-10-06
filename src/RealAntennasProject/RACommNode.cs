@@ -36,7 +36,7 @@ namespace RealAntennas
         public Vector3d GetSurfaceNormalVector()
         {
             if (ParentBody == null) return Vector3d.zero;
-            ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double alt);
+            ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double _);
             return ParentBody.GetSurfaceNVector(lat, lon);
         }
 
