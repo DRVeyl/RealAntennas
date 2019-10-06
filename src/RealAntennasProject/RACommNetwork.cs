@@ -54,11 +54,15 @@ namespace RealAntennas
 
         protected override bool TryConnect(CommNode a, CommNode b, double distance, bool aCanRelay = true, bool bCanRelay = true, bool bothRelay = true)
         {
-            RACommNode rac_a = a as RACommNode, rac_b = b as RACommNode;
-            if ((rac_a == null) || (rac_b == null))
+            if ((!(a is RACommNode rac_a)) || (!(b is RACommNode rac_b)))
             {
                 Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not RACommNode!", a, b);
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
+            }
+            if (!rac_a.CanComm() || !rac_b.CanComm())
+            {
+                Disconnect(a, b);
+                return false;
             }
             // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
             Profiler.BeginSample("RACommNetwork TryConnect");

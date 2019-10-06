@@ -40,6 +40,12 @@ namespace RealAntennas
             return ParentBody.GetSurfaceNVector(lat, lon);
         }
 
+        public bool CanComm()
+        {
+            if (ParentBody != null) return true;
+            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered : false;
+        }
+
         public virtual string DebugToString()
         {
             string s = string.Format("{0} : ", base.ToString());

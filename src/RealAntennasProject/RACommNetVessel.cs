@@ -11,8 +11,22 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
         List<RealAntenna> antennaList = new List<RealAntenna>();
         private EventData<Vessel>.OnEvent OnVesselModifiedEvent = null;
+        private PartResourceDefinition electricChargeDef;
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
+
+        [KSPField(isPersistant = true)]
+        public bool powered = true;
+
+        public override void OnNetworkPreUpdate()
+        {
+            base.OnNetworkPreUpdate();
+            if (Vessel.loaded && electricChargeDef != null)
+            {
+                Vessel.GetConnectedResourceTotals(electricChargeDef.id, out double amt, out double _);
+                powered = (amt > 0);
+            }
+        }
 
         public double UnloadedPowerDraw()
         {
@@ -57,6 +71,7 @@ namespace RealAntennas
                 GameEvents.onVesselWasModified.Add(OnVesselModifiedEvent);
             }
             this.overridePostUpdate = true;
+            electricChargeDef = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
         }
 
         protected override void OnDestroy()
@@ -154,10 +169,9 @@ namespace RealAntennas
                     if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
                         Part prefab = part.partInfo.partPrefab;
-                        ModuleRealAntenna raModule = prefab.FindModuleImplementing<ModuleRealAntenna>();
-                        if (raModule.CanCommUnloaded(snap))
+                        if (prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
-                            RealAntenna ra = new RealAntennaDigital(raModule.name) { ParentNode = Comm };
+                            RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm };
                             ra.LoadFromConfigNode(snap.moduleValues);
                             antennaList.Add(ra);
                         }

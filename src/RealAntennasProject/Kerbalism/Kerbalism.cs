@@ -13,9 +13,7 @@ namespace RealAntennas.Kerbalism
         public static Assembly KerbalismAssembly = null;
         public static void MyCommHandler(object p1, Vessel v)
         {
-            if (v.Connection is RACommNetVessel raCNV &&
-                raCNV.Comm is RACommNode node &&
-                KerbalismAssembly.GetType("KERBALISM.AntennaInfo") is Type KerbalismAntennaInfoType)
+            if (v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
             {
                 double rate = 0, strength = 0, packetInterval = 1.0f;
                 double ec = v.loaded ? 0 : raCNV.UnloadedPowerDraw();   // If loaded, individual modules will consume power
@@ -24,6 +22,7 @@ namespace RealAntennas.Kerbalism
                 bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
+                if (!v.loaded) raCNV.powered = powered;
                 if (powered && node.AntennaTowardsHome() is RealAntenna ra)
                 {
                     CommNet.CommPath path = new CommNet.CommPath();
