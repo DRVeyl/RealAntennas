@@ -75,10 +75,10 @@ namespace RealAntennas
             comm.isControlSourceMultiHop = false;
             comm.antennaRelay.power = comm.antennaTransmit.power = 0.0;
             hasScienceAntenna = (comm as RACommNode).RAAntennaList.Count > 0;
-            if (vessel.loaded) _determineControlLoaded(); else _determineControlUnloaded();
+            if (vessel.loaded) DetermineControlLoaded(); else DetermineControlUnloaded();
         }
 
-        private int _countControllingCrew()
+        private int CountControllingCrew()
         {
             int numControl = 0;
             foreach (ProtoCrewMember crewMember in vessel.GetVesselCrew())
@@ -89,9 +89,9 @@ namespace RealAntennas
             return numControl;
         }
 
-        private void _determineControlUnloaded()
+        private void DetermineControlUnloaded()
         {
-            int numControl = _countControllingCrew();
+            int numControl = CountControllingCrew();
             int index = 0;
             foreach (ProtoPartSnapshot protoPartSnapshot in vessel.protoVessel.protoPartSnapshots)
             {
@@ -109,9 +109,9 @@ namespace RealAntennas
                 }
             }
         }
-        private void _determineControlLoaded()
+        private void DetermineControlLoaded()
         {
-            int numControl = _countControllingCrew();
+            int numControl = CountControllingCrew();
             foreach (Part part in vessel.Parts)
             {
                 foreach (PartModule module in part.Modules)
@@ -129,12 +129,7 @@ namespace RealAntennas
 
         protected void OnVesselModified(Vessel data)
         {
-            Debug.LogFormat($"OnVesselModified fired for {this} data {data}");
-            if (this == null || data != this.vessel) return;
-            if (Comm is RACommNode node)
-            {
-                DiscoverAntennas();
-            }
+            if (this != null && data == Vessel && Comm is RACommNode) DiscoverAntennas();
         }
 
         protected List<ModuleRealAntenna> DiscoverModuleAntennas() => (Vessel != null && Vessel.loaded) ? Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList() : null;
