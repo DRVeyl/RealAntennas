@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RealAntennas
@@ -37,8 +38,6 @@ namespace RealAntennas
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
          UI_ChooseOption(scene = UI_Scene.Editor)]
         public string RFBand = "S";
-
-        public bool powered = true;
 
         public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
 
@@ -125,22 +124,27 @@ namespace RealAntennas
             SetupGUIs();
             SetupUICallbacks();
             ConfigBandOptions();
+            SetupIdlePower();
             RecalculateFields();
+        }
+
+        private void SetupIdlePower()
+        {
+            var electricCharge = resHandler.inputResources.First(x => x.id == PartResourceLibrary.ElectricityHashcode);
+            electricCharge.rate = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
+            string err = "";
+            resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
         }
 
         public void FixedUpdate()
         {
             if (HighLogic.LoadedSceneIsFlight)
             {
-                string err = string.Empty;
-                double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
-                powered = resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
-                //part.RequestResource("ElectricCharge", req * TimeWarp.fixedDeltaTime );    // Time.fixedDeltaTime does not change, it is fixed at 0.02s!
-                //Debug.LogFormat($"FixedUpdate() for {this}: Consuming {req:F8} ec.  Linear draw {PowerDrawLinear:F1} mW * {InactivePowerConsumptionMult:F2} at timestep {TimeWarp.fixedDeltaTime}s");
-                //Debug.LogFormat($"FixedUpdate() for {this} requesting rate {req:F8} ec/sec");
-
                 RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
+
+                string err = "";
+                resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
             }
         }
 
@@ -266,8 +270,5 @@ namespace RealAntennas
             SetTransmissionParams();
             base.TransmitData(dataQueue, callback);
         }
-
-//        public override bool CanComm() => powered && base.CanComm();
-//        public override bool CanCommUnloaded(ProtoPartModuleSnapshot mSnap) => powered && base.CanCommUnloaded(mSnap);
     }
 }
