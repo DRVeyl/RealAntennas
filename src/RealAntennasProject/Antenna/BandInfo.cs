@@ -4,63 +4,42 @@ using UnityEngine;
 
 namespace RealAntennas.Antenna
 {
-    public class BandInfo : Enumeration, IEquatable<BandInfo>
+    public class BandInfo : IEquatable<BandInfo>
     {
-        public readonly int minTechLevel;
-        public readonly double Frequency;
-        public readonly string DisplayName;
-        public readonly float ChannelWidth;
+        [Persistent] public string name;
+        [Persistent] public string DisplayName;
+        [Persistent] public int TechLevel;
+        [Persistent] public double Frequency;
+        [Persistent] public float ChannelWidth;
+
         public static bool initialized = false;
-        public static float[] MaxSymbolRateByTechLevel = { 32, 4e3f, 16e3f, 32e3f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f };
         public static Dictionary<string, BandInfo> All = new Dictionary<string, BandInfo>();
         protected static readonly string ModTag = "[RealAntennas.BandInfo] ";
         public static BandInfo Get(string band)
         {
-            if (!initialized)
-            {
-//                ConfigNode RAParamNode = GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams");
-                ConfigNode RAParamNode = null;
-                foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
-                    RAParamNode = n;
-
-                if (RAParamNode != null) Init(RAParamNode);
-            }
+            if (!initialized && GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode node)
+                Init(node);
             return All[band];
         }
         public static void Init(ConfigNode config)
         {
             Debug.LogFormat($"{ModTag} Init()");
             All.Clear();
-            int i = 0;
             foreach (ConfigNode node in config.GetNodes("BandInfo"))
             {
-                int tl = 0;
-                double freq = 0f;
-                float chan = 0f;
-                string nm = node.GetValue("name");
-                node.TryGetValue("TechLevel", ref tl);
-                node.TryGetValue("Frequency", ref freq);
-                node.TryGetValue("ChannelWidth", ref chan);
-                Debug.LogFormat($"{ModTag} Adding band {nm} TL: {tl} Freq: {RATools.PrettyPrint(freq)}Hz Width: {RATools.PrettyPrint(chan)}Hz");
-                All.Add(nm, new BandInfo(i, nm, nm + "-Band", tl, freq, chan));
-                i += 1;
-            }
-            i = 0;
-            string[] sRates = config.GetValue("MaxSymbolRateByTechLevel").Split(new char[] { ',' });
-            foreach (string sRate in sRates)
-            {
-                Debug.LogFormat("(Unimplemented) MaxSymbolRate learning max rate {0} at TL {1}", sRate, i);
-                MaxSymbolRateByTechLevel[i] = Single.Parse(sRate);
-                i += 1;
+                BandInfo obj = ConfigNode.CreateObjectFromConfig<BandInfo>(node);
+                Debug.LogFormat($"{ModTag} Adding BandInfo {obj}");
+                All.Add(obj.name, obj);
             }
             initialized = true;
         }
-
-        public BandInfo(int id, string name, string dispName, int minLevel, double freq, float chanWidth)
-            : base(id, name)
+      
+        public BandInfo() { }
+        public BandInfo(string name, string dispName, int minLevel, double freq, float chanWidth)
         {
+            this.name = name;
             DisplayName = dispName;
-            minTechLevel = minLevel;
+            TechLevel = minLevel;
             Frequency = freq;
             ChannelWidth = chanWidth;
         }
@@ -68,14 +47,14 @@ namespace RealAntennas.Antenna
         public float MaxSymbolRate(int techLevel) => ChannelWidth;
         //        public float MaxSymbolRate(int techLevel) => Math.Max(ChannelWidth * (1 + techLevel - minTechLevel), MaxSymbolRateByTechLevel[techLevel-1]);
 
-        public override string ToString() => $"[{DisplayName} {Frequency/1e6} MHz]";
+        public override string ToString() => $"[{DisplayName} TL:{TechLevel} {RATools.PrettyPrint(Frequency)}Hz]";
 
         public static List<BandInfo> GetFromTechLevel(int level)
         {
             List<BandInfo> l = new List<BandInfo>() { };
             foreach (BandInfo bi in All.Values)
             {
-                if (level >= bi.minTechLevel) l.Add(bi);
+                if (level >= bi.TechLevel) l.Add(bi);
             }
             return l;
         }

@@ -56,14 +56,11 @@ namespace RealAntennas
 
         private void Initialize()
         {
-            ConfigNode RAParamNode = null;
-            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
-                RAParamNode = n;
-
-            if (RAParamNode != null)
+            if (GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode RAParamNode)
             {
                 Antenna.BandInfo.Init(RAParamNode);
                 Antenna.Encoder.Init(RAParamNode);
+                TechLevelInfo.Init(RAParamNode);
             }
         }
 
