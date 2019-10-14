@@ -66,7 +66,7 @@ namespace RealAntennas.Network
                     RealAntenna ant = new RealAntennaDigital(name) { ParentNode = comm };
                     ant.LoadFromConfigNode(antNode);
                     ant.ProcessUpgrades(tsLevel, antNode);
-                    ant.TechLevel = tsLevel;
+                    ant.TechLevelInfo = TechLevelInfo.GetTechLevel(tsLevel);
                     t.RAAntennaList.Add(ant);
                 }
                 else
@@ -82,8 +82,7 @@ namespace RealAntennas.Network
             Vector3d pos = (nodeTransform == null) ? transform.position : nodeTransform.position;
             if (Vector3d.Distance(pos, desiredPos) > DriftTolerance)
             {
-                double cLat, cLon, cAlt;
-                body.GetLatLonAlt(pos, out cLat, out cLon, out cAlt);
+                body.GetLatLonAlt(pos, out double cLat, out double cLon, out double cAlt);
                 Debug.LogFormat($"{ModTag} {name} {nodeName} correcting position from current {cLat:F2}/{cLon:F2}/{cAlt:F0} to desired {lat:F2}/{lon:F2}/{alt:F0}");
                 transform.SetPositionAndRotation(desiredPos, Quaternion.identity);
             }

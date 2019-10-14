@@ -23,7 +23,8 @@ namespace RealAntennas
 
         public static bool initialized = false;
 
-        public static Dictionary<int, TechLevelInfo> All = new Dictionary<int, TechLevelInfo>();
+        private static readonly Dictionary<int, TechLevelInfo> All = new Dictionary<int, TechLevelInfo>();
+        private static int maxTL = -1;
         protected static readonly string ModTag = "[RealAntennas.TechLevelInfo] ";
 
         public TechLevelInfo() { }
@@ -37,13 +38,22 @@ namespace RealAntennas
                 TechLevelInfo obj = ConfigNode.CreateObjectFromConfig<TechLevelInfo>(node);
                 Debug.LogFormat($"{ModTag} Adding TL {obj}");
                 All.Add(obj.Level, obj);
+                maxTL = Math.Max(maxTL, obj.Level);
             }
             initialized = true;
         }
 
         public override string ToString() => $"{name} L:{Level} MaxP:{MaxPower:N0}dBm MaxRate:{RATools.PrettyPrintDataRate(MaxDataRate)} Eff:{PowerEfficiency:F4}";
-        
-        public static TechLevelInfo GetTechLevel(int i) => All[(i < 0) ? 0 : i];
 
+        public static TechLevelInfo GetTechLevel(int i)
+        {
+            i = (i < 0) ? 0 : i;
+            i = (i > maxTL) ? maxTL : i;
+            if (All.TryGetValue(i, out TechLevelInfo info))
+            {
+                return info;
+            }
+            return All[0];
+        }
     }
 }

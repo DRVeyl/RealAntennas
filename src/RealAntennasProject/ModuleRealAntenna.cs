@@ -86,7 +86,7 @@ namespace RealAntennas
         public bool Deployable => deployableAntenna != null;
         public bool Deployed => deployableAntenna?.deployState == ModuleDeployablePart.DeployState.EXTENDED;
 
-        private static readonly double StockRateModifier = 0.00001;
+        private static readonly double StockRateModifier = 0.001;
         public static double InactivePowerConsumptionMult = 0.1;
         public float defaultPacketInterval = 1.0f;
 
@@ -156,7 +156,7 @@ namespace RealAntennas
 
         private void RecalculateFields()
         {
-            RAAntenna.TechLevel = techLevel;
+            RAAntenna.TechLevelInfo = TechLevelInfo.GetTechLevel(techLevel);
             RAAntenna.TxPower = TxPower;
             RAAntenna.RFBand = Antenna.BandInfo.All[RFBand];
             RAAntenna.SymbolRate = RAAntenna.RFBand.MaxSymbolRate(techLevel);

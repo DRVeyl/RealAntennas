@@ -16,13 +16,13 @@ namespace RealAntennas
         public double referenceFrequency = 0;
         public double antennaDiameter = 0;
         public virtual double TxPower { get; set; }       // Transmit Power in dBm (milliwatts)
-        public virtual int TechLevel { get; set; }
+        public TechLevelInfo TechLevelInfo;
         public Antenna.BandInfo RFBand;
         public virtual double SymbolRate { get; set; }
         public virtual double MinSymbolRate => SymbolRate / 1000;
         public virtual double Frequency => RFBand.Frequency;
-        public virtual double PowerEfficiency => Math.Min(0.4, 0.1 + (TechLevel * 0.03));
-        public virtual double AntennaEfficiency => Math.Min(0.7, 0.5 + (TechLevel * 0.025));
+        public virtual double PowerEfficiency => TechLevelInfo.PowerEfficiency;
+        public virtual double AntennaEfficiency => TechLevelInfo.ReflectorEfficiency;
         public virtual double DataRate { get; }
         public virtual double Bandwidth => DataRate;          // RF bandwidth required.
         public virtual double AMWTemp { get; set; }
@@ -35,7 +35,7 @@ namespace RealAntennas
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
         // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
         // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
-        public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevel); 
+        public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevelInfo.Level); 
         public virtual double RequiredCI => Encoder.RequiredEbN0;
 
         public ModuleRealAntenna Parent { get; internal set; }
@@ -72,7 +72,7 @@ namespace RealAntennas
         public static double MaxOmniGain = 5;
         private readonly double minimumSpotRadius = 1e3;
 
-        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevel:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)
@@ -88,7 +88,7 @@ namespace RealAntennas
             referenceFrequency = orig.referenceFrequency;
             antennaDiameter = orig.antennaDiameter;
             TxPower = orig.TxPower;
-            TechLevel = orig.TechLevel;
+            TechLevelInfo = orig.TechLevelInfo;
             RFBand = orig.RFBand;
             SymbolRate = orig.SymbolRate;
             AMWTemp = orig.AMWTemp;
@@ -122,7 +122,10 @@ namespace RealAntennas
 
         public virtual void LoadFromConfigNode(ConfigNode config)
         {
-            TechLevel = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 1;
+            int tl = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 0;
+            if (!TechLevelInfo.initialized)
+                TechLevelInfo.Init(GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams"));
+            TechLevelInfo = TechLevelInfo.GetTechLevel(tl);
             string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
             RFBand = Antenna.BandInfo.Get(sRFBand);
             referenceGain = (config.HasValue("referenceGain")) ? double.Parse(config.GetValue("referenceGain")) : 0;
@@ -130,7 +133,7 @@ namespace RealAntennas
             antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;
             Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBand.Frequency);
             TxPower = (config.HasValue("TxPower")) ? double.Parse(config.GetValue("TxPower")) : 30f;
-            SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevel);
+            SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevelInfo.Level);
             AMWTemp = (config.HasValue("AMWTemp")) ? double.Parse(config.GetValue("AMWTemp")) : 290f;
             if (config.HasValue("targetID"))
             {
