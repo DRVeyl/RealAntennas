@@ -7,21 +7,23 @@ namespace RealAntennas
     public class RealAntennaDigital : RealAntenna
     {
         public override double DataRate => modulator.DataRate * Encoder.CodingRate;
-        public override int TechLevel { get => modulator.TechLevel; set => modulator.TechLevel = value; }
         public override double Bandwidth => SymbolRate * Encoder.CodingRate;
         public override double SymbolRate { get => modulator.SymbolRate; set => modulator.SymbolRate = value; }
         public override double MinSymbolRate => modulator.MinSymbolRate;
-        public RAModulator modulator = new RAModulator();
+        public RAModulator modulator;
 
         protected static new readonly string ModTag = "[RealAntennaDigital] ";
 
         public RealAntennaDigital() : this("New RealAntennaDigital") { }
-        public RealAntennaDigital(string name) : base(name) { }
+        public RealAntennaDigital(string name) : base(name) 
+        {
+            modulator = new RAModulator(this);
+        }
         public RealAntennaDigital(RealAntenna orig) : base(orig)
         {
             if (orig is RealAntennaDigital o) modulator = new RAModulator(o.modulator);
         }
-        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevel:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
 
         public override double BestDataRateToPeer(RealAntenna rx)
         {
@@ -55,7 +57,7 @@ namespace RealAntennas
             double minEb = encoder.RequiredEbN0 + N0;           // in dBm
             double maxBitRateLog = RxPower - minEb;                // in dB*Hz
             double maxBitRate = RATools.LinearScale(maxBitRateLog);
-            /*            
+            /*           
             Vessel tv = (tx.ParentNode as RACommNode).ParentVessel;
             Vessel rv = (rx.ParentNode as RACommNode).ParentVessel;
             if (tv != null && rv != null)
@@ -107,7 +109,6 @@ namespace RealAntennas
         public override void LoadFromConfigNode(ConfigNode config)
         {
             base.LoadFromConfigNode(config);
-            modulator.TechLevel = TechLevel;
             modulator.LoadFromConfigNode(config);
         }
         public override void UpgradeFromConfigNode(ConfigNode config)

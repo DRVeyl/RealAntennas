@@ -4,11 +4,12 @@ namespace RealAntennas
 {
     public class RAModulator
     {
+        public RealAntennaDigital Parent;
         public double SymbolRate { get; set; }      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
-        public int TechLevel { get; set; }
+        public TechLevelInfo TechLevel => Parent.TechLevelInfo;
         public double DataRate => SymbolRate * ModulationBits;       // Data Rate in bits/sec.
-        public int SymbolSteps => (2 * TechLevel) + 3;
+        public int SymbolSteps => (2 * TechLevel.Level) + 3;
         public double MinSymbolRate => SymbolRate / Math.Pow(2, SymbolSteps);
 
         // Voyager ~= 14 bits (115,200 down to 10 bps)
@@ -45,24 +46,23 @@ namespace RealAntennas
             }
         }
         public virtual int ModulationBitsFromTechLevel(double level) => 1 + Convert.ToInt32(Math.Floor(level / 2));
-        public RAModulator() : this(1, 0, 0) { }
-        public RAModulator(RAModulator orig) : this(orig.SymbolRate, orig.ModulationBits, orig.TechLevel) { }
-        public RAModulator(double symbolRate, int modulationBits, int techLevel)
+        public RAModulator(RealAntennaDigital p) : this(p, 1, 1) { }
+        public RAModulator(RAModulator orig) : this(orig.Parent, orig.SymbolRate, orig.ModulationBits) { }
+        public RAModulator(RealAntennaDigital parent, double symbolRate, int modulationBits)
         {
+            Parent = parent;
             SymbolRate = symbolRate;
             ModulationBits = modulationBits;
-            TechLevel = techLevel;
         }
         public void Copy(RAModulator orig)
         {
             SymbolRate = orig.SymbolRate;
             ModulationBits = orig.ModulationBits;
-            TechLevel = orig.TechLevel;
         }
 
         public void LoadFromConfigNode(ConfigNode config)
         {
-            ModulationBits = (config.HasValue("ModulationBits")) ? int.Parse(config.GetValue("ModulationBits")) : ModulationBitsFromTechLevel(TechLevel);
+            ModulationBits = (config.HasValue("ModulationBits")) ? int.Parse(config.GetValue("ModulationBits")) : ModulationBitsFromTechLevel(TechLevel.Level);
         }
         public virtual void UpgradeFromConfigNode(ConfigNode config)
         {
