@@ -72,7 +72,7 @@ namespace RealAntennas
         public static double MaxOmniGain = 5;
         private readonly double minimumSpotRadius = 1e3;
 
-        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi] [{RFBand.name}] [TL:{TechLevel:N0}] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevel:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)

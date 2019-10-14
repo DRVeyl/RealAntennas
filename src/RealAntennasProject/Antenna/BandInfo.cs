@@ -7,7 +7,6 @@ namespace RealAntennas.Antenna
     public class BandInfo : IEquatable<BandInfo>
     {
         [Persistent] public string name;
-        [Persistent] public string DisplayName;
         [Persistent] public int TechLevel;
         [Persistent] public double Frequency;
         [Persistent] public float ChannelWidth;
@@ -23,31 +22,24 @@ namespace RealAntennas.Antenna
         }
         public static void Init(ConfigNode config)
         {
-            Debug.LogFormat($"{ModTag} Init()");
+            Debug.Log($"{ModTag} Init()");
             All.Clear();
             foreach (ConfigNode node in config.GetNodes("BandInfo"))
             {
                 BandInfo obj = ConfigNode.CreateObjectFromConfig<BandInfo>(node);
-                Debug.LogFormat($"{ModTag} Adding BandInfo {obj}");
+                Debug.Log($"{ModTag} Adding BandInfo {obj.ToDetailedString()}");
                 All.Add(obj.name, obj);
             }
             initialized = true;
         }
       
         public BandInfo() { }
-        public BandInfo(string name, string dispName, int minLevel, double freq, float chanWidth)
-        {
-            this.name = name;
-            DisplayName = dispName;
-            TechLevel = minLevel;
-            Frequency = freq;
-            ChannelWidth = chanWidth;
-        }
 
         public float MaxSymbolRate(int techLevel) => ChannelWidth;
         //        public float MaxSymbolRate(int techLevel) => Math.Max(ChannelWidth * (1 + techLevel - minTechLevel), MaxSymbolRateByTechLevel[techLevel-1]);
 
-        public override string ToString() => $"[{DisplayName} TL:{TechLevel} {RATools.PrettyPrint(Frequency)}Hz]";
+        public override string ToString() => $"[{name}-Band {RATools.PrettyPrint(Frequency)}Hz]";
+        public virtual string ToDetailedString() => $"[{name}-Band TL:{TechLevel} {RATools.PrettyPrint(Frequency)}Hz]";
 
         public static List<BandInfo> GetFromTechLevel(int level)
         {
