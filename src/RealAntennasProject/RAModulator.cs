@@ -8,7 +8,7 @@ namespace RealAntennas
         public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public int TechLevel { get; set; }
         public double DataRate => SymbolRate * ModulationBits;       // Data Rate in bits/sec.
-        public int SymbolSteps => (2 * TechLevel) + 1;
+        public int SymbolSteps => (2 * TechLevel) + 3;
         public double MinSymbolRate => SymbolRate / Math.Pow(2, SymbolSteps);
 
         // Voyager ~= 14 bits (115,200 down to 10 bps)
@@ -44,7 +44,7 @@ namespace RealAntennas
                 default: return $"{Math.Pow(2, bits):N0}-QAM";
             }
         }
-        public virtual int ModulationBitsFromTechLevel(double level) => Convert.ToInt32(Math.Ceiling(level / 2));
+        public virtual int ModulationBitsFromTechLevel(double level) => 1 + Convert.ToInt32(Math.Floor(level / 2));
         public RAModulator() : this(1, 0, 0) { }
         public RAModulator(RAModulator orig) : this(orig.SymbolRate, orig.ModulationBits, orig.TechLevel) { }
         public RAModulator(double symbolRate, int modulationBits, int techLevel)
