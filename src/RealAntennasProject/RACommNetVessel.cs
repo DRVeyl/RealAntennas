@@ -70,9 +70,17 @@ namespace RealAntennas
                 OnVesselModifiedEvent = new EventData<Vessel>.OnEvent(OnVesselModified);
                 GameEvents.onVesselWasModified.Add(OnVesselModifiedEvent);
             }
+            foreach (ModuleDeployablePart mdp in Vessel.FindPartModulesImplementing<ModuleDeployablePart>())
+            {
+                mdp.OnMoving.Add(new EventData<float, float>.OnEvent(OnMoving));
+                mdp.OnStop.Add(new EventData<float>.OnEvent(OnStop));
+            }
             this.overridePostUpdate = true;
             electricChargeDef = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
         }
+
+        private void OnMoving(float f1, float f2) => DiscoverAntennas();
+        private void OnStop(float f1) => DiscoverAntennas();
 
         protected override void OnDestroy()
         {
@@ -157,8 +165,11 @@ namespace RealAntennas
             {
                 foreach (ModuleRealAntenna ant in Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList())
                 {
-                    ant.RAAntenna.ParentNode = Comm;
-                    antennaList.Add(ant.RAAntenna);
+                    if (DeployedLoaded(ant.part))
+                    {
+                        ant.RAAntenna.ParentNode = Comm;
+                        antennaList.Add(ant.RAAntenna);
+                    }
                 }
                 return antennaList;
             }
@@ -166,7 +177,7 @@ namespace RealAntennas
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
-                    if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
+                    if (DeployedUnloaded(part) && part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
                         Part prefab = part.partInfo.partPrefab;
                         if (prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
@@ -180,5 +191,18 @@ namespace RealAntennas
             }
             return antennaList;
         }
+        public static bool DeployedUnloaded(ProtoPartSnapshot part)
+        {
+            if (part.FindModule("ModuleDeployableAntenna") is ProtoPartModuleSnapshot deploySnap)
+            {
+                string deployState = string.Empty;
+                deploySnap.moduleValues.TryGetValue("deployState", ref deployState);
+                return deployState.Equals("EXTENDED");
+            }
+            return true;
+        }
+        public static bool DeployedLoaded(Part part) =>
+            (part.FindModuleImplementing<ModuleDeployableAntenna>() is ModuleDeployableAntenna mda) ?
+            mda.deployState == ModuleDeployablePart.DeployState.EXTENDED : true;
     }
 }

@@ -16,12 +16,12 @@ namespace RealAntennas
         public float TxPower = 40f;       // Transmit Power in dBm (milliwatts)
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0"),
-        UI_FloatRange(minValue = 1f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
-        private float TechLevel = 1f;
+        UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
+        private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
 
         [KSPField]
-        private int maxTechLevel = 1;
+        private int maxTechLevel = 0;
 
         [KSPField(isPersistant = true)]
         public double AMWTemp;    // Antenna Microwave Temperature
@@ -82,13 +82,16 @@ namespace RealAntennas
         public Antenna.AntennaGUI targetGUI = new Antenna.AntennaGUI();
         public Planner planner;
 
+        private ModuleDeployableAntenna deployableAntenna;
+        public bool Deployable => deployableAntenna != null;
+        public bool Deployed => deployableAntenna?.deployState == ModuleDeployablePart.DeployState.EXTENDED;
+
         private static readonly double StockRateModifier = 0.00001;
         public static double InactivePowerConsumptionMult = 0.1;
         public float defaultPacketInterval = 1.0f;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
-
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
@@ -113,7 +116,7 @@ namespace RealAntennas
 
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
-            if (HighLogic.LoadedSceneIsEditor) TechLevel = maxTechLevel;
+            if (HighLogic.LoadedSceneIsEditor && TechLevel < 0) TechLevel = maxTechLevel;
             defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
 
             if (!RAAntenna.CanTarget)
@@ -121,6 +124,9 @@ namespace RealAntennas
                 Fields[nameof(sAntennaTarget)].guiActive = false;
                 Events[nameof(AntennaTargetGUI)].active = false;
             }
+
+            deployableAntenna = part.FindModuleImplementing<ModuleDeployableAntenna>();
+
             SetupGUIs();
             SetupUICallbacks();
             ConfigBandOptions();
@@ -216,8 +222,8 @@ namespace RealAntennas
             List<string> availableBandDisplayNames = new List<string>();
             foreach (Antenna.BandInfo bi in Antenna.BandInfo.GetFromTechLevel(techLevel))
             {
-                availableBands.Add(bi.Name);
-                availableBandDisplayNames.Add(bi.DisplayName);
+                availableBands.Add(bi.name);
+                availableBandDisplayNames.Add($"{bi.name}-Band");
             }
 
             UI_ChooseOption op = (UI_ChooseOption)Fields[nameof(RFBand)].uiControlEditor;
@@ -236,6 +242,8 @@ namespace RealAntennas
                    $"<b>Gain</b>: {Gain:F1} dBi\n" + 
                    $"<b>Reference Frequency</b>: {RATools.PrettyPrint(RAAntenna.Frequency)}Hz\n";
         }
+
+        public override bool CanComm() => base.CanComm() && (!Deployable || Deployed);
 
         public override string ToString() => RAAntenna.ToString();
 
