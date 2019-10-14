@@ -109,19 +109,5 @@ namespace RealAntennas
             home.Configure(node, body);
             Debug.LogFormat($"{ModTag} Built: {home.name} {home.nodeName}");
         }
-        private void LoadTempCurves(ConfigNode bodyNode)
-        {
-            if (bodyNode?.GetNode("skyTemperature") is ConfigNode temperatureNode)
-            {
-                foreach (ConfigNode n in temperatureNode.GetNodes("temperatureCurve"))
-                {
-                    FloatCurve MyFloatCurve = new FloatCurve();
-                    MyFloatCurve.Load(n);
-                    MyFloatCurve.Curve.postWrapMode = WrapMode.ClampForever;
-                    MyFloatCurve.Curve.preWrapMode = WrapMode.ClampForever;
-                    Debug.LogFormat("Loaded temperature curve for declination {0} with {1} keys", n.GetValue("declination"), MyFloatCurve.Curve.length);
-                }
-            }
-        }
     }
 }
