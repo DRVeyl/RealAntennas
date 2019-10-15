@@ -132,7 +132,7 @@ namespace RealAntennas
             antennaDiameter = (config.HasValue("antennaDiameter")) ? double.Parse(config.GetValue("antennaDiameter")) : 0;
             Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBand.Frequency, AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBand.Frequency);
             TxPower = (config.HasValue("TxPower")) ? double.Parse(config.GetValue("TxPower")) : 30f;
-            SymbolRate = Antenna.BandInfo.All[sRFBand].MaxSymbolRate(TechLevelInfo.Level);
+            SymbolRate = RFBand.MaxSymbolRate(TechLevelInfo.Level);
             AMWTemp = (config.HasValue("AMWTemp")) ? double.Parse(config.GetValue("AMWTemp")) : 290f;
             if (config.HasValue("targetID"))
             {

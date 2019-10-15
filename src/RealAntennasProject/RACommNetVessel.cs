@@ -9,7 +9,8 @@ namespace RealAntennas
     public class RACommNetVessel : CommNet.CommNetVessel
     {
         protected static readonly string ModTag = "[RealAntennasCommNetVessel] ";
-        List<RealAntenna> antennaList = new List<RealAntenna>();
+        readonly List<RealAntenna> antennaList = new List<RealAntenna>();
+        readonly List<RealAntenna> inactiveAntennas = new List<RealAntenna>();
         private EventData<Vessel>.OnEvent OnVesselModifiedEvent = null;
         private PartResourceDefinition electricChargeDef;
         public override IScienceDataTransmitter GetBestTransmitter() =>
@@ -34,6 +35,11 @@ namespace RealAntennas
             foreach (RealAntenna ra in antennaList)
             {
                 ec += ra.PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;  // mW->kW conversion 1e-6, Standby power SWAG 10%
+            }
+            foreach (RealAntenna ra in inactiveAntennas)
+            {
+                ec += ra.PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;  // mW->kW conversion 1e-6, Standby power SWAG 10%
+
             }
             return ec;
         }
@@ -155,21 +161,18 @@ namespace RealAntennas
             if (this != null && data == Vessel && Comm is RACommNode) DiscoverAntennas();
         }
 
-        protected List<ModuleRealAntenna> DiscoverModuleAntennas() => (Vessel != null && Vessel.loaded) ? Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList() : null;
-
         protected List<RealAntenna> DiscoverAntennas()
         {
             antennaList.Clear();
+            inactiveAntennas.Clear();
             if (Vessel == null) return antennaList;
             if (Vessel.loaded)
             {
                 foreach (ModuleRealAntenna ant in Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList())
                 {
-                    if (DeployedLoaded(ant.part))
-                    {
-                        ant.RAAntenna.ParentNode = Comm;
-                        antennaList.Add(ant.RAAntenna);
-                    }
+                    ant.RAAntenna.ParentNode = Comm;
+                    if (DeployedLoaded(ant.part)) antennaList.Add(ant.RAAntenna);
+                    else inactiveAntennas.Add(ant.RAAntenna);
                 }
                 return antennaList;
             }
@@ -177,14 +180,15 @@ namespace RealAntennas
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
-                    if (DeployedUnloaded(part) && part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
+                    if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
                         Part prefab = part.partInfo.partPrefab;
                         if (prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
                             RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm };
                             ra.LoadFromConfigNode(snap.moduleValues);
-                            antennaList.Add(ra);
+                            if (DeployedUnloaded(part)) antennaList.Add(ra);
+                            else inactiveAntennas.Add(ra);
                         }
                     }
                 }
