@@ -8,7 +8,6 @@ namespace RealAntennas
     {
         public override double DataRate => modulator.DataRate * Encoder.CodingRate;
         public override double Bandwidth => SymbolRate * Encoder.CodingRate;
-        public override double SymbolRate { get => modulator.SymbolRate; set => modulator.SymbolRate = value; }
         public override double MinSymbolRate => modulator.MinSymbolRate;
         public RAModulator modulator;
 

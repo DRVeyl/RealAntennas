@@ -79,6 +79,7 @@ namespace RealAntennas
         {
             Name = name;
             DataRate = dataRate;
+            TechLevelInfo = TechLevelInfo.GetTechLevel(0);
         }
         public RealAntenna(RealAntenna orig)
         {
@@ -123,8 +124,6 @@ namespace RealAntennas
         public virtual void LoadFromConfigNode(ConfigNode config)
         {
             int tl = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 0;
-            if (!TechLevelInfo.initialized)
-                TechLevelInfo.Init(GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams"));
             TechLevelInfo = TechLevelInfo.GetTechLevel(tl);
             string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
             RFBand = Antenna.BandInfo.Get(sRFBand);

@@ -47,6 +47,8 @@ namespace RealAntennas
 
         public static TechLevelInfo GetTechLevel(int i)
         {
+            if (!initialized) 
+                Init(GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams"));
             i = (i < 0) ? 0 : i;
             i = (i > maxTL) ? maxTL : i;
             if (All.TryGetValue(i, out TechLevelInfo info))

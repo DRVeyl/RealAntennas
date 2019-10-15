@@ -5,7 +5,7 @@ namespace RealAntennas
     public class RAModulator
     {
         public RealAntennaDigital Parent;
-        public double SymbolRate { get; set; }      // Samples / sec.
+        public double SymbolRate => Parent.SymbolRate;      // Samples / sec.
         public int ModulationBits { get; set; }     // Bits / symbol (1=BPSK, 2=QPSK, 3=8-PSK, 4=16-QAM,...
         public TechLevelInfo TechLevel => Parent.TechLevelInfo;
         public double DataRate => SymbolRate * ModulationBits;       // Data Rate in bits/sec.
@@ -46,17 +46,15 @@ namespace RealAntennas
             }
         }
         public virtual int ModulationBitsFromTechLevel(double level) => 1 + Convert.ToInt32(Math.Floor(level / 2));
-        public RAModulator(RealAntennaDigital p) : this(p, 1, 1) { }
-        public RAModulator(RAModulator orig) : this(orig.Parent, orig.SymbolRate, orig.ModulationBits) { }
-        public RAModulator(RealAntennaDigital parent, double symbolRate, int modulationBits)
+        public RAModulator(RealAntennaDigital p) : this(p, 1) { }
+        public RAModulator(RAModulator orig) : this(orig.Parent, orig.ModulationBits) { }
+        public RAModulator(RealAntennaDigital parent, int modulationBits)
         {
             Parent = parent;
-            SymbolRate = symbolRate;
             ModulationBits = modulationBits;
         }
         public void Copy(RAModulator orig)
         {
-            SymbolRate = orig.SymbolRate;
             ModulationBits = orig.ModulationBits;
         }
 
