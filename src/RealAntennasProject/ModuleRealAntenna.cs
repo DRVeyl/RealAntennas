@@ -65,8 +65,11 @@ namespace RealAntennas
          UI_FloatRange(maxValue = 1000, minValue = 1, stepIncrement = 10, scene = UI_Scene.All)]
         public float plannerAltitude = 1;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Result")]
-        public string sPlanningResult = string.Empty;
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit")]
+        public string sDownlinkPlanningResult = string.Empty;
+
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive")]
+        public string sUplinkPlanningResult = string.Empty;
 
         [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting")]
         void AntennaTargetGUI() => targetGUI.showGUI = !targetGUI.showGUI;
@@ -86,9 +89,9 @@ namespace RealAntennas
         public bool Deployable => deployableAntenna != null;
         public bool Deployed => deployableAntenna?.deployState == ModuleDeployablePart.DeployState.EXTENDED;
 
-        private static readonly double StockRateModifier = 0.001;
+        private float StockRateModifier = 0.001f;
         public static double InactivePowerConsumptionMult = 0.1;
-        public float defaultPacketInterval = 1.0f;
+        private float defaultPacketInterval = 1.0f;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
@@ -118,6 +121,7 @@ namespace RealAntennas
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
             if (HighLogic.LoadedSceneIsEditor && TechLevel < 0) TechLevel = maxTechLevel;
             defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
+            StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
 
             if (!RAAntenna.CanTarget)
             {
@@ -259,6 +263,7 @@ namespace RealAntennas
                 packetInterval = defaultPacketInterval;
                 packetSize = Convert.ToSingle(data_rate * packetInterval * StockRateModifier);
                 packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
+                Debug.Log($"{ModTag} Setting transmission params: rate: {data_rate:F1}, interval: {packetInterval:N1}s, rescale: {StockRateModifier:N5}, size: {packetSize:N6}");
             }
         }
         public override bool CanTransmit()

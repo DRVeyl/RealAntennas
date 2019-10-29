@@ -9,7 +9,11 @@ namespace RealAntennas
         public ModuleRealAntenna parent;
 
         private void SetPlannerTargetStr(string value) => parent.plannerTargetString = value;
-        private void SetPlanningResult(string value) => parent.sPlanningResult = value;
+        private void SetPlanningResult(string dl, string ul)
+        {
+            parent.sDownlinkPlanningResult = dl;
+            parent.sUplinkPlanningResult = ul;
+        }
 
         private object PlannerTarget;
         private float PlannerAltitude { get => parent.plannerAltitude; set => parent.plannerAltitude = value; }
@@ -33,11 +37,17 @@ namespace RealAntennas
         {
             { if (parent.Events[nameof(parent.AntennaPlanningGUI)] is BaseEvent be) be.active = PlanningEnabled; }
             { if (parent.Fields[nameof(parent.plannerTargetString)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (parent.Fields[nameof(parent.sPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
+            { if (parent.Fields[nameof(parent.sDownlinkPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
+            { if (parent.Fields[nameof(parent.sUplinkPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
             { if (parent.Fields[nameof(parent.plannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
         }
 
-        internal void OnPlanningEnabledChange(BaseField f, object obj) {  SetPlanningFields(); RecalculatePlannerFields(); }
+        internal void OnPlanningEnabledChange(BaseField f, object obj) 
+        {  
+            SetPlanningFields();
+            CheckAntennaExtended();
+            RecalculatePlannerFields();
+        }
         internal void OnPlanningAltitudeChange(BaseField f, object obj)
         {
             if (PlannerAltitude < 1) PlannerAltitude = 1;
@@ -90,26 +100,41 @@ namespace RealAntennas
             if (peerAnt != null)
             {
                 if (parent.Fields[nameof(parent.plannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = showAltitude;
-                Vector3 adj = dir * Convert.ToSingle(furthestDistance);
+                Vector3 adj = dir * Convert.ToSingle(closestDistance);
                 selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
 
-                double rxp = parent.TxPower + parent.Gain - Physics.PathLoss(furthestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
-                double dataRateLow = selfAnt.BestDataRateToPeer(peerAnt);
-                double dataRateHigh = dataRateLow;
+                double rxp = parent.TxPower + parent.Gain - Physics.PathLoss(closestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
+                double fwdDataRateHigh = selfAnt.BestDataRateToPeer(peerAnt);
+                double revDataRateHigh = peerAnt.BestDataRateToPeer(selfAnt);
+                string dl = RATools.PrettyPrintDataRate(fwdDataRateHigh);
+                string ul = RATools.PrettyPrintDataRate(revDataRateHigh);
 
                 if (furthestDistance != closestDistance)
                 {
-                    adj = dir * Convert.ToSingle(closestDistance);
+                    adj = dir * Convert.ToSingle(furthestDistance);
                     selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
 
-                    rxp = parent.TxPower + parent.Gain - Physics.PathLoss(closestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
-                    dataRateHigh = selfAnt.BestDataRateToPeer(peerAnt);
+                    rxp = parent.TxPower + parent.Gain - Physics.PathLoss(furthestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
+                    double fwdDataRateLow = selfAnt.BestDataRateToPeer(peerAnt);
+                    double revDataRateLow = peerAnt.BestDataRateToPeer(selfAnt);
+                    dl += $" - {RATools.PrettyPrintDataRate(fwdDataRateLow)}";
+                    ul += $" - {RATools.PrettyPrintDataRate(revDataRateLow)}";
                 }
 
-                SetPlanningResult($"Max {RATools.PrettyPrintDataRate(dataRateHigh)} Min {RATools.PrettyPrintDataRate(dataRateLow)}");
+                SetPlanningResult(dl, ul);
             }
             peerObj.DestroyGameObject();
             selfObj.DestroyGameObject();
+        }
+
+        private void CheckAntennaExtended()
+        {
+            if (parent.Deployable && !parent.Deployed)
+            {
+                ScreenMessage message = new ScreenMessage("", 8f, ScreenMessageStyle.UPPER_CENTER);
+                message.message = "You must deploy this antenna for the planner to work.";
+                ScreenMessages.PostScreenMessage(message);
+            }
         }
     }
 }
