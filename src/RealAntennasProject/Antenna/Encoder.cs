@@ -1,39 +1,59 @@
-﻿namespace RealAntennas.Antenna
+﻿using System.Collections.Generic;
+using UnityEngine;
+
+namespace RealAntennas.Antenna
 {
-    public class Encoder : Enumeration
+    public class Encoder
     {
         // Reed-Solomon RS 255,223 sends 255 data symbols then 32 parity symbols.
         // https://deepspace.jpl.nasa.gov/dsndocs/810-005/Binder/810-005_Binder_Change42.pdf
         // 810-005, Module 208, Rev B, Page 30, Figure 14.  For calculating BER ~= 10^-5.
-        private static readonly double RSMult = 255.0 / (255 + 32);
-        public readonly double CodingRate;
-        public readonly double RequiredEbN0;
-        public static Encoder None = new Encoder(1, "None", 1, 10);
-        public static Encoder ReedSolomon = new Encoder(2, "Reed-Solomon", RSMult, 5);
-        public static Encoder Convolutional = new Encoder(3, "Convolutional", 0.5, 4);
-        public static Encoder Concatenated = new Encoder(4, "Concatenated Reed-Solomon,Convolutional", 0.5 * RSMult, 2.5);
-        public static Encoder Turbo = new Encoder(5, "Turbo 1/2", 0.5, 1);
+        [Persistent] public string name;
+        [Persistent] public int TechLevel;
+        [Persistent] public double CodingRate;
+        [Persistent] public double RequiredEbN0;
+        public static bool initialized = false;
 
-        public Encoder(int id, string name, double rate, double minEbN0)
-            : base(id, name)
+        public static Dictionary<string, Encoder> All = new Dictionary<string, Encoder>();
+        protected static readonly string ModTag = "[RealAntennas.Encoder] ";
+
+        public Encoder() { }
+        public Encoder(string name, int techLevel, double rate, double minEbN0)
         {
+            this.name = name;
+            TechLevel = techLevel;
             CodingRate = rate;
             RequiredEbN0 = minEbN0;
         }
 
-        public override string ToString() => $"[{Name} Rate {CodingRate:F2} Eb/N0 {RequiredEbN0}]";
+        public override string ToString() => $"[{name} Rate {CodingRate:F2} Eb/N0 {RequiredEbN0}]";
 
-        public static Encoder BestMatching(Encoder a, Encoder b) => (a.Id > b.Id) ? b : a;
+        public static Encoder BestMatching(Encoder a, Encoder b) => (a.TechLevel > b.TechLevel) ? b : a;
         public static Encoder GetFromTechLevel(int level)
         {
-            if (level <= 1) return Encoder.None;
-            switch(level)
+            Encoder best = null;
+            foreach (Encoder e in All.Values)
             {
-                case 2: return Encoder.ReedSolomon;
-                case 3: return Encoder.Convolutional;
-                case 4: return Encoder.Concatenated;
+                if (level >= e.TechLevel)
+                {
+                    if (best == null) best = e;
+                    else if (e.TechLevel > best.TechLevel) best = e;
+                }
             }
-            return Encoder.Turbo;
+            return best;
+        }
+
+        public static void Init(ConfigNode config)
+        {
+            Debug.LogFormat($"{ModTag} Init()");
+            All.Clear();
+            foreach (ConfigNode node in config.GetNodes("EncoderInfo"))
+            {
+                Encoder obj = ConfigNode.CreateObjectFromConfig<Encoder>(node);
+                Debug.LogFormat($"{ModTag} Adding Encoder {obj}");
+                All.Add(obj.name, obj);
+            }
+            initialized = true;
         }
     }
 }
