@@ -36,6 +36,9 @@ namespace RealAntennas
             }
             return gain;
         }
+
+        public static double Beamwidth(double gain) => Math.Sqrt(52525 / RATools.LinearScale(gain));
+
         public static double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;
