@@ -36,6 +36,9 @@ namespace RealAntennas
             }
             return gain;
         }
+
+        public static double Beamwidth(double gain) => Math.Sqrt(52525 / RATools.LinearScale(gain));
+
         public static double PathLoss(double distance, double frequency = 1e9)
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
             => (20 * Math.Log10(distance * frequency)) + path_loss_constant;
@@ -150,7 +153,14 @@ namespace RealAntennas
             //
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
         }
-        private static double AntennaMicrowaveTemp(RealAntenna rx) => rx.AMWTemp;
+        private static double AntennaMicrowaveTemp(RealAntenna rx) 
+        {
+            if ((rx.ParentNode as RACommNode)?.ParentVessel is Vessel)
+            {
+                return rx.TechLevelInfo.ReceiverNoiseTemperature;
+            }
+            return rx.AMWTemp;
+        }
         private static double AtmosphericTemp(RealAntenna rx, Vector3d origin)
         {
             if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)

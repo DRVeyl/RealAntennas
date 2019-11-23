@@ -13,9 +13,7 @@ namespace RealAntennas.Kerbalism
         public static Assembly KerbalismAssembly = null;
         public static void MyCommHandler(object p1, Vessel v)
         {
-            if (v.Connection is RACommNetVessel raCNV &&
-                raCNV.Comm is RACommNode node &&
-                KerbalismAssembly.GetType("KERBALISM.AntennaInfo") is Type KerbalismAntennaInfoType)
+            if (v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
             {
                 double rate = 0, strength = 0, packetInterval = 1.0f;
                 double ec = v.loaded ? 0 : raCNV.UnloadedPowerDraw();   // If loaded, individual modules will consume power
@@ -24,6 +22,7 @@ namespace RealAntennas.Kerbalism
                 bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
+                if (!v.loaded) raCNV.powered = powered;
                 if (powered && node.AntennaTowardsHome() is RealAntenna ra)
                 {
                     CommNet.CommPath path = new CommNet.CommPath();
@@ -35,12 +34,12 @@ namespace RealAntennas.Kerbalism
                     {
                         strength = link.start.Equals(node) ? link.FwdMetric : link.RevMetric;
                     }
-                    //                    foreach (CommNet.CommLink clink in path)
-                    //                    {
-                    //                        sList.Add(new string[1] { clink.end.name });
-                    //                    }
-                    sList.Add(new string[1] { path.First.end.name });
-                    target_name = path.First.end.ToString();
+                    foreach (CommNet.CommLink clink in path)
+                    {
+                        sList.Add(new string[1] { clink.end.name });
+                    }
+                    //sList.Add(new string[1] { path.First.end.name });
+                    target_name = path.First.end.name;
                 }
 
                 p1.GetType().GetField("linked").SetValue(p1, raCNV.IsConnectedHome); // Link Status
@@ -51,12 +50,8 @@ namespace RealAntennas.Kerbalism
                 p1.GetType().GetField("target_name").SetValue(p1, target_name);
                 p1.GetType().GetField("control_path").SetValue(p1, sList);
 
-                Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
+                //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
             }
-
-            /*
-            antennaInfo.control_path = control_path; // List<string[title, value, tooltip]> for display in the UI (value+tooltip are optional)
-            */
         }
         public static bool DetectKerbalismDLL()
         {

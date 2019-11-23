@@ -6,7 +6,7 @@ namespace RealAntennas
     [KSPScenario(ScenarioCreationOptions.AddToAllGames | ScenarioCreationOptions.AddToAllMissionGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR })]
     public class RACommNetScenario : CommNetScenario
     {
-        protected static readonly string ModTag = "[RealAntennasCommNetScenario] ";
+        protected static readonly string ModTag = "[RealAntennasCommNetScenario]";
         public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
         public static bool Enabled => true;
 
@@ -16,8 +16,8 @@ namespace RealAntennas
 
         protected override void Start()
         {
-            Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
-            InitBandInfo();
+            Debug.LogFormat($"{ModTag} Start in {HighLogic.LoadedScene}");
+            Initialize();
             ui = gameObject.AddComponent<Network.RACommNetUI>();
             this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
@@ -29,15 +29,15 @@ namespace RealAntennas
         {
             if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
-                Debug.LogFormat(ModTag + "Scenario check: Found {0}", RATools.DisplayGamescenes(psm));
+                Debug.LogFormat($"{ModTag} Scenario check: Found {RATools.DisplayGamescenes(psm)}");
                 if (! RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
                 {
                     RealAntennas.Network.CommNetPatcher.UnloadCommNet();
                     DestroyNetwork();
-                    Debug.LogFormat("Rebuilding CommNetBody and CommNetHome list");
+                    Debug.LogFormat($"{ModTag} Rebuilding CommNetBody and CommNetHome list");
                     UnloadHomes();
                     BuildHomes();
-                    Debug.LogFormat("Ignore CommNetScenario ERR immediately following this.");
+                    Debug.LogFormat($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
                 }
             }
             base.OnAwake();     // Will set CommNetScenario.Instance to this
@@ -54,13 +54,14 @@ namespace RealAntennas
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
         }
 
-        private void InitBandInfo()
+        private void Initialize()
         {
-            ConfigNode RAParamNode = null;
-            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RealAntennasCommNetParams"))
-                RAParamNode = n;
-
-            if (RAParamNode != null) Antenna.BandInfo.Init(RAParamNode);
+            if (GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode RAParamNode)
+            {
+                Antenna.BandInfo.Init(RAParamNode);
+                Antenna.Encoder.Init(RAParamNode);
+                TechLevelInfo.Init(RAParamNode);
+            }
         }
 
         private void BuildHomes()
@@ -97,7 +98,7 @@ namespace RealAntennas
         {
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                Debug.LogFormat("Immediately destroying {0}", home);
+                Debug.LogFormat($"{ModTag} Immediately destroying {home}");
                 DestroyImmediate(home);
             }
         }
@@ -106,21 +107,7 @@ namespace RealAntennas
             GameObject newHome = new GameObject(body.name);
             Network.RACommNetHome home = newHome.AddComponent<Network.RACommNetHome>();
             home.Configure(node, body);
-            Debug.LogFormat(ModTag + "Built: {0}", home);
-        }
-        private void LoadTempCurves(ConfigNode bodyNode)
-        {
-            if (bodyNode?.GetNode("skyTemperature") is ConfigNode temperatureNode)
-            {
-                foreach (ConfigNode n in temperatureNode.GetNodes("temperatureCurve"))
-                {
-                    FloatCurve MyFloatCurve = new FloatCurve();
-                    MyFloatCurve.Load(n);
-                    MyFloatCurve.Curve.postWrapMode = WrapMode.ClampForever;
-                    MyFloatCurve.Curve.preWrapMode = WrapMode.ClampForever;
-                    Debug.LogFormat("Loaded temperature curve for declination {0} with {1} keys", n.GetValue("declination"), MyFloatCurve.Curve.length);
-                }
-            }
+            Debug.LogFormat($"{ModTag} Built: {home.name} {home.nodeName}");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RealAntennas
@@ -10,17 +11,17 @@ namespace RealAntennas
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power", guiUnits = " dBm", guiFormat = "F1"),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1"),
         UI_FloatRange(maxValue = 60f, minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
         public float TxPower = 40f;       // Transmit Power in dBm (milliwatts)
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0"),
-        UI_FloatRange(minValue = 1f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
-        private float TechLevel = 1f;
+        UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
+        private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
 
         [KSPField]
-        private int maxTechLevel = 1;
+        private int maxTechLevel = 0;
 
         [KSPField(isPersistant = true)]
         public double AMWTemp;    // Antenna Microwave Temperature
@@ -55,45 +56,45 @@ namespace RealAntennas
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning"),
          UI_Toggle(disabledText = "Disabled", enabledText = "Enabled", scene = UI_Scene.All)]
-        public bool PlanningEnabled = true;
+        public bool planningEnabled = false;
 
         [KSPField(guiActiveEditor = true, guiName = "Planning Peer")]
-        public string sPlannerTarget = string.Empty;
-        public ITargetable PlannerTarget;
+        public string plannerTargetString = string.Empty;
 
-        [KSPField(guiActiveEditor = true, guiName = "Planning Altitude", guiUnits = " Mm"),
-         UI_FloatRange(maxValue = 1000, minValue = 1, scene = UI_Scene.All, stepIncrement = 10f)]
-        public float PlannerAltitude = 1;
+        [KSPField(guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0"),
+         UI_FloatRange(maxValue = 1000, minValue = 1, stepIncrement = 10, scene = UI_Scene.All)]
+        public float plannerAltitude = 1;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Result")]
-        public string sPlanningResult = string.Empty;
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit")]
+        public string sDownlinkPlanningResult = string.Empty;
+
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive")]
+        public string sUplinkPlanningResult = string.Empty;
 
         [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting")]
         void AntennaTargetGUI() => targetGUI.showGUI = !targetGUI.showGUI;
 
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI")]
-        void AntennaPlanningGUI() => plannerGUI.showGUI = !plannerGUI.showGUI;
+        public void AntennaPlanningGUI() => planner.plannerGUI.showGUI = !planner.plannerGUI.showGUI;
 
-        public void OnGUI() { targetGUI.OnGUI(); plannerGUI.OnGUI(); }
+        public void OnGUI() { targetGUI.OnGUI(); planner.plannerGUI.OnGUI(); }
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
         public RealAntenna RAAntenna = new RealAntennaDigital();
         public Antenna.AntennaGUI targetGUI = new Antenna.AntennaGUI();
-        public PlannerGUI plannerGUI = new PlannerGUI();
+        public Planner planner;
 
-        private static double StockRateModifier = 0.00001;
+        private ModuleDeployableAntenna deployableAntenna;
+        public bool Deployable => deployableAntenna != null;
+        public bool Deployed => deployableAntenna?.deployState == ModuleDeployablePart.DeployState.EXTENDED;
+
+        private float StockRateModifier = 0.001f;
         public static double InactivePowerConsumptionMult = 0.1;
+        private float defaultPacketInterval = 1.0f;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
-
-        public override void OnAwake()
-        {
-            base.OnAwake();
-            SetupUICallbacks();
-        }
-
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
@@ -112,37 +113,54 @@ namespace RealAntennas
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            planner = new Planner(this);
+            planner.ConfigTarget(Planetarium.fetch.Home.name, Planetarium.fetch.Home);
             SetupBaseFields();
 
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
-            if (HighLogic.LoadedSceneIsEditor) TechLevel = maxTechLevel;
+            if (HighLogic.LoadedSceneIsEditor && TechLevel < 0) TechLevel = maxTechLevel;
+            defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
+            StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
 
             if (!RAAntenna.CanTarget)
             {
                 Fields[nameof(sAntennaTarget)].guiActive = false;
                 Events[nameof(AntennaTargetGUI)].active = false;
             }
-            SetPlanningFields();
+
+            deployableAntenna = part.FindModuleImplementing<ModuleDeployableAntenna>();
+
             SetupGUIs();
+            SetupUICallbacks();
             ConfigBandOptions();
+            SetupIdlePower();
             RecalculateFields();
+        }
+
+        private void SetupIdlePower()
+        {
+            var electricCharge = resHandler.inputResources.First(x => x.id == PartResourceLibrary.ElectricityHashcode);
+            electricCharge.rate = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
+            string err = "";
+            resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
         }
 
         public void FixedUpdate()
         {
             if (HighLogic.LoadedSceneIsFlight)
             {
-                string err = string.Empty;
-                double req = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult * Time.fixedDeltaTime;
-                resHandler.UpdateModuleResourceInputs(ref err, req, 1, true, false);
-                //Debug.LogFormat("FixedUpdate() for {0}: Consuming {1:F4} ec", this, req);
+                RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
+                //part.AddThermalFlux(req / Time.fixedDeltaTime);
+
+                string err = "";
+                resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
             }
         }
 
         private void RecalculateFields()
         {
-            RAAntenna.TechLevel = techLevel;
+            RAAntenna.TechLevelInfo = TechLevelInfo.GetTechLevel(techLevel);
             RAAntenna.TxPower = TxPower;
             RAAntenna.RFBand = Antenna.BandInfo.All[RFBand];
             RAAntenna.SymbolRate = RAAntenna.RFBand.MaxSymbolRate(techLevel);
@@ -153,55 +171,7 @@ namespace RealAntennas
             int ModulationBits = (RAAntenna as RealAntennaDigital).modulator.ModulationBitsFromTechLevel(TechLevel);
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
-            RecalculatePlannerFields();
-        }
-        internal void RecalculatePlannerFields()
-        {
-            if (PlannerTarget is CelestialBody b)
-            {
-                CelestialBody home = Planetarium.fetch.Home;
-                RACommNetwork net = (RACommNetScenario.Instance as RACommNetScenario).Network.CommNet as RACommNetwork;
-
-                if (RATools.HighestGainCompatibleDSNAntenna(net.Nodes, RAAntenna) is RealAntenna DSNAntenna)
-                {
-                    GameObject localObj = new GameObject("localAntenna");
-                    GameObject remoteObj = new GameObject("remoteAntenna");
-                    RACommNode localComm = new RACommNode(localObj.transform) { ParentBody = home };
-                    RACommNode remoteComm = new RACommNode(remoteObj.transform) { ParentVessel = vessel };
-                    RealAntenna localAnt = new RealAntennaDigital(DSNAntenna) { ParentNode = localComm };
-                    RealAntenna remoteAnt = new RealAntennaDigital(RAAntenna) { ParentNode = remoteComm };
-                    localAnt.ParentNode.transform.SetPositionAndRotation(home.GetRelSurfacePosition(0,0,0), Quaternion.identity);
-                    Vector3 dir = home.GetRelSurfaceNVector(0, 0).normalized;
-                    // Simplification: Use the current position of the homeworld, rather than choosing Ap/Pe/an average.
-                    double maxAlt = (b == Planetarium.fetch.Sun) ? 0 : b.orbit.ApA;
-                    double minAlt = (b == Planetarium.fetch.Sun) ? 0 : b.orbit.PeA;
-                    double sunDistance = (Planetarium.fetch.Sun.position - home.position).magnitude;
-                    double furthestDistance = PlannerAltitude * 1e6;
-                    double closestDistance = PlannerAltitude * 1e6;
-                    if (b != home)
-                    {
-                        furthestDistance = maxAlt + sunDistance;
-                        closestDistance = (maxAlt < sunDistance) ? sunDistance - maxAlt : minAlt - sunDistance;
-                    }
-
-                    Vector3 adj = dir * Convert.ToSingle(furthestDistance);
-                    remoteAnt.ParentNode.transform.SetPositionAndRotation(home.position + adj, Quaternion.identity);
-
-                    double rxp = TxPower + Gain - Physics.PathLoss(furthestDistance, RFBandInfo.Frequency) + localAnt.Gain;
-                    double dataRateLow = remoteAnt.BestDataRateToPeer(localAnt);
-
-                    adj = dir * Convert.ToSingle(closestDistance);
-                    remoteAnt.ParentNode.transform.SetPositionAndRotation(home.position + adj, Quaternion.identity);
-
-                    rxp = TxPower + Gain - Physics.PathLoss(closestDistance, RFBandInfo.Frequency) + localAnt.Gain;
-                    double dataRateHigh = remoteAnt.BestDataRateToPeer(localAnt);
-
-                    sPlanningResult = $"Max {RATools.PrettyPrintDataRate(dataRateHigh)} Min {RATools.PrettyPrintDataRate(dataRateLow)}";
-
-                    localObj.DestroyGameObject();
-                    remoteObj.DestroyGameObject();
-                }
-            }
+            planner.RecalculatePlannerFields();
         }
 
         private void SetupBaseFields()
@@ -213,22 +183,13 @@ namespace RealAntennas
             if (Fields[nameof(powerText)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
         }
 
-        private void SetPlanningFields()
-        {
-            { if (Events[nameof(AntennaPlanningGUI)] is BaseEvent be) be.active = PlanningEnabled; }
-            { if (Fields[nameof(sPlannerTarget)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (Fields[nameof(sPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (Fields[nameof(PlannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-        }
-
         private void SetupGUIs()
         {
             targetGUI.ParentPart = part;
             targetGUI.ParentPartModule = this;
             targetGUI.Start();
-            plannerGUI.ParentPart = part;
-            plannerGUI.ParentPartModule = this;
-            plannerGUI.Start();
+            planner.SetPlanningFields();
+            planner.plannerGUI.Start();
         }
 
         private void SetupUICallbacks()
@@ -242,17 +203,15 @@ namespace RealAntennas
             UI_FloatRange fr = (UI_FloatRange)Fields[nameof(TxPower)].uiControlEditor;
             fr.onFieldChanged = new Callback<BaseField, object>(OnTxPowerChange);
 
-            UI_Toggle tE = (UI_Toggle)Fields[nameof(PlanningEnabled)].uiControlEditor;
-            UI_Toggle tF = (UI_Toggle)Fields[nameof(PlanningEnabled)].uiControlFlight;
-            tE.onFieldChanged = tF.onFieldChanged = new Callback<BaseField, object>(OnPlanningEnabledChange);
+            UI_Toggle tE = (UI_Toggle)Fields[nameof(planningEnabled)].uiControlEditor;
+            UI_Toggle tF = (UI_Toggle)Fields[nameof(planningEnabled)].uiControlFlight;
+            tE.onFieldChanged = tF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningEnabledChange);
 
-            UI_FloatRange paE = (UI_FloatRange)(Fields[nameof(PlannerAltitude)].uiControlEditor);
-            UI_FloatRange paF = (UI_FloatRange)(Fields[nameof(PlannerAltitude)].uiControlFlight);
-            paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(OnPlanningAltitudeChange);
+            UI_FloatRange paE = (UI_FloatRange)(Fields[nameof(plannerAltitude)].uiControlEditor);
+            UI_FloatRange paF = (UI_FloatRange)(Fields[nameof(plannerAltitude)].uiControlFlight);
+            paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningAltitudeChange);
         }
 
-        private void OnPlanningEnabledChange(BaseField f, object obj) => SetPlanningFields();
-        private void OnPlanningAltitudeChange(BaseField f, object obj) => RecalculatePlannerFields();
         private void OnRFBandChange(BaseField f, object obj) => RecalculateFields();
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
         private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
@@ -267,8 +226,8 @@ namespace RealAntennas
             List<string> availableBandDisplayNames = new List<string>();
             foreach (Antenna.BandInfo bi in Antenna.BandInfo.GetFromTechLevel(techLevel))
             {
-                availableBands.Add(bi.Name);
-                availableBandDisplayNames.Add(bi.DisplayName);
+                availableBands.Add(bi.name);
+                availableBandDisplayNames.Add($"{bi.name}-Band");
             }
 
             UI_ChooseOption op = (UI_ChooseOption)Fields[nameof(RFBand)].uiControlEditor;
@@ -288,6 +247,8 @@ namespace RealAntennas
                    $"<b>Reference Frequency</b>: {RATools.PrettyPrint(RAAntenna.Frequency)}Hz\n";
         }
 
+        public override bool CanComm() => base.CanComm() && (!Deployable || Deployed);
+
         public override string ToString() => RAAntenna.ToString();
 
         // StartTransmission -> CanTransmit()
@@ -299,9 +260,10 @@ namespace RealAntennas
             if (this?.vessel?.Connection?.Comm is RACommNode node)
             {
                 double data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
-                packetInterval = 0.1F;
+                packetInterval = defaultPacketInterval;
                 packetSize = Convert.ToSingle(data_rate * packetInterval * StockRateModifier);
                 packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
+                Debug.Log($"{ModTag} Setting transmission params: rate: {data_rate:F1}, interval: {packetInterval:N1}s, rescale: {StockRateModifier:N5}, size: {packetSize:N6}");
             }
         }
         public override bool CanTransmit()

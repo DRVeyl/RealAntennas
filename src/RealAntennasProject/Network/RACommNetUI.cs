@@ -155,9 +155,9 @@ namespace RealAntennas.Network
 
         public override void SwitchMode(int step)
         {
-            targetLine.active = false;
-            cone3Line.active = false;
-            cone10Line.active = false;
+            if (targetLine != null) targetLine.active = false;
+            if (cone3Line != null) cone3Line.active = false;
+            if (cone10Line != null) cone10Line.active = false;
             base.SwitchMode(step);
         }
     }

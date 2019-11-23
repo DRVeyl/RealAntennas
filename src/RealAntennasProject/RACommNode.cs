@@ -36,11 +36,17 @@ namespace RealAntennas
         public Vector3d GetSurfaceNormalVector()
         {
             if (ParentBody == null) return Vector3d.zero;
-            ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double alt);
+            ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double _);
             return ParentBody.GetSurfaceNVector(lat, lon);
         }
 
-        public override string ToString()
+        public bool CanComm()
+        {
+            if (ParentBody != null) return true;
+            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered : false;
+        }
+
+        public virtual string DebugToString()
         {
             string s = string.Format("{0} : ", base.ToString());
             foreach (RealAntenna ra in RAAntennaList)
