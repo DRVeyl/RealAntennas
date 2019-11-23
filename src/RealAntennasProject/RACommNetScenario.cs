@@ -6,7 +6,7 @@ namespace RealAntennas
     [KSPScenario(ScenarioCreationOptions.AddToAllGames | ScenarioCreationOptions.AddToAllMissionGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR })]
     public class RACommNetScenario : CommNetScenario
     {
-        protected static readonly string ModTag = "[RealAntennasCommNetScenario] ";
+        protected static readonly string ModTag = "[RealAntennasCommNetScenario]";
         public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
         public static bool Enabled => true;
 
@@ -16,7 +16,7 @@ namespace RealAntennas
 
         protected override void Start()
         {
-            Debug.LogFormat(ModTag + "Start in {0}", HighLogic.LoadedScene);
+            Debug.LogFormat($"{ModTag} Start in {HighLogic.LoadedScene}");
             Initialize();
             ui = gameObject.AddComponent<Network.RACommNetUI>();
             this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
@@ -29,15 +29,15 @@ namespace RealAntennas
         {
             if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
-                Debug.LogFormat(ModTag + "Scenario check: Found {0}", RATools.DisplayGamescenes(psm));
+                Debug.LogFormat($"{ModTag} Scenario check: Found {RATools.DisplayGamescenes(psm)}");
                 if (! RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
                 {
                     RealAntennas.Network.CommNetPatcher.UnloadCommNet();
                     DestroyNetwork();
-                    Debug.LogFormat("Rebuilding CommNetBody and CommNetHome list");
+                    Debug.LogFormat($"{ModTag} Rebuilding CommNetBody and CommNetHome list");
                     UnloadHomes();
                     BuildHomes();
-                    Debug.LogFormat("Ignore CommNetScenario ERR immediately following this.");
+                    Debug.LogFormat($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
                 }
             }
             base.OnAwake();     // Will set CommNetScenario.Instance to this
@@ -98,7 +98,7 @@ namespace RealAntennas
         {
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                Debug.LogFormat("Immediately destroying {0}", home);
+                Debug.LogFormat($"{ModTag} Immediately destroying {home}");
                 DestroyImmediate(home);
             }
         }

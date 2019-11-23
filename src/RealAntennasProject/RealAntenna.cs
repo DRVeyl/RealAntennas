@@ -26,7 +26,7 @@ namespace RealAntennas
         public virtual double DataRate { get; }
         public virtual double Bandwidth => DataRate;          // RF bandwidth required.
         public virtual double AMWTemp { get; set; }
-        public virtual double Beamwidth => Math.Sqrt(52525 / RATools.LinearScale(Gain));
+        public virtual double Beamwidth => Physics.Beamwidth(Gain);
 
         internal double cachedRemoteBodyNoiseTemp;
         public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(angle, Beamwidth);

@@ -6,19 +6,20 @@ namespace RealAntennas.Network
     [KSPScenario(ScenarioCreationOptions.AddToAllGames | ScenarioCreationOptions.AddToAllMissionGames, new GameScenes[] { GameScenes.MAINMENU })]
     public class CommNetPatcher : ScenarioModule
     {
-        protected static readonly string ModTag = "[CommNetPatcher] ";
+        protected static readonly string ModTag = "[CommNetPatcher]";
         public override void OnAwake()
         {
-            Debug.LogFormat(ModTag + "Started");
+            Debug.LogFormat($"{ModTag} Started");
             if (GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
                 if (!CommNetPatched(psm))
                 {
-                    Debug.LogFormat("{0} Patching out CommNetScenario", this.ClassName);
+                    Debug.LogFormat($"{ClassName} Patching out CommNetScenario");
                     UnloadCommNet(psm);
                 }
             }
         }
+
         internal static ProtoScenarioModule GetCommNetScenarioModule()
         {
             if (HighLogic.CurrentGame != null && HighLogic.CurrentGame?.scenarios is List<ProtoScenarioModule> l)
@@ -30,10 +31,11 @@ namespace RealAntennas.Network
             }
             return null;
         }
+
         internal static bool CommNetPatched(ProtoScenarioModule psm) => psm != null ? psm.targetScenes.Contains(GameScenes.CREDITS) : false;
         internal static void UnloadCommNet(ProtoScenarioModule psm = null)
         {
-            Debug.LogFormat(ModTag + "Patching CommNet's TargetScenes");
+            Debug.LogFormat($"{ModTag} Patching CommNet's TargetScenes");
             if (psm == null) psm = GetCommNetScenarioModule();
             if (psm != null) psm.SetTargetScenes(new GameScenes[] { GameScenes.CREDITS });
         }
