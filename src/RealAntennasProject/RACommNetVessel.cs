@@ -170,9 +170,12 @@ namespace RealAntennas
             {
                 foreach (ModuleRealAntenna ant in Vessel.FindPartModulesImplementing<ModuleRealAntenna>().ToList())
                 {
-                    ant.RAAntenna.ParentNode = Comm;
-                    if (DeployedLoaded(ant.part)) antennaList.Add(ant.RAAntenna);
-                    else inactiveAntennas.Add(ant.RAAntenna);
+                    if (ant._enabled)
+                    {
+                        ant.RAAntenna.ParentNode = Comm;
+                        if (DeployedLoaded(ant.part)) antennaList.Add(ant.RAAntenna);
+                        else inactiveAntennas.Add(ant.RAAntenna);
+                    }
                 }
                 return antennaList;
             }
@@ -182,8 +185,10 @@ namespace RealAntennas
                 {
                     if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
+                        bool _enabled = true;
+                        snap.moduleValues.TryGetValue(nameof(ModuleRealAntenna._enabled), ref _enabled);
                         Part prefab = part.partInfo.partPrefab;
-                        if (prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
+                        if (_enabled && prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
                             RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm };
                             ra.LoadFromConfigNode(snap.moduleValues);

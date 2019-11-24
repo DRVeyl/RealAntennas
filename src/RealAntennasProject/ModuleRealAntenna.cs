@@ -8,6 +8,10 @@ namespace RealAntennas
 {
     public class ModuleRealAntenna : ModuleDataTransmitter
     {
+        [KSPField(guiActiveEditor = true, guiName = "Antenna", isPersistant = true),
+        UI_Toggle(disabledText = "<color=red><b>Disabled</b></color>", enabledText = "<color=green>Enabled</color>", scene =UI_Scene.Editor)]
+        public bool _enabled = true;
+
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
@@ -116,6 +120,7 @@ namespace RealAntennas
             planner = new Planner(this);
             planner.ConfigTarget(Planetarium.fetch.Home.name, Planetarium.fetch.Home);
             SetupBaseFields();
+            Fields[nameof(_enabled)].uiControlEditor.onFieldChanged = OnAntennaEnableChange;
 
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
@@ -136,6 +141,8 @@ namespace RealAntennas
             ConfigBandOptions();
             SetupIdlePower();
             RecalculateFields();
+
+            if (HighLogic.LoadedSceneIsFlight) isEnabled = _enabled;
         }
 
         private void SetupIdlePower()
@@ -152,9 +159,11 @@ namespace RealAntennas
             {
                 RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
-
-                string err = "";
-                resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
+                //if (Kerbalism.Kerbalism.KerbalismAssembly is null)
+                {
+                    string err = "";
+                    resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
+                }
             }
         }
 
@@ -181,6 +190,18 @@ namespace RealAntennas
             { if (Events[nameof(StopTransmission)] is BaseEvent be) be.active = false; }
             if (Actions[nameof(StartTransmissionAction)] is BaseAction ba) ba.active = false;
             if (Fields[nameof(powerText)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
+        }
+
+        private void OnAntennaEnableChange(BaseField field, object obj)
+        {
+            Fields[nameof(Gain)].guiActiveEditor = _enabled;
+            Fields[nameof(TxPower)].guiActiveEditor = _enabled;
+            Fields[nameof(TechLevel)].guiActiveEditor = _enabled;
+            Fields[nameof(RFBand)].guiActiveEditor = _enabled;
+            Fields[nameof(sTransmitterPower)].guiActiveEditor = _enabled;
+            Fields[nameof(sPowerConsumed)].guiActiveEditor = _enabled;
+            Fields[nameof(sAntennaTarget)].guiActiveEditor = _enabled;
+            Fields[nameof(planningEnabled)].guiActiveEditor = _enabled;
         }
 
         private void SetupGUIs()
@@ -242,9 +263,19 @@ namespace RealAntennas
         public override string GetModuleDisplayName() => "RealAntenna";
         public override string GetInfo()
         {
-            return $"{ModTag}\n" + 
-                   $"<b>Gain</b>: {Gain:F1} dBi\n" + 
-                   $"<b>Reference Frequency</b>: {RATools.PrettyPrint(RAAntenna.Frequency)}Hz\n";
+            string res = string.Empty;
+            if (RAAntenna.Shape != AntennaShape.Omni)
+            {
+                foreach (Antenna.BandInfo band in Antenna.BandInfo.All.Values)
+                {
+                    double tGain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, band.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, band.Frequency);
+                    res += $"<color=green><b>{band.name}</b></color>: {tGain:F1} dBi, {Physics.Beamwidth(tGain):F1} beamwidth\n";
+                }
+            } else
+            {
+                res = $"<color=green>Omni-directional</color>: {Gain:F1} dBi";
+            }
+            return res;
         }
 
         public override bool CanComm() => base.CanComm() && (!Deployable || Deployed);
