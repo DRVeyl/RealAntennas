@@ -5,6 +5,7 @@ namespace RealAntennas
 {
     public class Planner
     {
+        private static readonly string ModTag = "[RealAntennas.Planner]";
         public PlannerGUI plannerGUI;
         public ModuleRealAntenna parent;
 
@@ -33,7 +34,7 @@ namespace RealAntennas
             RecalculatePlannerFields();
         }
 
-        internal void SetPlanningFields()
+            internal void SetPlanningFields()
         {
             { if (parent.Events[nameof(parent.AntennaPlanningGUI)] is BaseEvent be) be.active = PlanningEnabled; }
             { if (parent.Fields[nameof(parent.plannerTargetString)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
@@ -66,14 +67,14 @@ namespace RealAntennas
             RACommNode selfComm = new RACommNode(selfObj.transform) { ParentVessel = parent.vessel };
             RealAntenna selfAnt = new RealAntennaDigital(RAAntenna) { ParentNode = selfComm };
             bool showAltitude = PlanningEnabled;
-            Vector3 dir = Vector3.up;
+            Vector3d dir = Vector3d.up;
             double furthestDistance = PlannerAltitude * 1e6;
             double closestDistance = PlannerAltitude * 1e6;
 
-            Debug.LogFormat($"RecalculatePlannerFields Target: {PlannerTarget}");
+            Debug.LogFormat($"{ModTag} Target: {PlannerTarget}");
+            CelestialBody home = Planetarium.fetch.Home;
             if (PlannerTarget is CelestialBody b)
             {
-                CelestialBody home = Planetarium.fetch.Home;
                 showAltitude = showAltitude && (b == home);
                 if (RATools.HighestGainCompatibleDSNAntenna(net.Nodes, RAAntenna) is RealAntenna DSNAntenna)
                 {
@@ -89,18 +90,21 @@ namespace RealAntennas
                         furthestDistance = maxAlt + sunDistance;
                         closestDistance = (maxAlt < sunDistance) ? sunDistance - maxAlt : minAlt - sunDistance;
                     }
+                } else
+                {
+                    SetPlanningResult("No compatible ground station", "Check TS upgrade level!");
                 }
             } else if (PlannerTarget is RealAntenna ra)
             {
                 peerComm = new RACommNode(peerObj.transform) { ParentVessel = ra?.Parent?.vessel };
                 peerAnt = new RealAntennaDigital(ra) { ParentNode = peerComm };
-                peerAnt.ParentNode.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + (closestDistance / 2 * Vector3d.up), Quaternion.identity);
                 if (peerAnt.ToTarget != Vector3.zero) dir = peerAnt.ToTarget.normalized;
             }
             if (peerAnt != null)
             {
                 if (parent.Fields[nameof(parent.plannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = showAltitude;
-                Vector3 adj = dir * Convert.ToSingle(closestDistance);
+                Vector3d adj = dir * closestDistance;
                 selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
 
                 double rxp = parent.TxPower + parent.Gain - Physics.PathLoss(closestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
@@ -111,7 +115,7 @@ namespace RealAntennas
 
                 if (furthestDistance != closestDistance)
                 {
-                    adj = dir * Convert.ToSingle(furthestDistance);
+                    adj = dir * furthestDistance;
                     selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
 
                     rxp = parent.TxPower + parent.Gain - Physics.PathLoss(furthestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
@@ -131,9 +135,7 @@ namespace RealAntennas
         {
             if (parent.Deployable && !parent.Deployed)
             {
-                ScreenMessage message = new ScreenMessage("", 8f, ScreenMessageStyle.UPPER_CENTER);
-                message.message = "You must deploy this antenna for the planner to work.";
-                ScreenMessages.PostScreenMessage(message);
+                ScreenMessages.PostScreenMessage("You must deploy this antenna for the planner to work", 8f, ScreenMessageStyle.UPPER_CENTER, Color.red);
             }
         }
     }
