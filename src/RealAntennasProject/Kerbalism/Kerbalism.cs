@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using System.Reflection;
 
 namespace RealAntennas.Kerbalism
@@ -11,12 +8,13 @@ namespace RealAntennas.Kerbalism
     {
         public static readonly string ModTag = "[RAKerbalismLink] ";
         public static Assembly KerbalismAssembly = null;
-        public static void MyCommHandler(object p1, Vessel v)
+        public static void RAKerbalismLinkHandler(object p1, Vessel v)
         {
             if (v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
             {
-                double rate = 0, strength = 0, packetInterval = 1.0f;
-                double ec = v.loaded ? 0 : raCNV.UnloadedPowerDraw();   // If loaded, individual modules will consume power
+                double ec=0,rate = 0, strength = 0, packetInterval = 1.0f;
+                double ecIdle = v.loaded ? 0 : raCNV.UnloadedPowerDraw();
+                ec = ecIdle;
                 int status = 2;
                 bool powered = (bool) p1.GetType().GetField("powered").GetValue(p1);
                 bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
@@ -49,6 +47,7 @@ namespace RealAntennas.Kerbalism
                 p1.GetType().GetField("strength").SetValue(p1, strength);   // Signal quality indicator (float 0..1)
                 p1.GetType().GetField("target_name").SetValue(p1, target_name);
                 p1.GetType().GetField("control_path").SetValue(p1, sList);
+                p1.GetType().GetField("ec_idle")?.SetValue(p1, ecIdle);
 
                 //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
             }
@@ -63,7 +62,7 @@ namespace RealAntennas.Kerbalism
                     )
                 {
                     KerbalismAssembly = a.assembly;
-                    MethodInfo baseMethod = typeof(Kerbalism).GetMethod("MyCommHandler");
+                    MethodInfo baseMethod = typeof(Kerbalism).GetMethod(nameof(RAKerbalismLinkHandler));
                     var x = baseMethod;
                     var fInf = KerbalismAPIType.GetField("Comm", BindingFlags.Public | BindingFlags.Static);
                     var val = fInf.GetValue(null);
