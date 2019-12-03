@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -125,7 +126,7 @@ namespace RealAntennas
         {
             int tl = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 0;
             TechLevelInfo = TechLevelInfo.GetTechLevel(tl);
-            string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : "S";
+            string sRFBand = (config.HasValue("RFBand")) ? config.GetValue("RFBand") : Antenna.BandInfo.All.Keys.First();
             RFBand = Antenna.BandInfo.Get(sRFBand);
             referenceGain = (config.HasValue("referenceGain")) ? double.Parse(config.GetValue("referenceGain")) : 0;
             referenceFrequency = (config.HasValue("referenceFrequency")) ? double.Parse(config.GetValue("referenceFrequency")) : 0;
