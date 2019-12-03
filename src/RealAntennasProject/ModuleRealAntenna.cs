@@ -141,21 +141,26 @@ namespace RealAntennas
             ConfigBandOptions();
             SetupIdlePower();
             RecalculateFields();
+            SetFieldVisibility(_enabled);
 
             if (HighLogic.LoadedSceneIsFlight) isEnabled = _enabled;
         }
 
         private void SetupIdlePower()
         {
-            var electricCharge = resHandler.inputResources.First(x => x.id == PartResourceLibrary.ElectricityHashcode);
-            electricCharge.rate = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
-            string err = "";
-            resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);
+            if (HighLogic.LoadedSceneIsFlight && _enabled)
+            {
+                var electricCharge = resHandler.inputResources.First(x => x.id == PartResourceLibrary.ElectricityHashcode);
+//                electricCharge.rate = RAAntenna.TechLevelInfo.BasePower / 1000; // Base Power in W, 1ec/s = 1kW
+                electricCharge.rate = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
+                string err = "";
+                resHandler.UpdateModuleResourceInputs(ref err, 1, 1, false, false);
+            }
         }
 
         public void FixedUpdate()
         {
-            if (HighLogic.LoadedSceneIsFlight)
+            if (HighLogic.LoadedSceneIsFlight && _enabled)
             {
                 RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
@@ -192,16 +197,16 @@ namespace RealAntennas
             if (Fields[nameof(powerText)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = false;      // "Antenna Rating"
         }
 
-        private void OnAntennaEnableChange(BaseField field, object obj)
+        private void SetFieldVisibility(bool en)
         {
-            Fields[nameof(Gain)].guiActiveEditor = _enabled;
-            Fields[nameof(TxPower)].guiActiveEditor = _enabled;
-            Fields[nameof(TechLevel)].guiActiveEditor = _enabled;
-            Fields[nameof(RFBand)].guiActiveEditor = _enabled;
-            Fields[nameof(sTransmitterPower)].guiActiveEditor = _enabled;
-            Fields[nameof(sPowerConsumed)].guiActiveEditor = _enabled;
-            Fields[nameof(sAntennaTarget)].guiActiveEditor = _enabled;
-            Fields[nameof(planningEnabled)].guiActiveEditor = _enabled;
+            Fields[nameof(Gain)].guiActiveEditor = Fields[nameof(Gain)].guiActive = en;
+            Fields[nameof(TxPower)].guiActiveEditor = Fields[nameof(TxPower)].guiActive = en;
+            Fields[nameof(TechLevel)].guiActiveEditor = Fields[nameof(TechLevel)].guiActive = en;
+            Fields[nameof(RFBand)].guiActiveEditor = Fields[nameof(RFBand)].guiActive = en;
+            Fields[nameof(sTransmitterPower)].guiActiveEditor = Fields[nameof(sTransmitterPower)].guiActive = en;
+            Fields[nameof(sPowerConsumed)].guiActiveEditor = Fields[nameof(sPowerConsumed)].guiActive = en;
+            Fields[nameof(sAntennaTarget)].guiActiveEditor = Fields[nameof(sAntennaTarget)].guiActive = en;
+            Fields[nameof(planningEnabled)].guiActiveEditor = Fields[nameof(planningEnabled)].guiActive = en;
         }
 
         private void SetupGUIs()
@@ -215,24 +220,25 @@ namespace RealAntennas
 
         private void SetupUICallbacks()
         {
-            UI_FloatRange t = (UI_FloatRange)(Fields[nameof(TechLevel)].uiControlEditor);
+            UI_FloatRange t = Fields[nameof(TechLevel)].uiControlEditor as UI_FloatRange;
             t.onFieldChanged = new Callback<BaseField, object>(OnTechLevelChange);
 
-            UI_ChooseOption op = (UI_ChooseOption)(Fields[nameof(RFBand)].uiControlEditor);
+            UI_ChooseOption op = Fields[nameof(RFBand)].uiControlEditor as UI_ChooseOption;
             op.onFieldChanged = new Callback<BaseField, object>(OnRFBandChange);
 
-            UI_FloatRange fr = (UI_FloatRange)Fields[nameof(TxPower)].uiControlEditor;
+            UI_FloatRange fr = Fields[nameof(TxPower)].uiControlEditor as UI_FloatRange;
             fr.onFieldChanged = new Callback<BaseField, object>(OnTxPowerChange);
 
-            UI_Toggle tE = (UI_Toggle)Fields[nameof(planningEnabled)].uiControlEditor;
-            UI_Toggle tF = (UI_Toggle)Fields[nameof(planningEnabled)].uiControlFlight;
+            UI_Toggle tE = Fields[nameof(planningEnabled)].uiControlEditor as UI_Toggle;
+            UI_Toggle tF = Fields[nameof(planningEnabled)].uiControlFlight as UI_Toggle;
             tE.onFieldChanged = tF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningEnabledChange);
 
-            UI_FloatRange paE = (UI_FloatRange)(Fields[nameof(plannerAltitude)].uiControlEditor);
-            UI_FloatRange paF = (UI_FloatRange)(Fields[nameof(plannerAltitude)].uiControlFlight);
+            UI_FloatRange paE = Fields[nameof(plannerAltitude)].uiControlEditor as UI_FloatRange;
+            UI_FloatRange paF = Fields[nameof(plannerAltitude)].uiControlFlight as UI_FloatRange;
             paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningAltitudeChange);
         }
 
+        private void OnAntennaEnableChange(BaseField field, object obj) => SetFieldVisibility(_enabled);
         private void OnRFBandChange(BaseField f, object obj) => RecalculateFields();
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
         private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
