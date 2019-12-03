@@ -9,6 +9,8 @@ namespace RealAntennas
         protected static readonly string ModTag = "[RealAntennasCommNetScenario]";
         public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
         public static bool Enabled => true;
+        public static bool debugWalkLogging = true;
+        public static float debugWalkInterval = 60;
 
         public Network.RACommNetNetwork Network { get => network; }
         private Network.RACommNetNetwork network = null;
@@ -23,6 +25,9 @@ namespace RealAntennas
             CommNetScenario.RangeModel = RangeModel;
 
             RealAntennas.Kerbalism.Kerbalism.DetectKerbalismDLL();
+
+            debugWalkLogging = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkLogging;
+            debugWalkInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkInterval;
         }
 
         public override void OnAwake()

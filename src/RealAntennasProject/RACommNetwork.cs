@@ -8,24 +8,23 @@ namespace RealAntennas
 {
     public class RACommNetwork : CommNetwork
     {
-        protected static readonly string ModTag = "[RealAntennasCommNetwork] ";
-        protected static readonly string ModTrace = ModTag + "[Trace] ";
+        protected static readonly string ModTag = "[RealAntennasCommNetwork]";
+        protected static readonly string ModTrace = $"{ModTag} [Trace]";
 
-        private readonly float updatePeriod = 60.0f;
         private float lastRun = 0f;
 
-        private RealAntenna[] bestFwdAntPair = new RealAntenna[2];
-        private RealAntenna[] bestRevAntPair = new RealAntenna[2];
+        private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
+        private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
         public List<CommNode> Nodes { get => nodes; }
 
         public override CommNode Add(CommNode conn)
         {
             if (!(conn is RACommNode c))
             {
-                Debug.LogWarningFormat(ModTag + "Wrong commnode type, so ignoring.");
+                Debug.LogWarning($"{ModTag} Wrong commnode type, so ignoring.");
                 return conn;
             }
-            Debug.LogFormat(ModTag + "Adding {0}", c.DebugToString());
+            Debug.Log($"{ModTag} Adding {c.DebugToString()}");
             return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
@@ -56,7 +55,7 @@ namespace RealAntennas
         {
             if ((!(a is RACommNode rac_a)) || (!(b is RACommNode rac_b)))
             {
-                Debug.LogErrorFormat(ModTag + "TryConnect() but a({0}) or b({1}) null or not RACommNode!", a, b);
+                Debug.LogError($"{ModTag} TryConnect() but a({a}) or b({b}) null or not RACommNode!");
                 return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
             }
             if (!rac_a.CanComm() || !rac_b.CanComm())
@@ -116,7 +115,7 @@ namespace RealAntennas
 
             if (Convert.ToSingle(FwdBestDataRate / FwdDataRate) < 1.0)
             {
-                Debug.LogWarningFormat($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
+                Debug.LogWarning($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
             }
 
             link.FwdMetric = 1 - (FwdRateSteps / (FwdMaxSymSteps + FwdMaxModSteps + 1));
@@ -171,7 +170,7 @@ namespace RealAntennas
 
         private bool TimeToValidate()
         {
-            bool res = Time.timeSinceLevelLoad > lastRun + updatePeriod;
+            bool res = RACommNetScenario.debugWalkLogging && (Time.timeSinceLevelLoad > lastRun + RACommNetScenario.debugWalkInterval);
             if (res) lastRun = Time.timeSinceLevelLoad;
             return res;
         }
@@ -206,10 +205,10 @@ namespace RealAntennas
 
         protected string CommNodeWalk()
         {
-            string res = string.Format(ModTag + "CommNode walk\n");
+            string res = $"{ModTag} CommNode walk\n";
             foreach (RACommNode item in nodes)
             {
-                res += string.Format(ModTag + "{0}\n", item.DebugToString());
+                res += $"{ModTag} {item.DebugToString()}\n";
             }
             return res;
         }
@@ -224,10 +223,10 @@ namespace RealAntennas
 
         protected string CommLinkWalk()
         {
-            string res = string.Format(ModTag + "CommLink walk\n");
+            string res = $"{ModTag} CommLink walk\n";
             foreach (CommLink item in Links)
             {
-                res += string.Format(ModTrace + "{0}\n", item);
+                res += $"{ModTrace} {item}\n";
                 //                    res += string.Format(ModTag + "{0}\n", RealAntennasTools.DumpLink(item));
             }
             return res;
@@ -242,7 +241,7 @@ namespace RealAntennas
                 {
                     if ((cnv.Comm is RACommNode vcn) && (!nodes.Contains(vcn)))
                     {
-                        Debug.LogWarningFormat(ModTag + "Vessel {0} had commnode {1} not in the node list.", v, vcn);
+                        Debug.LogWarning($"{ModTag} Vessel {v} had commnode {vcn} not in the node list.");
                         Add(vcn);
                     }
                 }

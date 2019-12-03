@@ -15,6 +15,12 @@
         [GameParameters.CustomParameterUI("Apply Minimum Dish Distance", toolTip = "\"Antenna Cones\" directional antennas cannot point at a target that is too close.")]
         public bool enforceMinDirectionalDistance = true;
 
+        [GameParameters.CustomParameterUI("Periodic Debug Logging", toolTip = "Dump RealAntennas state on interval for debugging.")]
+        public bool debugWalkLogging = true;
+
+        [GameParameters.CustomFloatParameterUI("Periodic Debug Interval", toolTip = "Interval (sec) at which to send RealAntennas state data to debug log.", minValue = 5f, maxValue = 240f, stepCount = 235, displayFormat = "N0")]
+        public float debugWalkInterval = 60;
+
         [GameParameters.CustomFloatParameterUI("Maximum Min Dish Distance", toolTip = "Beyond this distance, a directional antenna can always point at a target.", minValue = 0f, maxValue = 1e7f, stepCount = 1000, displayFormat = "N1")]
         public float MaxMinDirectionalDistance = 1000;
 
