@@ -125,8 +125,6 @@ namespace RealAntennas
             if (HighLogic.CurrentGame.Mode != Game.Modes.CAREER) maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             if (Fields[nameof(TechLevel)].uiControlEditor is UI_FloatRange fr) fr.maxValue = maxTechLevel;
             if (HighLogic.LoadedSceneIsEditor && TechLevel < 0) TechLevel = maxTechLevel;
-            defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
-            StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
 
             if (!RAAntenna.CanTarget)
             {
@@ -136,6 +134,7 @@ namespace RealAntennas
 
             deployableAntenna = part.FindModuleImplementing<ModuleDeployableAntenna>();
 
+            ApplyGameSettings();
             SetupGUIs();
             SetupUICallbacks();
             ConfigBandOptions();
@@ -143,7 +142,12 @@ namespace RealAntennas
             RecalculateFields();
             SetFieldVisibility(_enabled);
 
-            if (HighLogic.LoadedSceneIsFlight) isEnabled = _enabled;
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                isEnabled = _enabled;
+                if (_enabled)
+                    GameEvents.OnGameSettingsApplied.Add(ApplyGameSettings);
+            }
         }
 
         private void SetupIdlePower()
@@ -245,6 +249,12 @@ namespace RealAntennas
         {
             ConfigBandOptions();
             RecalculateFields();
+        }
+
+        private void ApplyGameSettings()
+        {
+            defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
+            StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
         }
 
         private void ConfigBandOptions()

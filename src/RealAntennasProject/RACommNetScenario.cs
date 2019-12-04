@@ -24,10 +24,9 @@ namespace RealAntennas
             this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
 
-            RealAntennas.Kerbalism.Kerbalism.DetectKerbalismDLL();
-
-            debugWalkLogging = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkLogging;
-            debugWalkInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkInterval;
+            Kerbalism.Kerbalism.DetectKerbalismDLL();
+            ApplyGameSettings();
+            GameEvents.OnGameSettingsApplied.Add(ApplyGameSettings);
         }
 
         public override void OnAwake()
@@ -57,6 +56,12 @@ namespace RealAntennas
         private void DestroyNetwork()
         {
             if (FindObjectOfType<CommNetNetwork>() is CommNetNetwork cn) DestroyImmediate(cn);
+        }
+
+        private void ApplyGameSettings()
+        {
+            debugWalkLogging = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkLogging;
+            debugWalkInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().debugWalkInterval;
         }
 
         private void Initialize()
