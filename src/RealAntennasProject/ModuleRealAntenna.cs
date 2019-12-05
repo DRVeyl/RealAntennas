@@ -155,8 +155,7 @@ namespace RealAntennas
             if (HighLogic.LoadedSceneIsFlight && _enabled)
             {
                 var electricCharge = resHandler.inputResources.First(x => x.id == PartResourceLibrary.ElectricityHashcode);
-//                electricCharge.rate = RAAntenna.TechLevelInfo.BasePower / 1000; // Base Power in W, 1ec/s = 1kW
-                electricCharge.rate = PowerDrawLinear * 1e-6 * InactivePowerConsumptionMult;
+                electricCharge.rate = (Kerbalism.Kerbalism.KerbalismAssembly is null) ? RAAntenna.IdlePowerDraw : 0;
                 string err = "";
                 resHandler.UpdateModuleResourceInputs(ref err, 1, 1, false, false);
             }
@@ -168,7 +167,7 @@ namespace RealAntennas
             {
                 RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
-                //if (Kerbalism.Kerbalism.KerbalismAssembly is null)
+                if (Kerbalism.Kerbalism.KerbalismAssembly is null)
                 {
                     string err = "";
                     resHandler.UpdateModuleResourceInputs(ref err, 1, 1, true, false);

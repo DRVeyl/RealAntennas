@@ -29,17 +29,16 @@ namespace RealAntennas
             }
         }
 
-        public double UnloadedPowerDraw()
+        public double IdlePowerDraw()
         {
             double ec = 0;
             foreach (RealAntenna ra in antennaList)
             {
-                ec += ra.PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;  // mW->kW conversion 1e-6, Standby power SWAG 10%
+                ec += ra.IdlePowerDraw;
             }
             foreach (RealAntenna ra in inactiveAntennas)
             {
-                ec += ra.PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;  // mW->kW conversion 1e-6, Standby power SWAG 10%
-
+                ec += ra.IdlePowerDraw;
             }
             return ec;
         }
