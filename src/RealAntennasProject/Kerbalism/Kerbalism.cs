@@ -12,10 +12,11 @@ namespace RealAntennas.Kerbalism
         {
             if (v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
             {
-                double ec=0,rate = 0, strength = 0, packetInterval = 1.0f;
+                bool powered = (bool)p1.GetType().GetField("powered").GetValue(p1);
+                bool transmitting = (bool)p1.GetType().GetField("transmitting").GetValue(p1);
+                double ec =0,rate = 0, strength = 0, packetInterval = 1.0f;
+                double ecIdle = powered ? raCNV.IdlePowerDraw() : 0;
                 int status = 2;
-                bool powered = (bool) p1.GetType().GetField("powered").GetValue(p1);
-                bool transmitting = (bool) p1.GetType().GetField("transmitting").GetValue(p1);
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
                 if (!v.loaded) raCNV.powered = powered;
@@ -45,7 +46,7 @@ namespace RealAntennas.Kerbalism
                 p1.GetType().GetField("strength").SetValue(p1, strength);   // Signal quality indicator (float 0..1)
                 p1.GetType().GetField("target_name").SetValue(p1, target_name);
                 p1.GetType().GetField("control_path").SetValue(p1, sList);
-                p1.GetType().GetField("ec_idle")?.SetValue(p1, raCNV.IdlePowerDraw());
+                p1.GetType().GetField("ec_idle")?.SetValue(p1, ecIdle);
 
                 //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
             }
