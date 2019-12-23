@@ -33,14 +33,16 @@ namespace RealAntennas
         private bool BestPeerModulator(RealAntenna rx, out double modRate, out double codeRate)
         {
             RealAntennaDigital tx = this;
-            Antenna.Encoder encoder = Antenna.Encoder.BestMatching(tx.Encoder, rx.Encoder);
-            codeRate = encoder.CodingRate;
             modRate = 0;
+            codeRate = 0;
             if (!(rx is RealAntennaDigital)) return false;
             if (!Compatible(rx)) return false;
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return false;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return false;
+            if (!(tx.DirectionCheck(rx) && rx.DirectionCheck(tx))) return false;
 
+            Antenna.Encoder encoder = Antenna.Encoder.BestMatching(tx.Encoder, rx.Encoder);
+            codeRate = encoder.CodingRate;
             Vector3 toSource = rx.Position - tx.Position;
             double distance = toSource.magnitude;
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;

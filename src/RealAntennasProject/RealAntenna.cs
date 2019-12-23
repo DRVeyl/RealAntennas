@@ -102,6 +102,8 @@ namespace RealAntennas
         }
 
         public virtual bool Compatible(RealAntenna other) => RFBand == other.RFBand;
+        public virtual bool DirectionCheck(RealAntenna other) => DirectionCheck(other.Position);
+        public virtual bool DirectionCheck(Vector3 pos) => Physics.PointingLoss(this, pos) < Physics.MaxPointingLoss;
 
         public virtual double BestDataRateToPeer(RealAntenna rx)
         {
@@ -112,6 +114,7 @@ namespace RealAntennas
             if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
             if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;
+            if (!(tx.DirectionCheck(rx) && rx.DirectionCheck(tx))) return 0;
 
             double RSSI = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
             double temp = Physics.NoiseTemperature(rx, toSource);
