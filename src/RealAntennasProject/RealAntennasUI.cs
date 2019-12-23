@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace RealAntennas
 {
-    [KSPAddon(KSPAddon.Startup.FlightEditorAndKSC, false)]
+    [KSPAddon(KSPAddon.Startup.AllGameScenes, false)]
     internal class RealAntennasUI : MonoBehaviour
     {
         private const string modName = "RealAntennas";
@@ -78,7 +78,7 @@ namespace RealAntennas
                         null,
                         null,
                         null,
-                        ApplicationLauncher.AppScenes.ALWAYS ^ ApplicationLauncher.AppScenes.MAINMENU,
+                        ApplicationLauncher.AppScenes.ALWAYS & ~ApplicationLauncher.AppScenes.MAINMENU,
                         GameDatabase.Instance.GetTexture($"{icon}", false));
                     GameEvents.onGameSceneLoadRequested.Add(OnSceneChange);
                 }
