@@ -71,7 +71,6 @@ namespace RealAntennas
             double furthestDistance = PlannerAltitude * 1e6;
             double closestDistance = PlannerAltitude * 1e6;
 
-            Debug.LogFormat($"{ModTag} Target: {PlannerTarget}");
             CelestialBody home = Planetarium.fetch.Home;
             if (PlannerTarget is CelestialBody b)
             {

@@ -30,7 +30,7 @@ namespace RealAntennas
         {
             RealAntenna result = null;
             double highestGain = 0;
-            foreach (RACommNode node in nodes)
+            foreach (RACommNode node in nodes.Where(obj => obj.isHome))
             {
                 foreach (RealAntenna ra in node.RAAntennaList)
                 {
