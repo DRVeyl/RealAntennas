@@ -65,8 +65,8 @@ namespace RealAntennas
         }
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
-        public virtual double IdlePowerDraw => PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;
-//        public virtual double IdlePowerDraw => TechLevelInfo.BasePower / 1000;    // Base power in W, 1ec/s = 1kW
+//        public virtual double IdlePowerDraw => PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;
+        public virtual double IdlePowerDraw => TechLevelInfo.BasePower / 1000;    // Base power in W, 1ec/s = 1kW
         public virtual double PowerDrawLinear => RATools.LinearScale(TxPower) / PowerEfficiency;
         public virtual double MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Math.Tan(Beamwidth) : 0);
 

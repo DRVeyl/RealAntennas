@@ -32,7 +32,7 @@ namespace RealAntennas
             if (refGain > 0)
             {
                 gain = refGain;
-                gain += (refGain < RealAntenna.MaxOmniGain) ? 0 : RATools.LogScale(newFreq / refFreq);
+                gain += (refGain <= RealAntenna.MaxOmniGain) ? 0 : RATools.LogScale(newFreq / refFreq);
             }
             return gain;
         }
