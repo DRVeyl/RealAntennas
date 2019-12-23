@@ -12,6 +12,7 @@ namespace RealAntennas
         protected static readonly string ModTrace = $"{ModTag} [Trace]";
 
         private float lastRun = 0f;
+        private readonly System.Diagnostics.Stopwatch RebuildStopWatch = new System.Diagnostics.Stopwatch();
 
         private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
         private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
@@ -196,11 +197,19 @@ namespace RealAntennas
             return data_rate;
         }
 
+        private bool IsPaused => (KSCPauseMenu.Instance && KSCPauseMenu.Instance.enabled) || (PauseMenu.exists && PauseMenu.isOpen);
         public override void Rebuild()
         {
-            Profiler.BeginSample("RealAntennas CommNetwork Rebuild");
-            base.Rebuild();
-            Profiler.EndSample();
+            if (!IsPaused)
+            {
+                Profiler.BeginSample("RealAntennas CommNetwork Rebuild");
+                RebuildStopWatch.Reset();
+                RebuildStopWatch.Start();
+                base.Rebuild();
+                RebuildStopWatch.Stop();
+                Profiler.EndSample();
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Rebuild", RebuildStopWatch.ElapsedMilliseconds);
+            }
         }
 
         protected string CommNodeWalk()

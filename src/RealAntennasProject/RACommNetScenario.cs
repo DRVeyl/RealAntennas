@@ -11,6 +11,7 @@ namespace RealAntennas
         public static bool Enabled => true;
         public static bool debugWalkLogging = true;
         public static float debugWalkInterval = 60;
+        public Metrics metrics = new Metrics();
 
         public Network.RACommNetNetwork Network { get => network; }
         private Network.RACommNetNetwork network = null;
@@ -44,6 +45,8 @@ namespace RealAntennas
                     Debug.LogFormat($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
                 }
             }
+            if (!CommNetEnabled)
+                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", 8, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
             base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
 

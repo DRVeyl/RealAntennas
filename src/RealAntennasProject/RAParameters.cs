@@ -9,11 +9,11 @@
         public override int SectionOrder => 1;
         public override bool HasPresets => true;
 
-        [GameParameters.CustomParameterUI("All Antennas Relay", toolTip = "Turning this off does nothing.")]
-        public bool allAntennasRelay = true;
-
         [GameParameters.CustomParameterUI("Apply Minimum Dish Distance", toolTip = "\"Antenna Cones\" directional antennas cannot point at a target that is too close.")]
         public bool enforceMinDirectionalDistance = true;
+
+        [GameParameters.CustomParameterUI("Performance UI Button", toolTip = "Enable / Disable RealAntennas UI (shows performance metrics), also MOD+I")]
+        public bool performanceUI = false;
 
         [GameParameters.CustomParameterUI("Periodic Debug Logging", toolTip = "Dump RealAntennas state on interval for debugging.")]
         public bool debugWalkLogging = true;
