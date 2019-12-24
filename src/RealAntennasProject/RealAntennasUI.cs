@@ -39,8 +39,16 @@ namespace RealAntennas
         private void WindowGUI(int ID)
         {
             GUILayout.BeginVertical();
-
             RACommNetScenario scen = RACommNetScenario.Instance as RACommNetScenario;
+            VesselCounts(out int vessels, out int groundStations, out int antennas, out string net);
+            GUILayout.Label("1.6.1 Beta-7 build");
+            GUILayout.Label($"{net}");
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"Vessels: {vessels}");
+            GUILayout.Label($"GroundStations: {groundStations}");
+            GUILayout.Label($"Antennas/vessel: {(float)vessels / antennas:F1}");
+            GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Name", GUILayout.ExpandWidth(true));
             GUILayout.Label("Iterations", GUILayout.ExpandWidth(true));
@@ -64,6 +72,30 @@ namespace RealAntennas
         private void ShowWindow() => showUI = true;
         private void HideWindow() => showUI = false;
         private void OnSceneChange(GameScenes s) => showUI = false;
+
+        private void VesselCounts(out int vessels, out int groundStations, out int antennas, out string net)
+        {
+            vessels = groundStations = antennas = 0;
+            if ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet is RACommNetwork racn)
+            {
+                net = $"{racn}";
+                foreach (RACommNode node in racn.Nodes)
+                {
+                    if (node.isHome)
+                    {
+                        groundStations++;
+                    }
+                    else
+                    {
+                        vessels++;
+                        antennas += node.RAAntennaList.Count;
+                    }
+                }
+            } else
+            {
+                net = string.Empty;
+            }
+        }
 
         private void OnGuiAppLauncherReady()
         {
