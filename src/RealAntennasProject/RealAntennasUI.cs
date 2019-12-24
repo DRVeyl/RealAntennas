@@ -47,7 +47,7 @@ namespace RealAntennas
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Vessels: {vessels}");
             GUILayout.Label($"GroundStations: {groundStations}");
-            GUILayout.Label($"Antennas/vessel: {antennas / vessels:F1}");
+            GUILayout.Label($"Antennas/vessel: {(float)antennas / vessels:F1}");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Name", GUILayout.ExpandWidth(true));
