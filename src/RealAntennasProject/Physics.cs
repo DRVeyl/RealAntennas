@@ -153,14 +153,8 @@ namespace RealAntennas
             //
             // P(dBW) = 10*log10(Kb*T*bandwidth) = -228.59917 + 10*log10(T*BW)
         }
-        private static double AntennaMicrowaveTemp(RealAntenna rx) 
-        {
-            if ((rx.ParentNode as RACommNode)?.ParentVessel is Vessel)
-            {
-                return rx.TechLevelInfo.ReceiverNoiseTemperature;
-            }
-            return rx.AMWTemp;
-        }
+        private static double AntennaMicrowaveTemp(RealAntenna rx) =>
+            ((rx.ParentNode as RACommNode)?.ParentBody is CelestialBody) ? rx.AMWTemp : rx.TechLevelInfo.ReceiverNoiseTemperature;
         private static double AtmosphericTemp(RealAntenna rx, Vector3d origin)
         {
             if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
