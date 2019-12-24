@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RealAntennas.Antenna
@@ -18,6 +19,11 @@ namespace RealAntennas.Antenna
         {
             if (!initialized && GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode node)
                 Init(node);
+            if (!All.ContainsKey(band))
+            {
+                Debug.LogError($"{ModTag} Band \"{band}\" not defined, defaulting to {All.Keys.FirstOrDefault()}");
+                band = All.Keys.FirstOrDefault();
+            }
             return All[band];
         }
         public static void Init(ConfigNode config)
