@@ -10,18 +10,18 @@ namespace RealAntennas
     {
         private const string PAWGroup = "RealAntennas";
         private const string PAWGroupPlanner = "Antenna Planning";
-        [KSPField(guiActiveEditor = true, guiName = "Antenna", isPersistant = true, groupName = PAWGroup, groupDisplayName = PAWGroup),
+        [KSPField(guiActiveEditor = true, guiName = "Antenna", isPersistant = true),
         UI_Toggle(disabledText = "<color=red><b>Disabled</b></color>", enabledText = "<color=green>Enabled</color>", scene =UI_Scene.Editor)]
         public bool _enabled = true;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1", groupName = PAWGroup, groupDisplayName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1")]
         public double Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1"),
         UI_FloatRange(maxValue = 60f, minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor)]
         public float TxPower = 30f;       // Transmit Power in dBm (milliwatts)
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0"),
         UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
         private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
@@ -41,49 +41,49 @@ namespace RealAntennas
         [KSPField(isPersistant = true)]
         public double referenceFrequency = 0;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band"),
          UI_ChooseOption(scene = UI_Scene.Editor)]
         public string RFBand = "S";
 
         public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmitter Power", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmitter Power")]
         public string sTransmitterPower = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Active)", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Active)")]
         public string sActivePowerConsumed = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Idle)", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Idle)")]
         public string sIdlePowerConsumed = string.Empty;
 
-        [KSPField(guiActive = true, guiName = "Antenna Target", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiName = "Antenna Target")]
         public string sAntennaTarget = string.Empty;
 
         [KSPField(isPersistant = true)]
         public string targetID = RealAntenna.DefaultTargetName;
         public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner),
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning"),
          UI_Toggle(disabledText = "Disabled", enabledText = "Enabled", scene = UI_Scene.All)]
         public bool planningEnabled = false;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Peer", groupName = PAWGroupPlanner)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Peer")]
         public string plannerTargetString = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0", groupName = PAWGroupPlanner),
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0"),
          UI_FloatRange(maxValue = 1000, minValue = 1, stepIncrement = 1, scene = UI_Scene.All)]
         public float plannerAltitude = 1;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit", groupName = PAWGroupPlanner)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit")]
         public string sDownlinkPlanningResult = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive", groupName = PAWGroupPlanner)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive")]
         public string sUplinkPlanningResult = string.Empty;
 
-        [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
+        [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting")]
         void AntennaTargetGUI() => targetGUI.showGUI = !targetGUI.showGUI;
 
-        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI", groupName = PAWGroupPlanner)]
+        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI")]
         public void AntennaPlanningGUI() => planner.plannerGUI.showGUI = !planner.plannerGUI.showGUI;
 
         public void OnGUI() { targetGUI.OnGUI(); planner.plannerGUI.OnGUI(); }
