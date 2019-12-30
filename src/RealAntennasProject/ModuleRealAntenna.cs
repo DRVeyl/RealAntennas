@@ -201,6 +201,7 @@ namespace RealAntennas
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
             planner.RecalculatePlannerFields();
+            MonoUtilities.RefreshContextWindows(part);
         }
 
         private void SetupBaseFields()
