@@ -41,7 +41,7 @@ namespace RealAntennas
 
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
-        public Vector3 Position => ParentNode.position;
+        public Vector3d Position => ParentNode.precisePosition;
         public virtual AntennaShape Shape => Gain <= MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
         public Vector3 ToTarget {

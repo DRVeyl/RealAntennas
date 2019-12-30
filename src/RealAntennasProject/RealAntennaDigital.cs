@@ -43,7 +43,7 @@ namespace RealAntennas
 
             Antenna.Encoder encoder = Antenna.Encoder.BestMatching(tx.Encoder, rx.Encoder);
             codeRate = encoder.CodingRate;
-            Vector3 toSource = rx.Position - tx.Position;
+            Vector3d toSource = rx.Position - tx.Position;
             double distance = toSource.magnitude;
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
@@ -94,7 +94,7 @@ namespace RealAntennas
                 double d = 1 + Math.Floor(margin / 3);
                 if (d < Int32.MinValue || d > Int32.MaxValue)
                 {
-                    Debug.LogError($"{ModTag} Max bits {d} OUT OF RANGE of Int32 for Tx: {tx} Rx: {rx} N0: {N0} MaxSymbolRate: {maxSymbolRate} Noise: {Noise} RxP: {RxPower} CI: {CI} Encoder: {encoder} margin: {margin}");
+                    Debug.LogError($"{ModTag} Max bits {d} OUT OF RANGE of Int32 for Tx: {tx} Rx: {rx} N0: {N0} MaxSymbolRate: {maxSymbolRate} Noise: {Noise} RxP: {RxPower} CI: {CI} Encoder: {encoder} margin: {margin} distance: {distance} freq: {tx.Frequency} txNode: {tx.ParentNode} rxNode: {rx.ParentNode}");
                     negotiatedBits = 1;
                 } else
                 {
