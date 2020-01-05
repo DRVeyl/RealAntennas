@@ -62,7 +62,7 @@ namespace RealAntennas.MapUI
 
 //                RAOrbitRenderer.ReplaceOrbitRenderers();
             }
-            //RATelemetryUpdate.Install();
+            RATelemetryUpdate.Install();
         }
 
         protected override void OnDestroy()
