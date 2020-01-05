@@ -41,7 +41,7 @@ namespace RealAntennas
             GUILayout.BeginVertical();
             RACommNetScenario scen = RACommNetScenario.Instance as RACommNetScenario;
             VesselCounts(out int vessels, out int groundStations, out int antennas, out string net);
-            GUILayout.Label("1.7.3 Beta-7 build");
+            GUILayout.Label($"{RACommNetScenario.assembly.GetName().Name} v{RACommNetScenario.info.FileVersion}");
             GUILayout.Label($"{net}");
 
             GUILayout.BeginHorizontal();
@@ -66,6 +66,14 @@ namespace RealAntennas
             }
 
             GUILayout.EndVertical();
+            if (MapView.fetch is MapView map && MapView.MapIsEnabled)
+            {
+                MapUI.NetUIConfigurationWindow win = scen.UI.configWindow;
+                if (GUILayout.Button($"{(win.showUI ? "Hide" : "Show")} Config Window"))
+                {
+                    if (win.showUI) win.HideWindow(); else win.ShowWindow();
+                }
+            }
             GUI.DragWindow();
         }
 

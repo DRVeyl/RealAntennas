@@ -37,11 +37,14 @@
     <Compile Include="Antenna\AntennaGUI.cs" />
     <Compile Include="Antenna\BandInfo.cs" />
     <Compile Include="Antenna\Encoder.cs" />
-    <Compile Include="Enumeration.cs" />
     <Compile Include="Kerbalism\Kerbalism.cs" />
+    <Compile Include="MapUI\GroundStationSiteNode.cs" />
+    <Compile Include="MapUI\NetUIConfigurationWindow.cs" />
+    <Compile Include="MapUI\RAOrbitRenderer.cs" />
+    <Compile Include="MapUI\RATelemetryUpdate.cs" />
     <Compile Include="Metrics.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
-    <Compile Include="Network\RACommNetUI.cs" />
+    <Compile Include="MapUI\RACommNetUI.cs" />
     <Compile Include="Physics.cs" />
     <Compile Include="Planner.cs" />
     <Compile Include="PlannerGUI.cs" />
@@ -58,6 +61,7 @@
     <Compile Include="Network\RealAntennasRangeModel.cs" />
     <Compile Include="Network\ScenarioPatcher.cs" />
     <Compile Include="RealAntennasUI.cs" />
+    <Compile Include="MapUI\SignalToolTipController.cs" />
     <Compile Include="TechLevelInfo.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Network\RACommNetNetwork.cs" />
