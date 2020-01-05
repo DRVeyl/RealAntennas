@@ -10,6 +10,8 @@ namespace RealAntennas.Network
         protected static readonly string ModTag = "[RealAntennasCommNetHome] ";
         protected ConfigNode config = null;
         private readonly double DriftTolerance = 10000.0;
+        public string icon = "radio-antenna";
+        public RACommNode Comm => comm as RACommNode;
 
         public void SetTransformFromLatLonAlt(double lat, double lon, double alt, CelestialBody body)
         {
@@ -29,6 +31,7 @@ namespace RealAntennas.Network
             lat = double.Parse(node.GetValue("lat"));
             lon = double.Parse(node.GetValue("lon"));
             alt = double.Parse(node.GetValue("alt"));
+            node.TryGetValue("icon", ref icon);
             SetTransformFromLatLonAlt(lat, lon, alt, body);
         }
         protected override void CreateNode()
