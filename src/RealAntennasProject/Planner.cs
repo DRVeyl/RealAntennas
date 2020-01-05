@@ -80,6 +80,7 @@ namespace RealAntennas
                     peerComm = new RACommNode(peerObj.transform) { ParentBody = home };
                     peerAnt = new RealAntennaDigital(DSNAntenna) { ParentNode = peerComm };
                     peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + home.GetRelSurfacePosition(0, 0, 0), Quaternion.identity);
+                    peerAnt.ParentNode.precisePosition = peerAnt.ParentNode.position;
                     dir = home.GetRelSurfaceNVector(0, 0).normalized;
                     if (b != home)
                     {
@@ -98,6 +99,7 @@ namespace RealAntennas
                 peerComm = new RACommNode(peerObj.transform) { ParentVessel = ra?.Parent?.vessel };
                 peerAnt = new RealAntennaDigital(ra) { ParentNode = peerComm };
                 peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + (closestDistance / 2 * Vector3d.up), Quaternion.identity);
+                peerAnt.ParentNode.precisePosition = peerAnt.ParentNode.position;
                 if (peerAnt.ToTarget != Vector3.zero) dir = peerAnt.ToTarget.normalized;
             }
             if (peerAnt != null)
@@ -105,6 +107,7 @@ namespace RealAntennas
                 if (parent.Fields[nameof(parent.plannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = showAltitude;
                 Vector3d adj = dir * closestDistance;
                 selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
+                selfAnt.ParentNode.precisePosition = selfAnt.ParentNode.position;
 
                 double rxp = parent.TxPower + parent.Gain - Physics.PathLoss(closestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
                 double fwdDataRateHigh = selfAnt.BestDataRateToPeer(peerAnt);
@@ -116,6 +119,7 @@ namespace RealAntennas
                 {
                     adj = dir * furthestDistance;
                     selfAnt.ParentNode.transform.SetPositionAndRotation(peerAnt.Position + adj, Quaternion.identity);
+                    selfAnt.ParentNode.precisePosition = selfAnt.ParentNode.position;
 
                     rxp = parent.TxPower + parent.Gain - Physics.PathLoss(furthestDistance, parent.RFBandInfo.Frequency) + peerAnt.Gain;
                     double fwdDataRateLow = selfAnt.BestDataRateToPeer(peerAnt);

@@ -41,7 +41,9 @@ namespace RealAntennas
 
         public ModuleRealAntenna Parent { get; internal set; }
         public CommNet.CommNode ParentNode { get; set; }
-        public Vector3d Position => ParentNode.precisePosition;
+        public Vector3d Position => PrecisePosition;
+        public Vector3d PrecisePosition => ParentNode.precisePosition;
+        public Vector3d TransformPosition => ParentNode.position;
         public virtual AntennaShape Shape => Gain <= MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
         public Vector3 ToTarget {
@@ -50,6 +52,16 @@ namespace RealAntennas
                 return (Target is Vessel v) ? v.transform.position - Position : (Vector3)(Target as CelestialBody).position - Position;
             }
         }
+
+        public Vector3 ToTargetByTransform
+        {
+            get
+            {
+                if (!(CanTarget && Target != null)) return Vector3.zero;
+                return (Target is Vessel v) ? v.transform.position - TransformPosition : (Vector3)(Target as CelestialBody).position - TransformPosition;
+            }
+        }
+
         public string TargetID { get; set; }
         private ITargetable _target = null;
         public ITargetable Target
