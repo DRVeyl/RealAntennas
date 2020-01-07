@@ -14,8 +14,8 @@ namespace RealAntennas.Kerbalism
             {
                 bool powered = (bool)p1.GetType().GetField("powered").GetValue(p1);
                 bool transmitting = (bool)p1.GetType().GetField("transmitting").GetValue(p1);
-                double ec =0,rate = 0, strength = 0, packetInterval = 1.0f;
                 double ecIdle = powered ? raCNV.IdlePowerDraw() : 0;
+                double ec = ecIdle, rate = 0, strength = 0, packetInterval = 1.0f;
                 int status = 2;
                 string target_name = "NotConnected";
                 List<string[]> sList = new List<string[]>();
