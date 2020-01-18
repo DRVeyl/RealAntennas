@@ -47,6 +47,11 @@ namespace RealAntennas
             double distance = toSource.magnitude;
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
+            if (distance < 0.1f)
+            {
+                Debug.LogWarning($"{ModTag} Aborting calculation for {tx} and {rx}: Distance < 0.1");
+                return false;
+            }
             if (!txMod.Compatible(rxMod)) return false;
             int maxBits = Math.Min(txMod.ModulationBits, rxMod.ModulationBits);
             double maxSymbolRate = Math.Min(txMod.SymbolRate, rxMod.SymbolRate);
