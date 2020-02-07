@@ -201,7 +201,6 @@ namespace RealAntennas
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
             planner.RecalculatePlannerFields();
-            MonoUtilities.RefreshContextWindows(part);
         }
 
         private void SetupBaseFields()
@@ -260,8 +259,10 @@ namespace RealAntennas
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
         private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
         {
+            string oldBand = RFBand;
             ConfigBandOptions();
             RecalculateFields();
+            if (!oldBand.Equals(RFBand)) MonoUtilities.RefreshContextWindows(part);
         }
 
         private void ApplyGameSettings()
@@ -284,9 +285,7 @@ namespace RealAntennas
             op.options = availableBands.ToArray();
             op.display = availableBandDisplayNames.ToArray();
             if (op.options.IndexOf(RFBand) < 0)
-            {
                 RFBand = op.options[op.options.Length - 1];
-            }
         }
 
         public override string GetModuleDisplayName() => "RealAntenna";
