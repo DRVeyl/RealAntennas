@@ -1,0 +1,30 @@
+{
+    "NAME":"RealAntennas",
+    "URL":"https://github.com/DRVeyl/RealAntennas/raw/master/GameData/RealAntennas/RealAntennas.version",
+    "DOWNLOAD":"https://github.com/DRVeyl/RealAntennas/releases/tag/v1.0",
+    "GITHUB":
+    {
+        "USERNAME":"DRVeyl",
+        "REPOSITORY":"RealAntennas",
+        "ALLOW_PRE_RELEASE":false
+    },
+    "VERSION":
+    {
+        "MAJOR":1,
+        "MINOR":0,
+        "PATCH":0,
+        "BUILD":0
+    },
+    "KSP_VERSION_MIN":
+    {
+        "MAJOR":1,
+        "MINOR":7,
+        "PATCH":0
+    },
+    "KSP_VERSION_MAX":
+    {
+        "MAJOR":1,
+        "MINOR":7,
+        "PATCH":3
+    }
+}
