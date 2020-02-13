@@ -67,7 +67,7 @@ namespace RealAntennas.MapUI
             foreach (KeyValuePair<CommLink, Tooltip_SignalStrengthItem> item in items)
             {
                 if (item.Value != null)
-                    Destroy(item.Value);
+                    Destroy(item.Value.gameObject);
             }
             items.Clear();
         }
