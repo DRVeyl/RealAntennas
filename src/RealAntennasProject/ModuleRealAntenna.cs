@@ -262,7 +262,7 @@ namespace RealAntennas
             string oldBand = RFBand;
             ConfigBandOptions();
             RecalculateFields();
-            if (!oldBand.Equals(RFBand)) MonoUtilities.RefreshContextWindows(part);
+            if (!oldBand.Equals(RFBand)) MonoUtilities.RefreshPartContextWindow(part);
         }
 
         private void ApplyGameSettings()
