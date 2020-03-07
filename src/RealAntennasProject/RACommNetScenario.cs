@@ -52,7 +52,7 @@ namespace RealAntennas
                 }
             }
             if (!CommNetEnabled)
-                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", 8, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", 16, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
             base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
 
