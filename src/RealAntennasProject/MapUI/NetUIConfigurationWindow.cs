@@ -15,19 +15,16 @@ namespace RealAntennas.MapUI
         public const string ModTag = "[RealAntennas.NetUIConfigurationWindow]";
 
         internal RACommNetUI parent;
-        internal RAOrbitRenderer orbitParent;
         private float coneOpacity = 1;
         private float fCircles = 4;
         private readonly List<GameObject> renderers = new List<GameObject>();
 
         private void Start()
         {
-//            GameEvents.OnMapEntered.Add(ShowWindow);
             GameEvents.OnMapExited.Add(HideWindow);
         }
         private void OnDestroy()
         {
-//            GameEvents.OnMapEntered.Remove(ShowWindow);
             GameEvents.OnMapExited.Remove(HideWindow);
         }
 

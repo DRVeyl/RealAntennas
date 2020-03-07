@@ -23,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,6 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Antenna\AntennaGUI.cs" />
@@ -40,7 +42,6 @@
     <Compile Include="Kerbalism\Kerbalism.cs" />
     <Compile Include="MapUI\GroundStationSiteNode.cs" />
     <Compile Include="MapUI\NetUIConfigurationWindow.cs" />
-    <Compile Include="MapUI\RAOrbitRenderer.cs" />
     <Compile Include="MapUI\RATelemetryUpdate.cs" />
     <Compile Include="Metrics.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
