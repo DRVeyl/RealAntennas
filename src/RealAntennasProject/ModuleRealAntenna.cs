@@ -90,7 +90,7 @@ namespace RealAntennas
 
         protected static readonly string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
-        public RealAntenna RAAntenna = new RealAntennaDigital();
+        public RealAntenna RAAntenna;
         public Antenna.AntennaGUI targetGUI = new Antenna.AntennaGUI();
         public Planner planner;
 
@@ -105,11 +105,19 @@ namespace RealAntennas
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
+        public override void OnAwake()
+        {
+            base.OnAwake();
+            RAAntenna = HighLogic.LoadedSceneIsEditor ?
+                new RealAntennaDigital(part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>().RAAntenna) :
+                new RealAntennaDigital();
+        }
+
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
             Configure(node);
-            Debug.LogFormat($"{ModTag} OnLoad {this}");
+            Debug.Log($"{ModTag} OnLoad {this}");
         }
 
         public void Configure(ConfigNode node)
