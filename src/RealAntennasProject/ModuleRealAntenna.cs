@@ -102,6 +102,7 @@ namespace RealAntennas
         private float StockRateModifier = 0.001f;
         public static double InactivePowerConsumptionMult = 0.1;
         private float defaultPacketInterval = 1.0f;
+        private float MinPacketSize = 16;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
@@ -109,7 +110,7 @@ namespace RealAntennas
         {
             base.OnAwake();
             RAAntenna = HighLogic.LoadedSceneIsEditor ?
-                new RealAntennaDigital(part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>().RAAntenna) :
+                new RealAntennaDigital(part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>().RAAntenna.Name) :
                 new RealAntennaDigital();
         }
 
@@ -277,6 +278,7 @@ namespace RealAntennas
         {
             defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
             StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
+            MinPacketSize = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MinPacketSize;
         }
 
         private void ConfigBandOptions()
@@ -329,8 +331,19 @@ namespace RealAntennas
             {
                 double data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
                 packetInterval = defaultPacketInterval;
-                packetSize = Convert.ToSingle(data_rate * packetInterval * StockRateModifier);
+                packetSize = Convert.ToSingle(data_rate * packetInterval);
                 packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
+
+                if (packetSize < MinPacketSize)
+                {
+                    // Correct for stock bug that doesn't complete transmission at low rates
+                    float scale = MinPacketSize / packetSize;
+                    packetSize *= scale;
+                    packetInterval *= scale;
+                    packetResourceCost *= scale;
+                }
+                packetSize *= StockRateModifier;
+
                 Debug.Log($"{ModTag} Setting transmission params: rate: {data_rate:F1}, interval: {packetInterval:N1}s, rescale: {StockRateModifier:N5}, size: {packetSize:N6}");
             }
         }
