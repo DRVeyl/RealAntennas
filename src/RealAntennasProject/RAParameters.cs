@@ -27,13 +27,6 @@
         [GameParameters.CustomIntParameterUI("Maximum Tech Level", displayFormat = "N0", gameMode = GameParameters.GameMode.SANDBOX | GameParameters.GameMode.SANDBOX, maxValue = 20, minValue = 1, stepSize = 1)]
         public int MaxTechLevel = 10;
 
-        [GameParameters.CustomFloatParameterUI("Default Packet Interval (s)", toolTip = "Default interval between science packets.  Increase if encountering bug with science not being credited.", minValue = 0.1f, maxValue = 10.0f, stepCount = 100, displayFormat = "N1")]
-        public float DefaultPacketInterval = 1.0f;
-
-        // 10 was sufficient in limited testing, but bug reports prior to the fix suggested 8 with 1.0 interval would break, and 8 with 1.5 interval (= 12 effective) would work
-        [GameParameters.CustomFloatParameterUI("Minimum Packet Size (bits)", toolTip = "Minimum number of bits to transmit in one shot.  Alternative fix to adjusting the packet interval. Increase if encountering bug with science not being credited.", minValue = 10, maxValue = 1000, stepCount = 199, displayFormat = "N0")]
-        public float MinPacketSize = 16;
-
         [GameParameters.CustomFloatParameterUI("Rescale transmission rate for stock science", toolTip = "Multiplier to transmission rate for stock science.  Available for balancing purposes: turn it down if science transmits too quickly, or up if too slowly.", minValue = 0.00001f, maxValue = 0.01f, stepCount = 10000, displayFormat = "N5")]
         public float StockRateModifier = 0.01f;
 

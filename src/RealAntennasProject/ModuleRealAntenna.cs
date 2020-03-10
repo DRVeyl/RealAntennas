@@ -47,9 +47,6 @@ namespace RealAntennas
 
         public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmitter Power", groupName = PAWGroup)]
-        public string sTransmitterPower = string.Empty;
-
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Active)", groupName = PAWGroup)]
         public string sActivePowerConsumed = string.Empty;
 
@@ -101,8 +98,7 @@ namespace RealAntennas
 
         private float StockRateModifier = 0.001f;
         public static double InactivePowerConsumptionMult = 0.1;
-        private float defaultPacketInterval = 1.0f;
-        private float MinPacketSize = 16;
+        private float DefaultPacketInterval = 1.0f;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
@@ -202,10 +198,9 @@ namespace RealAntennas
             RAAntenna.RFBand = Antenna.BandInfo.All[RFBand];
             RAAntenna.SymbolRate = RAAntenna.RFBand.MaxSymbolRate(techLevel);
             RAAntenna.Gain = Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBandInfo.Frequency);
-
-            sTransmitterPower = $"{RATools.LinearScale(TxPower - 30):F2} Watts";
-            sActivePowerConsumed = $"{PowerDrawLinear / 1000:F2} Watts";
-            sIdlePowerConsumed = $"{RAAntenna.IdlePowerDraw * 1000:F2} Watts";
+            double idleDraw = RAAntenna.IdlePowerDraw * 1000;
+            sIdlePowerConsumed = $"{idleDraw:F2} Watts";
+            sActivePowerConsumed = $"{idleDraw + (PowerDrawLinear / 1000):F2} Watts";
             int ModulationBits = (RAAntenna as RealAntennaDigital).modulator.ModulationBitsFromTechLevel(TechLevel);
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
@@ -227,7 +222,6 @@ namespace RealAntennas
             Fields[nameof(TxPower)].guiActiveEditor = Fields[nameof(TxPower)].guiActive = en;
             Fields[nameof(TechLevel)].guiActiveEditor = Fields[nameof(TechLevel)].guiActive = en;
             Fields[nameof(RFBand)].guiActiveEditor = Fields[nameof(RFBand)].guiActive = en;
-            Fields[nameof(sTransmitterPower)].guiActiveEditor = Fields[nameof(sTransmitterPower)].guiActive = en;
             Fields[nameof(sActivePowerConsumed)].guiActiveEditor = Fields[nameof(sActivePowerConsumed)].guiActive = en;
             Fields[nameof(sIdlePowerConsumed)].guiActiveEditor = Fields[nameof(sIdlePowerConsumed)].guiActive = en;
             Fields[nameof(sAntennaTarget)].guiActive = en;
@@ -276,9 +270,7 @@ namespace RealAntennas
 
         private void ApplyGameSettings()
         {
-            defaultPacketInterval = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().DefaultPacketInterval;
             StockRateModifier = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().StockRateModifier;
-            MinPacketSize = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MinPacketSize;
         }
 
         private void ConfigBandOptions()
@@ -330,21 +322,11 @@ namespace RealAntennas
             if (RACommNetScenario.CommNetEnabled && this?.vessel?.Connection?.Comm is RACommNode node)
             {
                 double data_rate = (node.Net as RACommNetwork).MaxDataRateToHome(node);
-                packetInterval = defaultPacketInterval;
+                packetInterval = DefaultPacketInterval;
                 packetSize = Convert.ToSingle(data_rate * packetInterval);
-                packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
-
-                if (packetSize < MinPacketSize)
-                {
-                    // Correct for stock bug that doesn't complete transmission at low rates
-                    float scale = MinPacketSize / packetSize;
-                    packetSize *= scale;
-                    packetInterval *= scale;
-                    packetResourceCost *= scale;
-                }
                 packetSize *= StockRateModifier;
-
-                Debug.Log($"{ModTag} Setting transmission params: rate: {data_rate:F1}, interval: {packetInterval:N1}s, rescale: {StockRateModifier:N5}, size: {packetSize:N6}");
+                packetResourceCost = PowerDrawLinear * packetInterval * 1e-6; // 1 EC/sec = 1KW.  Draw(mw) * interval(sec) * mW->kW conversion
+                Debug.Log($"{ModTag} Setting transmission params: rate: {data_rate:F1}, interval: {packetInterval:F1}s, rescale: {StockRateModifier:N5}, size: {packetSize:N6}");
             }
         }
         public override bool CanTransmit()
@@ -357,13 +339,45 @@ namespace RealAntennas
         {
             SetTransmissionParams();
             base.TransmitData(dataQueue);
+            StartCoroutine(StockScienceFixer());
         }
 
         public override void TransmitData(List<ScienceData> dataQueue, Callback callback)
         {
             SetTransmissionParams();
             base.TransmitData(dataQueue, callback);
+            StartCoroutine(StockScienceFixer());
         }
+
+        private IEnumerator StockScienceFixer()
+        {
+            System.Reflection.BindingFlags flag = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            float missCount = 2;
+            float threshold = 0.999f;
+            while (missCount > 0)
+            {
+                if (commStream is RnDCommsStream)
+                {
+                    float dataIn = (float)commStream.GetType().GetField("dataIn", flag).GetValue(commStream);
+                    if (dataIn == commStream.fileSize)
+                    {
+                        Debug.Log($"{ModTag} Stock Science Transfer delivered {dataIn} Mits successfully");
+                        yield break;
+                    }
+                    // Debug.Log($"{ModTag} StockScienceFixer: Current: {dataIn}, delta: {packetSize}");
+                    if (dataIn / commStream.fileSize >= threshold)
+                    {
+                        Debug.Log($"{ModTag} StockScienceFixer stuffing the last segment of data...");
+                        commStream.StreamData(commStream.fileSize * 0.1f, vessel.protoVessel);
+                        yield break;
+                    }
+                }
+                else missCount--;
+                yield return new WaitForSeconds(packetInterval);
+            }
+            Debug.Log($"{ModTag} DebugFileTransmission() ended: no active comm stream");
+        }
+
         #endregion
 
         #region Cost and Mass Modifiers
