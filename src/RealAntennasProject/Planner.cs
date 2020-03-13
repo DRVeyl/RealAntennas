@@ -5,7 +5,7 @@ namespace RealAntennas
 {
     public class Planner
     {
-        private static readonly string ModTag = "[RealAntennas.Planner]";
+        private const string ModTag = "[RealAntennas.Planner]";
         public PlannerGUI plannerGUI;
         public ModuleRealAntenna parent;
 
@@ -19,8 +19,6 @@ namespace RealAntennas
         private object PlannerTarget;
         private float PlannerAltitude { get => parent.plannerAltitude; set => parent.plannerAltitude = value; }
         private RealAntenna RAAntenna => parent.RAAntenna;
-        private bool PlanningEnabled => parent.planningEnabled;
-
         public Planner(ModuleRealAntenna p)
         {
             plannerGUI = new PlannerGUI() { parent = this };
@@ -34,21 +32,12 @@ namespace RealAntennas
             RecalculatePlannerFields();
         }
 
-            internal void SetPlanningFields()
-        {
-            { if (parent.Events[nameof(parent.AntennaPlanningGUI)] is BaseEvent be) be.active = PlanningEnabled; }
-            { if (parent.Fields[nameof(parent.plannerTargetString)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (parent.Fields[nameof(parent.sDownlinkPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (parent.Fields[nameof(parent.sUplinkPlanningResult)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-            { if (parent.Fields[nameof(parent.plannerAltitude)] is BaseField bf) bf.guiActive = bf.guiActiveEditor = PlanningEnabled; }
-        }
-
         internal void OnPlanningEnabledChange(BaseField f, object obj) 
         {  
-            SetPlanningFields();
             CheckAntennaExtended();
             RecalculatePlannerFields();
         }
+
         internal void OnPlanningAltitudeChange(BaseField f, object obj)
         {
             if (PlannerAltitude < 1) PlannerAltitude = 1;
@@ -66,7 +55,7 @@ namespace RealAntennas
             GameObject selfObj = new GameObject("remoteAntenna");
             RACommNode selfComm = new RACommNode(selfObj.transform) { ParentVessel = parent.vessel };
             RealAntenna selfAnt = new RealAntennaDigital(RAAntenna) { ParentNode = selfComm };
-            bool showAltitude = PlanningEnabled;
+            bool showAltitude = true;
             Vector3d dir = Vector3d.up;
             double furthestDistance = PlannerAltitude * 1e6;
             double closestDistance = PlannerAltitude * 1e6;
@@ -74,7 +63,7 @@ namespace RealAntennas
             CelestialBody home = Planetarium.fetch.Home;
             if (PlannerTarget is CelestialBody b)
             {
-                showAltitude = showAltitude && (b == home);
+                showAltitude = (b == home);
                 if (RATools.HighestGainCompatibleDSNAntenna(net.Nodes, RAAntenna) is RealAntenna DSNAntenna)
                 {
                     peerComm = new RACommNode(peerObj.transform) { ParentBody = home };

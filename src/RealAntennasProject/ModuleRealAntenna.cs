@@ -60,11 +60,7 @@ namespace RealAntennas
         public string targetID = RealAntenna.DefaultTargetName;
         public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner),
-         UI_Toggle(disabledText = "Disabled", enabledText = "Enabled", scene = UI_Scene.All)]
-        public bool planningEnabled = false;
-
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Peer", groupName = PAWGroupPlanner)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Peer", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner)]
         public string plannerTargetString = string.Empty;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0", groupName = PAWGroupPlanner),
@@ -82,6 +78,9 @@ namespace RealAntennas
 
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI", groupName = PAWGroupPlanner)]
         public void AntennaPlanningGUI() => planner.plannerGUI.showGUI = !planner.plannerGUI.showGUI;
+
+        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Refresh Planner", groupName = PAWGroupPlanner)]
+        public void RefreshPlanner() { RecalculateFields(); MonoUtilities.RefreshPartContextWindow(part); }
 
         public void OnGUI() { targetGUI.OnGUI(); planner.plannerGUI.OnGUI(); }
 
@@ -225,7 +224,6 @@ namespace RealAntennas
             Fields[nameof(sActivePowerConsumed)].guiActiveEditor = Fields[nameof(sActivePowerConsumed)].guiActive = en;
             Fields[nameof(sIdlePowerConsumed)].guiActiveEditor = Fields[nameof(sIdlePowerConsumed)].guiActive = en;
             Fields[nameof(sAntennaTarget)].guiActive = en;
-            Fields[nameof(planningEnabled)].guiActiveEditor = Fields[nameof(planningEnabled)].guiActive = en;
         }
 
         private void SetupGUIs()
@@ -233,7 +231,6 @@ namespace RealAntennas
             targetGUI.ParentPart = part;
             targetGUI.ParentPartModule = this;
             targetGUI.Start();
-            planner.SetPlanningFields();
             planner.plannerGUI.Start();
         }
 
@@ -247,10 +244,6 @@ namespace RealAntennas
 
             UI_FloatRange fr = Fields[nameof(TxPower)].uiControlEditor as UI_FloatRange;
             fr.onFieldChanged = new Callback<BaseField, object>(OnTxPowerChange);
-
-            UI_Toggle tE = Fields[nameof(planningEnabled)].uiControlEditor as UI_Toggle;
-            UI_Toggle tF = Fields[nameof(planningEnabled)].uiControlFlight as UI_Toggle;
-            tE.onFieldChanged = tF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningEnabledChange);
 
             UI_FloatRange paE = Fields[nameof(plannerAltitude)].uiControlEditor as UI_FloatRange;
             UI_FloatRange paF = Fields[nameof(plannerAltitude)].uiControlFlight as UI_FloatRange;
