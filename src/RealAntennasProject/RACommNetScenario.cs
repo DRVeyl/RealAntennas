@@ -1,4 +1,5 @@
 ﻿using CommNet;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -7,28 +8,29 @@ namespace RealAntennas
     [KSPScenario(ScenarioCreationOptions.AddToAllGames | ScenarioCreationOptions.AddToAllMissionGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR })]
     public class RACommNetScenario : CommNetScenario
     {
-        protected static readonly string ModTag = "[RealAntennasCommNetScenario]";
+        private const string ModTag = "[RealAntennasCommNetScenario]";
         public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
+        private static bool staticInit = false;
         public static bool Enabled => true;
         public static bool debugWalkLogging = true;
         public static float debugWalkInterval = 60;
         public Metrics metrics = new Metrics();
-        public static Assembly assembly;
-        public static System.Diagnostics.FileVersionInfo info;
+        public static readonly Assembly assembly = Assembly.GetExecutingAssembly();
+        public static readonly System.Diagnostics.FileVersionInfo info = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+        public static readonly Dictionary<string, Network.RACommNetHome> GroundStations = new Dictionary<string, Network.RACommNetHome>();
+        public static int GroundStationTechLevel = 0;
 
-        public Network.RACommNetNetwork Network { get => network; }
+        public Network.RACommNetNetwork Network { get; private set; } = null;
         public MapUI.RACommNetUI UI { get => ui as MapUI.RACommNetUI; }
-        private Network.RACommNetNetwork network = null;
+
         private CommNetUI ui;
 
         protected override void Start()
         {
-            Debug.LogFormat($"{ModTag} Start in {HighLogic.LoadedScene}");
-            assembly = Assembly.GetExecutingAssembly();
-            info = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            Debug.Log($"{ModTag} Start in {HighLogic.LoadedScene}");
             Initialize();
             ui = gameObject.AddComponent<MapUI.RACommNetUI>();
-            this.network = gameObject.AddComponent<Network.RACommNetNetwork>();
+            Network = gameObject.AddComponent<Network.RACommNetNetwork>();
             CommNetScenario.RangeModel = RangeModel;
 
             Kerbalism.Kerbalism.DetectKerbalismDLL();
@@ -40,15 +42,13 @@ namespace RealAntennas
         {
             if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm)
             {
-                Debug.LogFormat($"{ModTag} Scenario check: Found {RATools.DisplayGamescenes(psm)}");
-                if (! RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
+                Debug.Log($"{ModTag} Scenario check: Found {RATools.DisplayGamescenes(psm)}");
+                if (!RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
                 {
                     RealAntennas.Network.CommNetPatcher.UnloadCommNet();
                     DestroyNetwork();
-                    Debug.LogFormat($"{ModTag} Rebuilding CommNetBody and CommNetHome list");
-                    UnloadHomes();
-                    BuildHomes();
-                    Debug.LogFormat($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
+                    RebuildHomes();
+                    Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
                 }
             }
             if (!CommNetEnabled)
@@ -58,8 +58,16 @@ namespace RealAntennas
 
         private void OnDestroy()
         {
-            if (network != null) Destroy(network);
+            if (Network != null) Destroy(Network);
             if (ui != null) Destroy(ui);
+            GameEvents.OnGameSettingsApplied.Remove(ApplyGameSettings);
+        }
+
+        public void RebuildHomes()
+        {
+            Debug.LogFormat($"{ModTag} Rebuilding CommNetBody and CommNetHome list");
+            UnloadHomes();
+            BuildHomes();
         }
 
         private void DestroyNetwork()
@@ -75,12 +83,17 @@ namespace RealAntennas
 
         private void Initialize()
         {
-            if (GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode RAParamNode)
+            if (!staticInit && GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode RAParamNode)
             {
                 Antenna.BandInfo.Init(RAParamNode);
                 Antenna.Encoder.Init(RAParamNode);
                 TechLevelInfo.Init(RAParamNode);
+                staticInit = true;
             }
+
+            int maxTL = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
+            float fTSLvl = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
+            GroundStationTechLevel = (HighLogic.CurrentGame.Mode == Game.Modes.CAREER) ? Mathf.RoundToInt(1 + (fTSLvl * maxTL)) : maxTL;
         }
 
         private void BuildHomes()
@@ -120,13 +133,16 @@ namespace RealAntennas
                 Debug.LogFormat($"{ModTag} Immediately destroying {home}");
                 DestroyImmediate(home);
             }
+            GroundStations.Clear();
         }
+
         private void BuildHome(ConfigNode node, CelestialBody body)
         {
             GameObject newHome = new GameObject(body.name);
             Network.RACommNetHome home = newHome.AddComponent<Network.RACommNetHome>();
             home.Configure(node, body);
-            Debug.LogFormat($"{ModTag} Built: {home.name} {home.nodeName}");
+            if (!GroundStations.ContainsKey(home.nodeName)) GroundStations.Add(home.nodeName, home);
+            Debug.Log($"{ModTag} Built: {home.name} {home.nodeName}");
         }
     }
 }

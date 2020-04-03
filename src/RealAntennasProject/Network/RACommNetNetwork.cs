@@ -8,7 +8,7 @@ namespace RealAntennas.Network
     /// </summary>
     public class RACommNetNetwork : CommNetNetwork
     {
-        protected static readonly string ModTag = "[RACommNetNetwork] ";
+        private const string ModTag = "[RACommNetNetwork]";
 
         protected override void Awake()
         {
@@ -16,29 +16,36 @@ namespace RealAntennas.Network
             {
                 if (v.Connection != null && !(v.Connection is RACommNetVessel ra))
                 {
-                    Debug.LogFormat($"{ModTag}Rebuilding CommVessel on {v}.  (Was {v.Connection} of type {v.Connection.GetType()})");
+                    Debug.Log($"{ModTag} Rebuilding CommVessel on {v}.  (Was {v.Connection} of type {v.Connection.GetType()})");
                     CommNetVessel temp = v.Connection;
-                    v.Connection.gameObject.AddComponent<RACommNetVessel>();
+                    v.Connection = v.Connection.gameObject.AddComponent<RACommNetVessel>();
                     Destroy(temp);
                 }
             }
             // Not sure why the base singleton Instance check is killing itself.  (Instance != this?)
             CommNetNetwork.Instance = this;
             if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
-                GameEvents.onPlanetariumTargetChanged.Add(new EventData<MapObject>.OnEvent(this.OnMapFocusChange));
-            GameEvents.OnGameSettingsApplied.Add(new EventVoid.OnEvent(this.ResetNetwork));
+                GameEvents.onPlanetariumTargetChanged.Add(OnMapFocusChange);
+            GameEvents.OnGameSettingsApplied.Add(ResetNetwork);
             //CommNetNetwork.Reset();       // Don't call this way, it will invoke the parent class' ResetNetwork()
             ResetNetwork();
         }
 
         protected new void ResetNetwork()
         {
-            Debug.Log(ModTag + "CommNet Network resetNetwork() start");
+            Debug.Log($"{ModTag} ResetNetwork()");
 
             CommNet = new RACommNetwork();
-            Debug.Log(ModTag + "CommNet Network Firing onNetworkInitialized()");
+            Debug.Log($"{ModTag} Firing onNetworkInitialized()");
             GameEvents.CommNet.OnNetworkInitialized.Fire();
-            Debug.Log(ModTag + "CommNet Network onNetworkInitialized() complete");
+            Debug.Log($"{ModTag} Completed onNetworkInitialized()");
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            GameEvents.onPlanetariumTargetChanged.Remove(OnMapFocusChange);
+            GameEvents.OnGameSettingsApplied.Remove(ResetNetwork);
         }
     }
 }

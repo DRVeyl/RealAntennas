@@ -54,11 +54,8 @@ namespace RealAntennas.Network
 
             RACommNode t = comm as RACommNode;
             t.ParentBody = body;
-            int maxTL = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
-            float fTSLvl = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
-            int tsLevel = (HighLogic.CurrentGame.Mode == Game.Modes.CAREER) ? Convert.ToInt32(1 + (fTSLvl * maxTL)) : maxTL;
+            int tsLevel = RACommNetScenario.GroundStationTechLevel;
             // Config node contains a list of antennas to build.
-            //Debug.LogFormat("Building all antennas for tech level {0} from {1}", tsLevel, config);
             t.RAAntennaList = new List<RealAntenna> { };
             foreach (ConfigNode antNode in config.GetNodes("Antenna")) 
             {
@@ -71,10 +68,6 @@ namespace RealAntennas.Network
                     ant.ProcessUpgrades(tsLevel, antNode);
                     ant.TechLevelInfo = TechLevelInfo.GetTechLevel(tsLevel);
                     t.RAAntennaList.Add(ant);
-                }
-                else
-                {
-                    //Debug.LogFormat("Skipped because current techLevel {0} is less than required {1}", tsLevel, targetLevel);
                 }
             }
         }
