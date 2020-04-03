@@ -30,7 +30,7 @@ namespace RealAntennas
         public virtual double Beamwidth => Physics.Beamwidth(Gain);
 
         internal double cachedRemoteBodyNoiseTemp;
-        public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(angle, Beamwidth);
+        public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(Math.Abs(angle), Beamwidth);
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
         // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
         // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
@@ -63,8 +63,8 @@ namespace RealAntennas
         }
 
         public string TargetID { get; set; }
-        private ITargetable _target = null;
-        public ITargetable Target
+        private object _target = null;
+        public object Target
         {
             get => _target;
             set
@@ -72,6 +72,7 @@ namespace RealAntennas
                 if (!CanTarget || value is null) SetTarget(null, DefaultTargetName, DefaultTargetName);
                 else if (value is Vessel v) SetTarget(v, v.name, v.id.ToString());
                 else if (value is CelestialBody body) SetTarget(body, body.name, body.name);
+                else if (value is Network.RACommNetHome home) SetTarget(home, home.name, home.name);
                 else Debug.LogWarningFormat($"{ModTag} Tried to set antenna target to {value} and failed");
             }
         }
@@ -205,7 +206,7 @@ namespace RealAntennas
             return null;
         }
 
-        private void SetTarget(ITargetable tgt, string dispString, string tgtId)
+        private void SetTarget(object tgt, string dispString, string tgtId)
         {
             _target = tgt; TargetID = tgtId;
             if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = dispString; Parent.targetID = tgtId; }

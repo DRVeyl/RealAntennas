@@ -58,7 +58,7 @@ namespace RealAntennas
 
         [KSPField(isPersistant = true)]
         public string targetID = RealAntenna.DefaultTargetName;
-        public ITargetable Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
+        public object Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Peer", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner)]
         public string plannerTargetString = string.Empty;

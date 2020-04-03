@@ -21,7 +21,7 @@ namespace RealAntennas.Antenna
         {
             if (showGUI)
             {
-                Window = GUILayout.Window(93938174, Window, GUIDisplay, "Antenna Targeting", GUILayout.Width(200), GUILayout.Height(200));
+                Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, $"{ParentPart.partName} Antenna Targeting", GUILayout.Width(200), GUILayout.Height(200));
             }
         }
 
@@ -33,7 +33,6 @@ namespace RealAntennas.Antenna
                 scrollVesselPos = GUILayout.BeginScrollView(scrollVesselPos, GUILayout.Width(200), GUILayout.Height(200));
                 foreach (Vessel v in FlightGlobals.Vessels)
                 {
-                    //GUILayout.Label(v.name);
                     if (GUILayout.Button(v.name))
                     {
                         ParentPartModule.Target = v;
@@ -47,7 +46,6 @@ namespace RealAntennas.Antenna
                 scrollBodyPos = GUILayout.BeginScrollView(scrollBodyPos, GUILayout.Width(200), GUILayout.Height(200));
                 foreach (CelestialBody body in FlightGlobals.Bodies)
                 {
-//                    GUILayout.Label(body.name);
                     if (GUILayout.Button(body.name))
                     {
                         ParentPartModule.Target = body;

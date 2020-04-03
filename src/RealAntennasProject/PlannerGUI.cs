@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RealAntennas
@@ -11,34 +12,72 @@ namespace RealAntennas
         private const float INDENT = 60;
         Rect Window = new Rect(250, 100, GUIWidth, GUIHeight);
         Vector2 scroller;
-        bool showProto, showConstruct, showVessels, showBodies;
+        bool showProto, showConstruct, showVessels, showBodies, showGroundStations;
         public Planner parent;
         public readonly Dictionary<ProtoVessel, List<RealAntenna>> protoVesselAntennaCache = new Dictionary<ProtoVessel, List<RealAntenna>>();
         public readonly Dictionary<ProtoVessel, bool> protoVesselToggles = new Dictionary<ProtoVessel, bool>();
         public readonly Dictionary<Vessel, bool> vesselToggles = new Dictionary<Vessel, bool>();
+        public readonly Dictionary<Network.RACommNetHome, bool> groundStationToggles = new Dictionary<Network.RACommNetHome, bool>();
+        private float fTechLevel = 0;
+        private float maxTechLevel = 0;
 
         public void Start()
         {
-            showProto = showConstruct = showVessels = showBodies = false;
+            showProto = showConstruct = showVessels = showBodies = showGroundStations = false;
             DiscoverProtoVesselAntennas(protoVesselAntennaCache);
             protoVesselToggles.Clear();
             vesselToggles.Clear();
+            groundStationToggles.Clear();
             foreach (ProtoVessel pv in protoVesselAntennaCache.Keys)
                 protoVesselToggles.Add(pv, false);
             foreach (Vessel v in FlightGlobals.Vessels)
                 vesselToggles.Add(v, false);
+            foreach (Network.RACommNetHome h in RACommNetScenario.GroundStations.Values)
+                groundStationToggles.Add(h, false);
+            fTechLevel = RACommNetScenario.GroundStationTechLevel;
+            maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
         }
 
         public void OnGUI()
         {
             if (showGUI)
             {
-                Window = GUILayout.Window(93938174, Window, GUIDisplay, "Antenna Planning Target", GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
+                Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, "Antenna Planning Target", GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
             }
+        }
+
+        private HashSet<string> GetActiveCommNetHomeToggles()
+        {
+            HashSet<string> res = new HashSet<string>();
+            foreach (Network.RACommNetHome home in groundStationToggles.Keys)
+            {
+                if (groundStationToggles[home] && !res.Contains(home.nodeName))
+                    res.Add(home.nodeName);
+            }
+            return res;
         }
 
         void GUIDisplay(int windowID)
         {
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Ground Station TechLevel: {fTechLevel}");
+                fTechLevel = GUILayout.HorizontalSlider(Mathf.RoundToInt(fTechLevel), 0, maxTechLevel);
+                fTechLevel = Mathf.RoundToInt(fTechLevel);
+                if (GUILayout.Button("Apply"))
+                {
+                    HashSet<string> names = GetActiveCommNetHomeToggles();
+                    parent.ConfigTarget(Planetarium.fetch.Home.name, Planetarium.fetch.Home);
+                    RACommNetScenario.GroundStationTechLevel = Mathf.RoundToInt(fTechLevel);
+                    (RACommNetScenario.Instance as RACommNetScenario).RebuildHomes();
+                    groundStationToggles.Clear();
+                    foreach (Network.RACommNetHome h in RACommNetScenario.GroundStations.Values)
+                        groundStationToggles.Add(h, names.Contains(h.nodeName));
+                }
+                GUILayout.EndHorizontal();
+            }
+
             scroller = GUILayout.BeginScrollView(scroller);
             if (HighLogic.LoadedSceneIsEditor)
             {
@@ -54,6 +93,8 @@ namespace RealAntennas
             }
             showBodies = GUILayout.Toggle(showBodies, "Celestial Bodies");
             if (showBodies) GUI_HandleBodies();
+            showGroundStations = GUILayout.Toggle(showGroundStations, "Ground Stations");
+            if (showGroundStations) GUI_HandleGroundStations();
             GUILayout.EndScrollView();
 
             if (GUILayout.Button("Close")) showGUI = false;
@@ -148,6 +189,30 @@ namespace RealAntennas
             foreach (CelestialBody body in selectedList)
             {
                 AntennaButton($"{body.name}", body, INDENT / 2);
+            }
+        }
+
+        private void GUI_HandleGroundStations()
+        {
+            foreach (Network.RACommNetHome home in RACommNetScenario.GroundStations.Values)
+            {
+                if (home.Comm is RACommNode racn)
+                {
+                    if (groundStationToggles.ContainsKey(home))
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Space(INDENT / 2);
+                        groundStationToggles[home] = GUILayout.Toggle(groundStationToggles[home], $"{home.nodeName}");
+                        GUILayout.EndHorizontal();
+                    }
+                    if (!groundStationToggles.ContainsKey(home) || groundStationToggles[home])
+                    {
+                        foreach (RealAntenna ra in racn.RAAntennaList)
+                        {
+                            AntennaButton($"{ra}", ra, INDENT);
+                        }
+                    }
+                }
             }
         }
 
