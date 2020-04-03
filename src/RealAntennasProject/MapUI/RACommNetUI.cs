@@ -27,6 +27,9 @@ namespace RealAntennas.MapUI
         private readonly List<Vector3> targetPoints = new List<Vector3>();
         private readonly List<Vector3> cone3Points = new List<Vector3>();
         private readonly List<Vector3> cone10Points = new List<Vector3>();
+        private readonly List<CommLink> commLinkList = new List<CommLink>();
+        private readonly Cone cone3 = new Cone();
+        private readonly Cone cone10 = new Cone();
         private readonly Dictionary<CommLink, GameObject> linkRenderers = new Dictionary<CommLink, GameObject>();
         private readonly Dictionary<CommNode, Dictionary<RealAntenna, GameObject>> targetRenderers = new Dictionary<CommNode, Dictionary<RealAntenna, GameObject>>();
         private readonly Dictionary<CommNode, Dictionary<RealAntenna, GameObject>> cone3Renderers = new Dictionary<CommNode, Dictionary<RealAntenna, GameObject>>();
@@ -48,7 +51,7 @@ namespace RealAntennas.MapUI
             configWindow = gameObject.AddComponent<NetUIConfigurationWindow>();
             configWindow.parent = this;
 
-            if (MapView.fetch is MapView map)
+            if (MapView.fetch is MapView)
             {
                 Texture2D defaultTex = GameDatabase.Instance.GetTexture(icon, false);
                 foreach (RACommNetHome home in GameObject.FindObjectsOfType<RACommNetHome>())
@@ -125,8 +128,8 @@ namespace RealAntennas.MapUI
                         len = Math.Min(len, axis.magnitude - body.Radius);
                     axis.Normalize();
                     axis *= len;
-                    Cone cone10 = new Cone(node.position, axis, Vector3.up, ra.Beamwidth);
-                    Cone cone3 = new Cone(node.position, axis, Vector3.up, ra.Beamwidth / 2);
+                    cone10.Init(node.position, axis, Vector3.up, ra.Beamwidth);
+                    cone3.Init(node.position, axis, Vector3.up, ra.Beamwidth / 2);
 
                     targetPoints.Clear();
                     cone3Points.Clear();
@@ -241,6 +244,7 @@ namespace RealAntennas.MapUI
         public class Cone
         {
             public Vector3d vertex, end1, end2;
+            public Cone() : this(Vector3d.zero, Vector3d.up, Vector3d.right) { }
             public Cone(Vector3d vertex, Vector3d end1, Vector3d end2)
             {
                 this.vertex = vertex;
@@ -248,6 +252,10 @@ namespace RealAntennas.MapUI
                 this.end2 = end2;
             }
             public Cone(Vector3d vertex, Vector3d axis, Vector3d normal, double angle)
+            {
+                Init(vertex, axis, normal, angle);
+            }
+            public void Init(Vector3d vertex, Vector3d axis, Vector3d normal, double angle)
             {
                 this.vertex = vertex;
                 Vector3d perp = Vector3.Cross(axis, normal).normalized;
@@ -293,7 +301,9 @@ namespace RealAntennas.MapUI
                             CommLink cl = commPath.FirstOrDefault();
                             if (cl != null)
                             {
-                                GatherLinkLines(new List<CommLink>() { cl.start == commNode ? cl.start[cl.end] : cl.end[cl.start] });
+                                commLinkList.Clear();
+                                commLinkList.Add(cl.start == commNode ? cl.start[cl.end] : cl.end[cl.start]);
+                                GatherLinkLines(commLinkList);
                             }
                             GatherAntennaCones(commNode);
                             break;
@@ -309,7 +319,9 @@ namespace RealAntennas.MapUI
                             }
                             foreach (CommLink link in commPath)
                             {
-                                GatherLinkLines(new List<CommLink>() { link.start[link.end] });
+                                commLinkList.Clear();
+                                commLinkList.Add(link.start[link.end]);
+                                GatherLinkLines(commLinkList);
                                 GatherAntennaCones(link.start as RACommNode);
                             }
                             break;
@@ -372,7 +384,7 @@ namespace RealAntennas.MapUI
         {
             if (!dict.ContainsKey(ra))
             {
-                GameObject go = new GameObject("Cone3LineRenderer");
+                GameObject go = new GameObject("ConeLineRenderer");
                 LineRenderer rend = go.AddComponent<LineRenderer>();
                 InitializeRenderer(rend);
                 dict.Add(ra, go);
