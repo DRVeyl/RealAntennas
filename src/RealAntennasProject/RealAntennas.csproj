@@ -43,6 +43,7 @@
     <Compile Include="MapUI\GroundStationSiteNode.cs" />
     <Compile Include="MapUI\NetUIConfigurationWindow.cs" />
     <Compile Include="MapUI\RATelemetryUpdate.cs" />
+    <Compile Include="MathUtils.cs" />
     <Compile Include="Metrics.cs" />
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="MapUI\RACommNetUI.cs" />
