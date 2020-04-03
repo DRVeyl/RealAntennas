@@ -9,6 +9,8 @@ namespace RealAntennas
         public static readonly double boltzmann_dBW = 10 * Math.Log10(1.38064852e-23);      //-228.59917;
         public static readonly double boltzmann_dBm = boltzmann_dBW + 30;
         public static readonly double MaxPointingLoss = 200;
+        public static double SolarLuminosity => PhysicsGlobals.SolarLuminosity > double.Epsilon ? PhysicsGlobals.SolarLuminosity : Math.Pow(Planetarium.fetch.Home.orbit.semiMajorAxis, 2.0) * 4.0 * Math.PI * PhysicsGlobals.SolarLuminosityAtHome;
+
         private static readonly double path_loss_constant = 20 * Math.Log10(4 * Math.PI / (2.998 * Math.Pow(10, 8)));
 
         public static AnimationCurve AntennaGainCurve = new AnimationCurve(new Keyframe(0, 0, 0, 0), new Keyframe(0.5f, -3, -10, -10), new Keyframe(1, -10, -20, -20))
@@ -52,7 +54,8 @@ namespace RealAntennas
             => (ant.CanTarget && ant.ToTarget != Vector3.zero) ? PointingLoss(Vector3.Angle(origin - ant.Position, ant.ToTarget), ant.Beamwidth) : 0;
 
         public static double c = 2.998e8;
-        public static double SunTemp(double frequency) => 5672 * Math.Pow(frequency / c, .24517);   // QUIET Sun Temp, active can be 2-3x higher
+        // Sun Temp vs Freq from https://deepspace.jpl.nasa.gov/dsndocs/810-005/Binder/810-005_Binder_Change51.pdf Manual 105 Eq 14: T = 5672 * lambda ^ 0.24517, lambda units is mm
+        public static double StarRadioTemp(double surfaceTemp, double frequency) => surfaceTemp * Math.Pow(1000 * c / frequency, .24517);   // QUIET Sun Temp, active can be 2-3x higher
         public static double AtmosphereMeanEffectiveTemp(double CD) => 255 + (25 * CD); // 0 <= CD <= 1
         public static double AtmosphereNoiseTemperature(double elevationAngle, double frequency=1e9)
         {
@@ -86,21 +89,73 @@ namespace RealAntennas
                 return Mathf.Lerp(0.084f, 0.373f, CD);
             }
         }
+        //https://en.wikipedia.org/wiki/Planetary_equilibrium_temperature   - hopefully body.albedo is the bond albedo?
+        public static double GetEquilibriumTemperature(CelestialBody body)
+        {
+            if (body == Planetarium.fetch.Sun) return 5e6;  // Failsafe, should not trigger.
+            double sunDistSqr = (body.position - Planetarium.fetch.Sun.position).sqrMagnitude;
+            double IncidentSolarRadiation = SolarLuminosity / (Math.PI * 4 * sunDistSqr);
+            double val = IncidentSolarRadiation * (1 - body.albedo) / (4 * PhysicsGlobals.StefanBoltzmanConstant);
+            return Math.Pow(val, 0.25);
+        }
+
         public static double BodyNoiseTemp(RealAntenna rx, CelestialBody body, Vector3d rxPointing)
         {
             if (rx.Shape == AntennaShape.Omni) return 0;    // No purpose in per-body noise temp for an omni.
+
             Vector3 toBody = body.position - rx.Position;
             double angle = Vector3.Angle(rxPointing, toBody);
-            //            if (rx.GainAtAngle(Convert.ToSingle(angle)) < 0)
-            if (rx.Beamwidth < angle) return 0;  // Pointed too far away
-            double bw = rx.Beamwidth;
-            double t = body.GetTemperature(1);      // TODO: Get the BLACKBODY temperature!
+            double distance = toBody.magnitude;
+            double bodyRadiusAngularRad = (distance > 10 * body.Radius)
+                    ? Math.Atan2(body.Radius, distance)
+                    : MathUtils.AngularRadius(body.Radius, distance) * Mathf.Deg2Rad;
+            double bodyRadiusAngularDeg = bodyRadiusAngularRad * Mathf.Rad2Deg;
+            if (rx.Beamwidth < angle - bodyRadiusAngularDeg) return 0;  // Pointed too far away
+
+            double baseTemp = body.atmosphere ? body.GetTemperature(1) : GetEquilibriumTemperature(body) + body.coreTemperatureOffset;
+            double t = body.isStar ? StarRadioTemp(baseTemp, rx.Frequency) : baseTemp;      // TODO: Get the BLACKBODY temperature!
+            if (t < double.Epsilon) return 0;
+
+            double angleRad = angle * Mathf.Deg2Rad;
+            double beamwidthRad = rx.Beamwidth * Mathf.Deg2Rad;
+            double gainDelta; // Antenna Pointing adjustment
+            double viewedAreaBase;
+
+            // How much of the body is in view of the antenna?
+            if (rx.Beamwidth < bodyRadiusAngularDeg - angle)    // Antenna viewable area completely enclosed by body
+            {
+                viewedAreaBase = Mathf.PI * beamwidthRad * beamwidthRad;
+                gainDelta = 0;
+            }
+            else if (rx.Beamwidth > bodyRadiusAngularDeg + angle)   // Antenna viewable area completely encloses body
+            {
+                viewedAreaBase = Mathf.PI * bodyRadiusAngularRad * bodyRadiusAngularRad;
+                gainDelta = rx.GainAtAngle(angle) - rx.Gain;
+            }
+            else
+            {
+                viewedAreaBase = MathUtils.CircleCircleIntersectionArea(beamwidthRad, bodyRadiusAngularRad, angleRad);
+                double intersectionCenter = MathUtils.CircleCircleIntersectionOffset(beamwidthRad, bodyRadiusAngularRad, angleRad);
+                gainDelta = rx.GainAtAngle((intersectionCenter + beamwidthRad) * Mathf.Rad2Deg / 2) - rx.Gain;
+            }
+
+            // How much of the antenna viewable area is occupied by the body
+            double antennaViewableArea = Mathf.PI * beamwidthRad * beamwidthRad;
+            double viewableAreaRatio = viewedAreaBase / antennaViewableArea;
+
+            /*
             double d = body.Radius * 2;
-            double Rsqr = (rx.Position - body.position).sqrMagnitude;
+            double Rsqr = toBody.sqrMagnitude;
             double G = RATools.LinearScale(rx.Gain);
-            double angleRatio = angle / bw;
+            double angleRatio = angle / rx.Beamwidth;
+
+            // https://deepspace.jpl.nasa.gov/dsndocs/810-005/Binder/810-005_Binder_Change51.pdf Module 105: 2.4.3 Planetary Noise estimator
+            // This estimator is correct for the DSN viewing planets, but wrong for the sun & moon.
             double result = (t * G * d * d / (16 * Rsqr)) * Math.Pow(Math.E, -2.77 * angleRatio * angleRatio);
-            //            Debug.LogFormat("Planetary Body Noise Power Estimator: Body {0} base temp {1:F0} diameter {2:F0}km at {3:F2}Mm Gain {4:F1} vs HPBW {5:F1} incident angle {6:F1} yields {7:F1}K", body, t, d/1000, (rx.Position - body.position).magnitude/1e6, G, bw, angle, result);
+            */
+
+            double result = t * viewableAreaRatio * RATools.LinearScale(gainDelta);
+            //Debug.Log($"Planetary Body Noise Power Estimator: Body {body} Temp: {t:F0} AngularDiameter: {bodyRadiusAngularDeg * 2:F1} @ {angle:F1} HPBW: {rx.Beamwidth:F1} ViewableAreaRatio: {viewableAreaRatio:F2} gainDelta: {gainDelta:F4} result: {result}");
             return result;
         }
 
