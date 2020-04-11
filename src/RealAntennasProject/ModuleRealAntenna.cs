@@ -22,7 +22,7 @@ namespace RealAntennas
         public float TxPower = 30f;       // Transmit Power in dBm (milliwatts)
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0", groupName = PAWGroup),
-        UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor, suppressEditorShipModified = true)]
+        UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor)]
         private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
 
@@ -72,6 +72,10 @@ namespace RealAntennas
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive", groupName = PAWGroupPlanner)]
         public string sUplinkPlanningResult = string.Empty;
+
+        [KSPField(guiName = "Active Transmission Time", guiFormat = "P0", groupName = PAWGroupPlanner),
+         UI_FloatRange(minValue = 0, maxValue = 1, stepIncrement = 0.01f, scene = UI_Scene.Editor)]
+        public float plannerActiveTxTime = 0;
 
         [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
         void AntennaTargetGUI() => targetGUI.showGUI = !targetGUI.showGUI;
@@ -204,6 +208,7 @@ namespace RealAntennas
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
             planner.RecalculatePlannerFields();
+            RecalculatePlannerECConsumption();
         }
 
         private void SetupBaseFields()
@@ -224,6 +229,7 @@ namespace RealAntennas
             Fields[nameof(sActivePowerConsumed)].guiActiveEditor = Fields[nameof(sActivePowerConsumed)].guiActive = en;
             Fields[nameof(sIdlePowerConsumed)].guiActiveEditor = Fields[nameof(sIdlePowerConsumed)].guiActive = en;
             Fields[nameof(sAntennaTarget)].guiActive = en;
+            Fields[nameof(plannerActiveTxTime)].guiActiveEditor = Kerbalism.Kerbalism.KerbalismAssembly is System.Reflection.Assembly;
         }
 
         private void SetupGUIs()
@@ -248,9 +254,12 @@ namespace RealAntennas
             UI_FloatRange paE = Fields[nameof(plannerAltitude)].uiControlEditor as UI_FloatRange;
             UI_FloatRange paF = Fields[nameof(plannerAltitude)].uiControlFlight as UI_FloatRange;
             paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningAltitudeChange);
+
+            Fields[nameof(plannerActiveTxTime)].uiControlEditor.onFieldChanged += OnPlannerActiveTxTimeChanged;
         }
 
-        private void OnAntennaEnableChange(BaseField field, object obj) => SetFieldVisibility(_enabled);
+        private void OnPlannerActiveTxTimeChanged(BaseField field, object obj) => RecalculatePlannerECConsumption();
+        private void OnAntennaEnableChange(BaseField field, object obj) { SetFieldVisibility(_enabled); RecalculatePlannerECConsumption(); }
         private void OnRFBandChange(BaseField f, object obj) => RecalculateFields();
         private void OnTxPowerChange(BaseField f, object obj) => RecalculateFields();
         private void OnTechLevelChange(BaseField f, object obj)     // obj is the OLD value
@@ -381,5 +390,19 @@ namespace RealAntennas
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
         #endregion
+
+        private KeyValuePair<string, double> plannerECConsumption = new KeyValuePair<string, double>("ElectricCharge", 0);
+
+        public string PlannerUpdate(List<KeyValuePair<string, double>> resources, CelestialBody _, Dictionary<string, double> environment)
+        {
+            resources.Add(plannerECConsumption);   // ecConsumption is updated by the Toggle event
+            return "comms";
+        }
+        private void RecalculatePlannerECConsumption()
+        {
+            // RAAntenna.IdlePowerDraw is in kW (ec/s), PowerDrawLinear is in mW
+            double ec = _enabled ? RAAntenna.IdlePowerDraw + (RAAntenna.PowerDrawLinear * 1e-6 * plannerActiveTxTime) : 0;
+            plannerECConsumption = new KeyValuePair<string, double>("ElectricCharge", -ec);
+        }
     }
 }
