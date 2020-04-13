@@ -96,6 +96,7 @@ namespace RealAntennas
             Name = name;
             DataRate = dataRate;
             TechLevelInfo = TechLevelInfo.GetTechLevel(0);
+            RFBand ??= Antenna.BandInfo.Get(Antenna.BandInfo.All.Keys.FirstOrDefault() ?? Antenna.BandInfo.DefaultBand);
         }
         public RealAntenna(RealAntenna orig)
         {

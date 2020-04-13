@@ -14,7 +14,8 @@ namespace RealAntennas.Antenna
 
         public static bool initialized = false;
         public static Dictionary<string, BandInfo> All = new Dictionary<string, BandInfo>();
-        protected static readonly string ModTag = "[RealAntennas.BandInfo] ";
+        public static string DefaultBand = "L";
+        private const string ModTag = "[RealAntennas.BandInfo]";
         public static BandInfo Get(string band)
         {
             if (!initialized && GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode node)
@@ -47,29 +48,11 @@ namespace RealAntennas.Antenna
         public override string ToString() => $"[{name}-Band {RATools.PrettyPrint(Frequency)}Hz]";
         public virtual string ToDetailedString() => $"[{name}-Band TL:{TechLevel} {RATools.PrettyPrint(Frequency)}Hz]";
 
-        public static List<BandInfo> GetFromTechLevel(int level)
-        {
-            List<BandInfo> l = new List<BandInfo>() { };
-            foreach (BandInfo bi in All.Values)
-            {
-                if (level >= bi.TechLevel) l.Add(bi);
-            }
-            return l;
-        }
+        public static List<BandInfo> GetFromTechLevel(int level) => All.Values.Where(x => level >= x.TechLevel).ToList();
 
         public override bool Equals(object obj) => Equals(obj as BandInfo);
-        public bool Equals(BandInfo other)
-        {
-            if (other is null) return false;
-            return (Frequency == other.Frequency) && (ChannelWidth == other.ChannelWidth);
-        }
-
-        public static bool operator ==(BandInfo lhs, BandInfo rhs)
-        {
-            if (lhs is null) return (rhs is null);
-            return lhs.Equals(rhs);
-        }
-
+        public bool Equals(BandInfo other) => other is null ? false : (Frequency == other.Frequency) && (ChannelWidth == other.ChannelWidth);
+        public static bool operator ==(BandInfo lhs, BandInfo rhs) => lhs is null ? rhs is null : lhs.Equals(rhs);
         public static bool operator !=(BandInfo lhs, BandInfo rhs) => !(lhs == rhs);
 
         public override int GetHashCode()
