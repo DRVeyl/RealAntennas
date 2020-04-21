@@ -29,17 +29,11 @@ namespace RealAntennas
         [KSPField]
         private int maxTechLevel = 0;
 
-        [KSPField(isPersistant = true)]
-        public double AMWTemp;    // Antenna Microwave Temperature
-
-        [KSPField(isPersistant = true)]
-        public double antennaDiameter = 0;
-
-        [KSPField(isPersistant = true)]
-        public double referenceGain = 0;
-
-        [KSPField(isPersistant = true)]
-        public double referenceFrequency = 0;
+        [KSPField(isPersistant = true)] public double AMWTemp;    // Antenna Microwave Temperature
+        [KSPField(isPersistant = true)] public double antennaDiameter = 0;
+        [KSPField(isPersistant = true)] public double referenceGain = 0;
+        [KSPField(isPersistant = true)] public double referenceFrequency = 0;
+        [KSPField] public bool applyMassModifier = true;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band", groupName = PAWGroup),
          UI_ChooseOption(scene = UI_Scene.Editor)]
@@ -387,7 +381,7 @@ namespace RealAntennas
         public float GetModuleCost(float defaultCost, ModifierStagingSituation sit) =>
             _enabled ? RAAntenna.TechLevelInfo.BaseCost + (RAAntenna.TechLevelInfo.CostPerWatt * RATools.LinearScale(TxPower)/1000) : 0;
         public float GetModuleMass(float defaultMass, ModifierStagingSituation sit) =>
-            _enabled ? (RAAntenna.TechLevelInfo.BaseMass + (RAAntenna.TechLevelInfo.MassPerWatt * RATools.LinearScale(TxPower)/1000)) / 1000 : 0;
+            _enabled && applyMassModifier ? (RAAntenna.TechLevelInfo.BaseMass + (RAAntenna.TechLevelInfo.MassPerWatt * RATools.LinearScale(TxPower) / 1000)) / 1000 : 0;
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
         #endregion
