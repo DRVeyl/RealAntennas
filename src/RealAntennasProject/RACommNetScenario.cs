@@ -9,9 +9,8 @@ namespace RealAntennas
     public class RACommNetScenario : CommNetScenario
     {
         private const string ModTag = "[RealAntennasCommNetScenario]";
-        public static new Network.RealAntennasRangeModel RangeModel = new Network.RealAntennasRangeModel();
+        private const float DisabledNotifyInterval = 10;
         private static bool staticInit = false;
-        public static bool Enabled => true;
         public static bool debugWalkLogging = true;
         public static float debugWalkInterval = 60;
         public Metrics metrics = new Metrics();
@@ -21,21 +20,23 @@ namespace RealAntennas
         public static int GroundStationTechLevel = 0;
 
         public Network.RACommNetNetwork Network { get; private set; } = null;
-        public MapUI.RACommNetUI UI { get => ui as MapUI.RACommNetUI; }
-
-        private CommNetUI ui;
+        public MapUI.RACommNetUI UI { get; private set; } = null;
 
         protected override void Start()
         {
-            Debug.Log($"{ModTag} Start in {HighLogic.LoadedScene}");
-            Initialize();
-            ui = gameObject.AddComponent<MapUI.RACommNetUI>();
-            Network = gameObject.AddComponent<Network.RACommNetNetwork>();
-            CommNetScenario.RangeModel = RangeModel;
+            Debug.Log($"{ModTag} Start in {HighLogic.LoadedScene}, Enabled: {CommNetEnabled}");
+            if (CommNetEnabled)
+            {
+                Initialize();
+                UI = gameObject.AddComponent<MapUI.RACommNetUI>();
+                Network = gameObject.AddComponent<Network.RACommNetNetwork>();
+                RangeModel = new Network.RealAntennasRangeModel();
 
-            Kerbalism.Kerbalism.DetectKerbalismDLL();
-            ApplyGameSettings();
-            GameEvents.OnGameSettingsApplied.Add(ApplyGameSettings);
+                Kerbalism.Kerbalism.DetectKerbalismDLL();
+                ApplyGameSettings();
+                GameEvents.OnGameSettingsApplied.Add(ApplyGameSettings);
+            }
+            else StartCoroutine(NotifyDisabled());
         }
 
         public override void OnAwake()
@@ -51,15 +52,26 @@ namespace RealAntennas
                     Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
                 }
             }
-            if (!CommNetEnabled)
-                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", 16, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
-            base.OnAwake();     // Will set CommNetScenario.Instance to this
+            if (CommNetEnabled)     // Don't self-delete if we are not enabled.
+                base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
+
+        private System.Collections.IEnumerator NotifyDisabled()
+        {
+            yield return new WaitForSeconds(2);
+            while (!CommNetEnabled)
+            {
+                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", DisabledNotifyInterval / 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+                yield return new WaitForSeconds(DisabledNotifyInterval);
+            }
+            ScreenMessages.PostScreenMessage("RealAntennas: CommNet enabled, requires scene change to take effect", 10, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+        }
+
 
         private void OnDestroy()
         {
-            if (Network != null) Destroy(Network);
-            if (ui != null) Destroy(ui);
+            if (Network) Destroy(Network);
+            if (UI) Destroy(UI);
             GameEvents.OnGameSettingsApplied.Remove(ApplyGameSettings);
         }
 
@@ -130,7 +142,7 @@ namespace RealAntennas
         {
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                Debug.LogFormat($"{ModTag} Immediately destroying {home}");
+                Debug.Log($"{ModTag} Immediately destroying {home}");
                 DestroyImmediate(home);
             }
             GroundStations.Clear();
