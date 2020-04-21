@@ -10,7 +10,7 @@ namespace RealAntennas.Kerbalism
         public static Assembly KerbalismAssembly = null;
         public static void RAKerbalismLinkHandler(object p1, Vessel v)
         {
-            if (v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
+            if (CommNet.CommNetScenario.CommNetEnabled && v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
             {
                 bool powered = (bool)p1.GetType().GetField("powered").GetValue(p1);
                 bool transmitting = (bool)p1.GetType().GetField("transmitting").GetValue(p1);

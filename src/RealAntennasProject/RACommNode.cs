@@ -58,11 +58,10 @@ namespace RealAntennas
 
         public virtual RealAntenna AntennaTowardsHome()
         {
-            CommNet.CommPath path = new CommNet.CommPath();
-            if (!(Net.FindHome(this, path))) return null;
-            if (this[path.First.end] is RACommLink link)
+            if (Net is CommNet.CommNetwork && new CommNet.CommPath() is CommNet.CommPath path 
+                && Net.FindHome(this, path) && this[path.First.end] is RACommLink link)
             {
-                return link.start.Equals(this) ? link.FwdAntennaTx: link.RevAntennaTx;
+                return link.start.Equals(this) ? link.FwdAntennaTx : link.RevAntennaTx;
             }
             return null;
         }
