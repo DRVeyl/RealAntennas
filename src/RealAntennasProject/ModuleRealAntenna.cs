@@ -26,9 +26,7 @@ namespace RealAntennas
         private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
 
-        [KSPField]
-        private int maxTechLevel = 0;
-
+        [KSPField] private int maxTechLevel = 0;
         [KSPField(isPersistant = true)] public double AMWTemp;    // Antenna Microwave Temperature
         [KSPField(isPersistant = true)] public double antennaDiameter = 0;
         [KSPField(isPersistant = true)] public double referenceGain = 0;
