@@ -81,7 +81,7 @@ namespace RealAntennas
             scroller = GUILayout.BeginScrollView(scroller);
             if (HighLogic.LoadedSceneIsEditor)
             {
-                showProto = GUILayout.Toggle(showProto, "ProtoVessel Antennas");
+                showProto = GUILayout.Toggle(showProto, "Vessel Antennas");
                 if (showProto) GUI_HandleProtoVessels();
 
                 GUI_HandleShipConstruct();
