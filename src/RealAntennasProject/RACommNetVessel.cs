@@ -179,12 +179,12 @@ namespace RealAntennas
             {
                 foreach (ProtoPartSnapshot part in Vessel.protoVessel.protoPartSnapshots)
                 {
-                    if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
+                    foreach (ProtoPartModuleSnapshot snap in part.modules.Where(x => x.moduleName == ModuleRealAntenna.ModuleName))
                     {
                         bool _enabled = true;
                         snap.moduleValues.TryGetValue(nameof(ModuleRealAntenna._enabled), ref _enabled);
-                        Part prefab = part.partInfo.partPrefab;
-                        if (_enabled && prefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
+                        // Doesn't get the correct PartModule if multiple, but the only impact is the name, which defaults to the part anyway.
+                        if (_enabled && part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
                             RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm };
                             ra.LoadFromConfigNode(snap.moduleValues);
