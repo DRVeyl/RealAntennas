@@ -55,8 +55,8 @@ namespace RealAntennas
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Peer", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner)]
         public string plannerTargetString = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude (Mm)", guiUnits = " Mm", guiFormat = "N0", groupName = PAWGroupPlanner),
-         UI_FloatRange(maxValue = 1000, minValue = 1, stepIncrement = 1, scene = UI_Scene.All)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude", guiUnits = "m", guiFormat = "N0", groupName = PAWGroupPlanner),
+         UI_ScaleEdit(incrementSlide = new float[] { 1e4f, 1e6f, 1e8f, 1e10f, 1e12f }, intervals = new float[] { 1e4f, 1e6f, 1e8f, 1e10f, 1e12f, 1e14f }, sigFigs = 3, suppressEditorShipModified = true, unit = "m", useSI = true)]
         public float plannerAltitude = 1;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit", groupName = PAWGroupPlanner)]
@@ -136,7 +136,7 @@ namespace RealAntennas
                 if (fr.maxValue == fr.minValue)
                     fr.maxValue += 0.001f;
             }
-            if (HighLogic.LoadedSceneIsEditor && TechLevel < 0) TechLevel = maxTechLevel;
+            if (TechLevel < 0) TechLevel = maxTechLevel;
 
             if (!RAAntenna.CanTarget)
             {
@@ -235,19 +235,12 @@ namespace RealAntennas
 
         private void SetupUICallbacks()
         {
-            UI_FloatRange t = Fields[nameof(TechLevel)].uiControlEditor as UI_FloatRange;
-            t.onFieldChanged = new Callback<BaseField, object>(OnTechLevelChange);
-
-            UI_ChooseOption op = Fields[nameof(RFBand)].uiControlEditor as UI_ChooseOption;
-            op.onFieldChanged = new Callback<BaseField, object>(OnRFBandChange);
-
-            UI_FloatRange fr = Fields[nameof(TxPower)].uiControlEditor as UI_FloatRange;
-            fr.onFieldChanged = new Callback<BaseField, object>(OnTxPowerChange);
-
-            UI_FloatRange paE = Fields[nameof(plannerAltitude)].uiControlEditor as UI_FloatRange;
-            UI_FloatRange paF = Fields[nameof(plannerAltitude)].uiControlFlight as UI_FloatRange;
-            paE.onFieldChanged = paF.onFieldChanged = new Callback<BaseField, object>(planner.OnPlanningAltitudeChange);
-
+            Fields[nameof(TechLevel)].uiControlEditor.onFieldChanged = OnTechLevelChange;
+            Fields[nameof(TechLevel)].uiControlEditor.onSymmetryFieldChanged = OnTechLevelChangeSymmetry;
+            Fields[nameof(RFBand)].uiControlEditor.onFieldChanged = OnRFBandChange;
+            Fields[nameof(TxPower)].uiControlEditor.onFieldChanged = OnTxPowerChange;
+            Fields[nameof(plannerAltitude)].uiControlEditor.onFieldChanged = planner.OnPlanningAltitudeChange;
+            Fields[nameof(plannerAltitude)].uiControlFlight.onFieldChanged = planner.OnPlanningAltitudeChange;
             Fields[nameof(plannerActiveTxTime)].uiControlEditor.onFieldChanged += OnPlannerActiveTxTimeChanged;
         }
 
@@ -262,6 +255,7 @@ namespace RealAntennas
             RecalculateFields();
             if (!oldBand.Equals(RFBand)) MonoUtilities.RefreshPartContextWindow(part);
         }
+        private void OnTechLevelChangeSymmetry(BaseField f, object obj) => ConfigBandOptions();
 
         private void ApplyGameSettings()
         {

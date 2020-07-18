@@ -57,8 +57,8 @@ namespace RealAntennas
             RealAntenna selfAnt = new RealAntennaDigital(RAAntenna) { ParentNode = selfComm };
             bool showAltitude = true;
             Vector3d dir = Vector3d.up;
-            double furthestDistance = PlannerAltitude * 1e6;
-            double closestDistance = PlannerAltitude * 1e6;
+            double furthestDistance = PlannerAltitude;
+            double closestDistance = PlannerAltitude;
 
             CelestialBody home = Planetarium.fetch.Home;
             if (PlannerTarget is CelestialBody b)
@@ -66,7 +66,7 @@ namespace RealAntennas
                 showAltitude = (b == home);
                 if (RATools.HighestGainCompatibleDSNAntenna(net.Nodes, RAAntenna) is RealAntenna DSNAntenna)
                 {
-                    peerComm = new RACommNode(peerObj.transform) { ParentBody = home };
+                    peerComm = new RACommNode(peerObj.transform) { ParentBody = home, isHome = DSNAntenna.ParentNode?.isHome ?? true };
                     peerAnt = new RealAntennaDigital(DSNAntenna) { ParentNode = peerComm };
                     peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + home.GetRelSurfacePosition(0, 0, 0), Quaternion.identity);
                     peerAnt.ParentNode.precisePosition = peerAnt.ParentNode.position;
@@ -85,7 +85,12 @@ namespace RealAntennas
                 }
             } else if (PlannerTarget is RealAntenna ra)
             {
-                peerComm = new RACommNode(peerObj.transform) { ParentVessel = ra?.Parent?.vessel };
+                peerComm = new RACommNode(peerObj.transform)
+                {
+                    ParentVessel = (ra?.ParentNode as RACommNode)?.ParentVessel,
+                    ParentBody = (ra?.ParentNode as RACommNode)?.ParentBody,
+                    isHome = (ra?.ParentNode as RACommNode)?.isHome ?? false,
+                };
                 peerAnt = new RealAntennaDigital(ra) { ParentNode = peerComm };
                 peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + (closestDistance / 2 * Vector3d.up), Quaternion.identity);
                 peerAnt.ParentNode.precisePosition = peerAnt.ParentNode.position;
