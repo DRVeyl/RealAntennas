@@ -94,6 +94,7 @@ namespace RealAntennas
         private float StockRateModifier = 0.001f;
         public static double InactivePowerConsumptionMult = 0.1;
         private float DefaultPacketInterval = 1.0f;
+        private bool scienceMonitorActive = false;
 
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
         public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
@@ -328,43 +329,45 @@ namespace RealAntennas
         {
             SetTransmissionParams();
             base.TransmitData(dataQueue);
-            StartCoroutine(StockScienceFixer());
+            if (!scienceMonitorActive)
+                StartCoroutine(StockScienceFixer());
         }
 
         public override void TransmitData(List<ScienceData> dataQueue, Callback callback)
         {
             SetTransmissionParams();
             base.TransmitData(dataQueue, callback);
-            StartCoroutine(StockScienceFixer());
+            if (!scienceMonitorActive)
+                StartCoroutine(StockScienceFixer());
         }
 
         private IEnumerator StockScienceFixer()
         {
             System.Reflection.BindingFlags flag = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-            float missCount = 2;
             float threshold = 0.999f;
-            while (missCount > 0)
+            scienceMonitorActive = true;
+            while (busy || transmissionQueue.Count > 0)
             {
                 if (commStream is RnDCommsStream)
                 {
                     float dataIn = (float)commStream.GetType().GetField("dataIn", flag).GetValue(commStream);
+                    //Debug.Log($"{ModTag} StockScienceFixer: Current: {dataIn} / {commStream.fileSize}, delivered: {packetSize}");
                     if (dataIn == commStream.fileSize)
                     {
                         Debug.Log($"{ModTag} Stock Science Transfer delivered {dataIn} Mits successfully");
-                        yield break;
+                        yield return new WaitForSeconds(packetInterval * 2);
                     }
-                    // Debug.Log($"{ModTag} StockScienceFixer: Current: {dataIn}, delta: {packetSize}");
-                    if (dataIn / commStream.fileSize >= threshold)
+                    else if (dataIn / commStream.fileSize >= threshold)
                     {
                         Debug.Log($"{ModTag} StockScienceFixer stuffing the last segment of data...");
                         commStream.StreamData(commStream.fileSize * 0.1f, vessel.protoVessel);
-                        yield break;
+                        yield return new WaitForSeconds(packetInterval * 2);
                     }
                 }
-                else missCount--;
                 yield return new WaitForSeconds(packetInterval);
             }
-            Debug.Log($"{ModTag} DebugFileTransmission() ended: no active comm stream");
+            scienceMonitorActive = false;
+            Debug.Log($"{ModTag} StockScienceFixer: transmissions complete");
         }
 
         #endregion
