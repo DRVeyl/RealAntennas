@@ -40,6 +40,7 @@ namespace RealAntennas
         public virtual double RequiredCI => Encoder.RequiredEbN0;
 
         public ModuleRealAntenna Parent { get; internal set; }
+        public ProtoPartModuleSnapshot ParentSnapshot { get; internal set; } = null;
         public CommNet.CommNode ParentNode { get; set; }
         public Vector3d Position => PrecisePosition;
         public Vector3d PrecisePosition => ParentNode.precisePosition;
@@ -77,6 +78,11 @@ namespace RealAntennas
             }
         }
 
+        public string TargetString => (Target is Vessel v) ? v.vesselName :
+                                      (Target is CelestialBody b) ? b.name :
+                                      (Target is Network.RACommNetHome h) ? h.name :
+                                      string.Empty;
+
         public double PowerDraw => RATools.LogScale(PowerDrawLinear);
 //        public virtual double IdlePowerDraw => PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;
         public virtual double IdlePowerDraw => TechLevelInfo.BasePower / 1000;    // Base power in W, 1ec/s = 1kW
@@ -89,6 +95,7 @@ namespace RealAntennas
         private readonly double minimumSpotRadius = 1e3;
 
         public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
+        public virtual string ToStringShort() => $"{Name} [{RFBand.name} {TxPower} dBm] {(CanTarget ? $" ->{TargetString}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)
@@ -113,6 +120,7 @@ namespace RealAntennas
             Target = orig.Target;
             Parent = orig.Parent;
             ParentNode = orig.ParentNode;
+            ParentSnapshot = orig.ParentSnapshot;
         }
 
         public virtual bool Compatible(RealAntenna other) => RFBand == other.RFBand;
@@ -211,6 +219,7 @@ namespace RealAntennas
         {
             _target = tgt; TargetID = tgtId;
             if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = dispString; Parent.targetID = tgtId; }
+            ParentSnapshot?.moduleValues.SetValue("targetID", tgtId);
         }
     }
 
