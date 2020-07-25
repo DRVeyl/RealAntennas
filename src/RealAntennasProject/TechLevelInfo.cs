@@ -24,7 +24,7 @@ namespace RealAntennas
         public static bool initialized = false;
 
         private static readonly Dictionary<int, TechLevelInfo> All = new Dictionary<int, TechLevelInfo>();
-        private static int maxTL = -1;
+        public static int MaxTL { get; private set; }  = -1;
         protected static readonly string ModTag = "[RealAntennas.TechLevelInfo] ";
 
         public TechLevelInfo() { }
@@ -38,7 +38,7 @@ namespace RealAntennas
                 TechLevelInfo obj = ConfigNode.CreateObjectFromConfig<TechLevelInfo>(node);
                 Debug.LogFormat($"{ModTag} Adding TL {obj}");
                 All.Add(obj.Level, obj);
-                maxTL = Math.Max(maxTL, obj.Level);
+                MaxTL = Math.Max(MaxTL, obj.Level);
             }
             initialized = true;
         }
@@ -49,8 +49,7 @@ namespace RealAntennas
         {
             if (!initialized) 
                 Init(GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams"));
-            i = (i < 0) ? 0 : i;
-            i = (i > maxTL) ? maxTL : i;
+            i = Mathf.Clamp(i, 0, MaxTL);
             if (All.TryGetValue(i, out TechLevelInfo info))
             {
                 return info;

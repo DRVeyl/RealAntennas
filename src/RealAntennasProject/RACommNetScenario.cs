@@ -18,6 +18,8 @@ namespace RealAntennas
         public static readonly System.Diagnostics.FileVersionInfo info = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
         public static readonly Dictionary<string, Network.RACommNetHome> GroundStations = new Dictionary<string, Network.RACommNetHome>();
         public static int GroundStationTechLevel = 0;
+        public static int MaxTL => Mathf.Min(TechLevelInfo.MaxTL, HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel);
+
 
         public Network.RACommNetNetwork Network { get; private set; } = null;
         public MapUI.RACommNetUI UI { get; private set; } = null;
@@ -103,9 +105,8 @@ namespace RealAntennas
                 staticInit = true;
             }
 
-            int maxTL = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
             float fTSLvl = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
-            GroundStationTechLevel = (HighLogic.CurrentGame.Mode == Game.Modes.CAREER) ? Mathf.RoundToInt(1 + (fTSLvl * maxTL)) : maxTL;
+            GroundStationTechLevel = Mathf.RoundToInt(MaxTL * (HighLogic.CurrentGame.Mode == Game.Modes.CAREER ? fTSLvl : 1));
         }
 
         private void BuildHomes()

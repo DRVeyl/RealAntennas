@@ -19,7 +19,6 @@ namespace RealAntennas
         public readonly Dictionary<Vessel, bool> vesselToggles = new Dictionary<Vessel, bool>();
         public readonly Dictionary<Network.RACommNetHome, bool> groundStationToggles = new Dictionary<Network.RACommNetHome, bool>();
         private float fTechLevel = 0;
-        private float maxTechLevel = 0;
 
         public void Start()
         {
@@ -35,7 +34,6 @@ namespace RealAntennas
             foreach (Network.RACommNetHome h in RACommNetScenario.GroundStations.Values)
                 groundStationToggles.Add(h, false);
             fTechLevel = RACommNetScenario.GroundStationTechLevel;
-            maxTechLevel = HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel;
         }
 
         public void OnGUI()
@@ -63,7 +61,7 @@ namespace RealAntennas
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"Ground Station TechLevel: {fTechLevel}");
-                fTechLevel = GUILayout.HorizontalSlider(Mathf.RoundToInt(fTechLevel), 0, maxTechLevel);
+                fTechLevel = GUILayout.HorizontalSlider(Mathf.RoundToInt(fTechLevel), 0, RACommNetScenario.MaxTL);
                 fTechLevel = Mathf.RoundToInt(fTechLevel);
                 if (GUILayout.Button("Apply"))
                 {
