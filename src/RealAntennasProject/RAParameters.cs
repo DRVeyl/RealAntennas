@@ -13,7 +13,7 @@
         public bool enforceMinDirectionalDistance = true;
 
         [GameParameters.CustomParameterUI("Performance UI Button", toolTip = "Enable / Disable RealAntennas UI (shows performance metrics), also MOD+I")]
-        public bool performanceUI = false;
+        public bool performanceUI = true;
 
         [GameParameters.CustomParameterUI("Periodic Debug Logging", toolTip = "Dump RealAntennas state on interval for debugging.")]
         public bool debugWalkLogging = true;
