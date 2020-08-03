@@ -16,6 +16,7 @@ namespace RealAntennas
 
         private Rect winPos = new Rect(450, 100, 400, 100);
         private const int winID = 731806;
+        private GameObject antennaConsoleGO = null;
 
         protected void Awake()
         {
@@ -73,6 +74,15 @@ namespace RealAntennas
                 {
                     if (win.showUI) win.HideWindow(); else win.ShowWindow();
                 }
+            }
+
+            if (antennaConsoleGO is null && GUILayout.Button("Launch Control Console"))
+            {
+                antennaConsoleGO = new GameObject();
+                antennaConsoleGO.AddComponent(typeof(RemoteAntennaControlUI));
+            } else if (antennaConsoleGO is GameObject && GUILayout.Button("Close Control Console")) {
+                antennaConsoleGO.DestroyGameObject();
+                antennaConsoleGO = null;
             }
             GUI.DragWindow();
         }
