@@ -10,6 +10,7 @@ namespace RealAntennas.Network
         public override void OnAwake()
         {
             Debug.Log($"{ModTag} Started");
+            VesselModuleManager.RemoveModuleOfType(typeof(CommNet.CommNetVessel));
             if (GetCommNetScenarioModule() is ProtoScenarioModule psm && !CommNetPatched(psm))
             {
                 Debug.Log($"{ClassName} Patching out CommNetScenario");
