@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace RealAntennas
 {
@@ -68,7 +67,6 @@ namespace RealAntennas
                 if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
                     GameEvents.onPlanetariumTargetChanged.Add(OnMapFocusChange);
             }
-            Debug.Log($"{ModTag} OnStart() for {name}. ID:{gameObject.GetInstanceID()}. Comm:{Comm}");
             if (OnVesselModifiedEvent == null)
             {
                 OnVesselModifiedEvent = OnVesselModified;

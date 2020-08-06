@@ -63,20 +63,16 @@ namespace RealAntennas
         {
             string res = $"{ModTag} VesselWalk()\n";
             res += $"FlightData has {FlightGlobals.Vessels.Count} vessels.\n";
-            foreach (Vessel v in FlightGlobals.Vessels)
+            foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection == null))
             {
-                if (v.Connection == null)
+                res += $"Vessel {v.vesselName} has a null connection.\n";
+            }
+            foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection is CommNetVessel))
+            {
+                res += $"Vessel {v.vesselName}: {v.Connection?.name} CommNode: {v.Connection?.Comm}\n";
+                foreach (ModuleRealAntenna ra in v.FindPartModulesImplementing<ModuleRealAntenna>())
                 {
-                    res += $"Vessel {v} has a null connection.\n";
-                    continue;
-                }
-                CommNetVessel cv = v.Connection;
-                CommNode cn = cv.Comm;
-                res += $"Vessel {v} with CommNetVessel {cv} has CommNode: {cn}\n";
-                List<ModuleRealAntenna> updatedlist = v.FindPartModulesImplementing<ModuleRealAntenna>();
-                foreach (ModuleRealAntenna ra in updatedlist)
-                {
-                    res += $"... Contains realAntenna part {ra.part} / {ra}.\n";
+                    res += $"... Contains RealAntenna part {ra.part} / {ra}.\n";
                 }
             }
             return res;

@@ -5,8 +5,7 @@ namespace RealAntennas
 {
     public class RACommNode : CommNet.CommNode
     {
-        protected static readonly string ModTag = "[RealAntennasCommNode] ";
-        protected static readonly string ModTrace = ModTag + "[Trace] ";
+        protected const string ModTag = "[RealAntennasCommNode]";
 
         public List<RealAntenna> RAAntennaList { get; set; }
         public CelestialBody ParentBody { get; set; }
@@ -48,10 +47,10 @@ namespace RealAntennas
 
         public virtual string DebugToString()
         {
-            string s = string.Format("{0} : ", base.ToString());
+            string s = base.ToString();
             foreach (RealAntenna ra in RAAntennaList)
             {
-                s += string.Format("{0}  ",ra);
+                s += $"{ra} ";
             }
             return s;
         }
