@@ -30,12 +30,6 @@ namespace RealAntennas
         public virtual double Beamwidth => Physics.Beamwidth(Gain);
 
         internal double cachedRemoteBodyNoiseTemp;
-        public virtual double GainAtAngle(double angle) => Gain - Physics.PointingLoss(Math.Abs(angle), Beamwidth);
-        // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.
-        // 10dBi: Beamwidth = 72 = 4dB full beamwidth contour
-        // 10dBi @ .6 efficiency: 57 = 3dB full beamwidth contour
-        // 20dBi: Beamwidth = 23 = 4dB full beamwidth countour
-        // 20dBi @ .6 efficiency: Beamwidth = 17.75 = 3dB full beamwidth contour
         public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevelInfo.Level); 
         public virtual double RequiredCI => Encoder.RequiredEbN0;
 
@@ -45,7 +39,7 @@ namespace RealAntennas
         public Vector3d Position => PrecisePosition;
         public Vector3d PrecisePosition => ParentNode.precisePosition;
         public Vector3d TransformPosition => ParentNode.position;
-        public virtual AntennaShape Shape => Gain <= MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
+        public virtual AntennaShape Shape => Gain <= Physics.MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
         public Vector3 ToTarget {
             get {
@@ -91,7 +85,6 @@ namespace RealAntennas
 
         protected static readonly string ModTag = "[RealAntenna] ";
         public static readonly string DefaultTargetName = "None";
-        public static double MaxOmniGain = 5;
         private readonly double minimumSpotRadius = 1e3;
 
         public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
