@@ -1,10 +1,20 @@
 ﻿using System;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace RealAntennas
 {
     public class MathUtils
     {
+        //https://forum.kerbalspaceprogram.com/index.php?/topic/164418-vector3angle-more-accurate-and-numerically-stable-at-small-angles-version/
+        public static double Angle2(double3 a, double3 b)
+        {
+            var abm = a * math.length(b);
+            var bam = b * math.length(a);
+            return math.degrees(2 * math.atan2(math.length(abm - bam), math.length(abm + bam)));
+        }
+
+
         // https://mathworld.wolfram.com/Circle-CircleIntersection.html
         public static double CircleCircleIntersectionArea(double R, double r, double d)
         {
