@@ -15,9 +15,8 @@ namespace RealAntennas.Antenna
         public static bool initialized = false;
 
         public static Dictionary<string, Encoder> All = new Dictionary<string, Encoder>();
-        protected static readonly string ModTag = "[RealAntennas.Encoder] ";
+        private const string ModTag = "[RealAntennas.Encoder]";
 
-        public Encoder() { }
         public Encoder(string name, int techLevel, double rate, double minEbN0)
         {
             this.name = name;
@@ -28,7 +27,8 @@ namespace RealAntennas.Antenna
 
         public override string ToString() => $"[{name} Rate {CodingRate:F2} Eb/N0 {RequiredEbN0}]";
 
-        public static Encoder BestMatching(Encoder a, Encoder b) => (a.TechLevel > b.TechLevel) ? b : a;
+        public Encoder BestMatching(in Encoder other) => TechLevel > other.TechLevel ? other : this;
+        public static Encoder BestMatching(in Encoder a, in Encoder b) => a.BestMatching(b);
         public static Encoder GetFromTechLevel(int level)
         {
             Encoder best = null;
