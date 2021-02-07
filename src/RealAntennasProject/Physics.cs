@@ -43,8 +43,11 @@ namespace RealAntennas
         public static double Beamwidth(double gain) => math.sqrt(52525 / RATools.LinearScale(gain));
 
         public static double PathLoss(double distance, double frequency = 1e9)
+        {
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
-            => (20 * math.log10(distance * frequency)) + path_loss_constant;
+            double df = math.min(distance * frequency, 0.1);
+            return (20 * math.log10(df)) + path_loss_constant;
+        }
 
         public static double ReceivedPower(RealAntenna tx, RealAntenna rx, double distance, double frequency = 1e9)
             => tx.TxPower + tx.Gain - PathLoss(distance, frequency) - PointingLoss(tx, rx.Position) - PointingLoss(rx, tx.Position) + rx.Gain;
