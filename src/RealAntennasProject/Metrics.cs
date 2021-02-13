@@ -8,7 +8,7 @@ namespace RealAntennas
         const int hysteresisFactor = 20;
         public Metrics() { }
         public void Reset() => data.Clear();
-        public void AddMeasurement(string name, long t)
+        public void AddMeasurement(string name, double t)
         {
             if (!data.ContainsKey(name))
             {

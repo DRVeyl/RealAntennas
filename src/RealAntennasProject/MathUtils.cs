@@ -7,6 +7,12 @@ namespace RealAntennas
     public class MathUtils
     {
         //https://forum.kerbalspaceprogram.com/index.php?/topic/164418-vector3angle-more-accurate-and-numerically-stable-at-small-angles-version/
+        /// <summary>
+        ///  Angle between two vectors, in degrees
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static double Angle2(double3 a, double3 b)
         {
             var abm = a * math.length(b);

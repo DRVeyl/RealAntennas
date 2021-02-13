@@ -17,6 +17,7 @@ namespace RealAntennas.Antenna
         public static Dictionary<string, Encoder> All = new Dictionary<string, Encoder>();
         private const string ModTag = "[RealAntennas.Encoder]";
 
+        public Encoder() { }
         public Encoder(string name, int techLevel, double rate, double minEbN0)
         {
             this.name = name;
