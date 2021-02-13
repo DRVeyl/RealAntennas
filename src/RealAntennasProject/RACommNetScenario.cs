@@ -27,14 +27,14 @@ namespace RealAntennas
         protected override void Start()
         {
             Debug.Log($"{ModTag} Start in {HighLogic.LoadedScene}, Enabled: {CommNetEnabled}");
+            Initialize();
+            Kerbalism.Kerbalism.DetectKerbalismDLL();
             if (CommNetEnabled)
             {
-                Initialize();
                 UI = gameObject.AddComponent<MapUI.RACommNetUI>();
                 Network = gameObject.AddComponent<Network.RACommNetNetwork>();
                 RangeModel = new Network.RealAntennasRangeModel();
 
-                Kerbalism.Kerbalism.DetectKerbalismDLL();
                 ApplyGameSettings();
                 GameEvents.OnGameSettingsApplied.Add(ApplyGameSettings);
             }
