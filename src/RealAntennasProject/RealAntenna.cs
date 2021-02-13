@@ -132,10 +132,8 @@ namespace RealAntennas
             if (!(tx.DirectionCheck(rx) && rx.DirectionCheck(tx))) return 0;
 
             double RSSI = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
-            double temp = Physics.NoiseTemperature(rx, toSource);
-            double NoiseSpectralDensity = Physics.NoiseSpectralDensity(temp);
-
-            double Noise = Physics.NoiseFloor(this, Physics.NoiseTemperature(this, toSource));
+            double temp = Physics.NoiseTemperature(rx, tx.Position);
+            double Noise = Physics.NoiseFloor(Bandwidth, temp);
             double CI = RSSI - Noise;
             double margin = CI - RequiredCI;
 

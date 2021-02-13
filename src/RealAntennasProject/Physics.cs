@@ -45,7 +45,7 @@ namespace RealAntennas
         public static double PathLoss(double distance, double frequency = 1e9)
         {
             //FSPL = 20 log D + 20 log freq + 20 log (4pi/c)
-            double df = math.min(distance * frequency, 0.1);
+            double df = math.max(distance * frequency, 0.1);
             return (20 * math.log10(df)) + path_loss_constant;
         }
 
@@ -213,8 +213,8 @@ namespace RealAntennas
             // 9=> 17.6dB, 10=> 20.1dB, 11=> 22.7dB, 20=> 47.2dB
             // 0.5 => -0.8dB.  Rate 1/2 BPSK Turbo code is EbN0 = +1dB, so about 1.8 above Shannon?
         }
-        public static double NoiseFloor(RealAntenna rx, double noiseTemp) => NoiseSpectralDensity(noiseTemp) + (10 * Math.Log10(rx.Bandwidth));
-        public static double NoiseSpectralDensity(double noiseTemp) => boltzmann_dBm + (10 * Math.Log10(noiseTemp));
+        public static double NoiseFloor(double bandwidth, double noiseTemp) => NoiseSpectralDensity(noiseTemp) + (10 * math.log10(bandwidth));
+        public static double NoiseSpectralDensity(double noiseTemp) => boltzmann_dBm + (10 * math.log10(noiseTemp));
         public static double NoiseTemperature(RealAntenna rx, Vector3d origin)
         {
             double amt = AntennaMicrowaveTemp(rx);
@@ -261,12 +261,20 @@ namespace RealAntennas
             if (rx.ParentNode is RACommNode rxNode && rxNode.ParentBody != null)
             {
                 Vector3d normal = rxNode.GetSurfaceNormalVector();
-                Vector3d to_origin = origin - rx.Position;
-                double angle = Vector3d.Angle(normal, to_origin);
-                double elevation = Math.Max(0,90.0 - angle);
-                return AtmosphereNoiseTemperature(elevation, rx.Frequency);
+                return AtmosphericTemp(new double3(rx.Position.x, rx.Position.y, rx.Position.z),
+                                        new double3(normal.x, normal.y, normal.z),
+                                        new double3(origin.x, origin.y, origin.z),
+                                        rx.Frequency);
             }
             return 0;
+        }
+
+        public static double AtmosphericTemp(double3 position, double3 surfaceNormal, double3 origin, double frequency)
+        {
+            double3 to_origin = origin - position;
+            double angle = MathUtils.Angle2(surfaceNormal, to_origin);
+            double elevation = math.max(0, 90.0 - angle);
+            return AtmosphereNoiseTemperature(elevation, frequency);
         }
 
         public static double CosmicBackgroundTemp(double3 surfaceNormal, double3 toOrigin, double freq, bool isHome)
