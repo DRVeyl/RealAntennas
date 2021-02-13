@@ -42,7 +42,7 @@ namespace RealAntennas
         public bool CanComm()
         {
             if (ParentBody != null) return true;
-            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered : false;
+            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered && raCNV.CanComm : false;
         }
 
         public virtual string DebugToString()
