@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
+using Unity.Mathematics;
 
 namespace RealAntennas
 {
@@ -13,6 +14,8 @@ namespace RealAntennas
 
         private float lastRun = 0f;
         private readonly System.Diagnostics.Stopwatch RebuildStopWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch PathfindWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch PrecomputeLateWatch = new System.Diagnostics.Stopwatch();
         private readonly System.Diagnostics.Stopwatch tempWatch = new System.Diagnostics.Stopwatch();
         internal readonly Precompute.Precompute precompute = new Precompute.Precompute();
 
@@ -80,7 +83,7 @@ namespace RealAntennas
                 Profiler.EndSample();
                 return false;
             }
-            MakeLink(bestFwdAntPair[0], bestFwdAntPair[1], bestRevAntPair[0], bestRevAntPair[1], rac_a, rac_b, distance, FwdDataRate, RevDataRate);
+            //MakeLink(bestFwdAntPair[0], bestFwdAntPair[1], bestRevAntPair[0], bestRevAntPair[1], rac_a, rac_b, distance, FwdDataRate, RevDataRate);
 
             Profiler.EndSample();
             return true;
@@ -94,7 +97,11 @@ namespace RealAntennas
                                RACommNode b,
                                double distance,
                                double FwdDataRate,
-                               double RevDataRate)
+                               double RevDataRate,
+                               double FwdBestDataRate,
+                               double FwdMetric,
+                               double RevMetric
+                               )
         {
             RACommLink link = Connect(a, b, distance) as RACommLink;
             link.aCanRelay = true;
@@ -108,36 +115,10 @@ namespace RealAntennas
             link.FwdDataRate = FwdDataRate;
             link.RevDataRate = RevDataRate;
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
-
-            Antenna.Encoder FwdEncoder = Antenna.Encoder.BestMatching(fwdTx.Encoder, fwdRx.Encoder);
-            Antenna.Encoder RevEncoder = Antenna.Encoder.BestMatching(revTx.Encoder, revRx.Encoder);
-
-            RAModulator FwdAntennaTxMod = (link.FwdAntennaTx as RealAntennaDigital).modulator;
-            RAModulator FwdAntennaRxMod = (link.FwdAntennaRx as RealAntennaDigital).modulator;
-            RAModulator RevAntennaTxMod = (link.RevAntennaTx as RealAntennaDigital).modulator;
-            RAModulator RevAntennaRxMod = (link.RevAntennaRx as RealAntennaDigital).modulator;
-            int FwdMaxModSteps = Math.Min(FwdAntennaTxMod.ModulationBits, FwdAntennaRxMod.ModulationBits) - 1;
-            int RevMaxModSteps = Math.Min(RevAntennaTxMod.ModulationBits, RevAntennaRxMod.ModulationBits) - 1;
-            double FwdBestSymRate = Math.Min(fwdTx.SymbolRate, fwdRx.SymbolRate);
-            double RevBestSymRate = Math.Min(revTx.SymbolRate, revRx.SymbolRate);
-            double FwdMinSymRate = Math.Max(fwdTx.MinSymbolRate, fwdRx.MinSymbolRate);
-            double RevMinSymRate = Math.Max(revTx.MinSymbolRate, revRx.MinSymbolRate);
-            double FwdBestDataRate = FwdBestSymRate * FwdEncoder.CodingRate * Math.Pow(2, FwdMaxModSteps);
-            double RevBestDataRate = RevBestSymRate * RevEncoder.CodingRate * Math.Pow(2, RevMaxModSteps);
-            double FwdMinDataRate = FwdMinSymRate * FwdEncoder.CodingRate;
-            double RevMinDataRate = RevMinSymRate * RevEncoder.CodingRate;
-            double FwdMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestSymRate / FwdMinSymRate), 2));
-            double RevMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestSymRate / RevMinSymRate), 2));
-            double FwdRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestDataRate / FwdDataRate), 2));
-            double RevRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestDataRate / RevDataRate), 2));
-
+            link.FwdMetric = FwdMetric;
+            link.RevMetric = RevMetric;
             if (FwdBestDataRate < FwdDataRate)
                 Debug.LogWarning($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
-
-            link.FwdMetric = 1 - (FwdRateSteps / (FwdMaxSymSteps + FwdMaxModSteps + 1));
-            link.RevMetric = 1 - (RevRateSteps / (RevMaxSymSteps + RevMaxModSteps + 1));
-            //            Debug.LogFormat("Think we have taken {0} of {1} steps on FWD", Fwdlog2, FwdSymSteps);
-            //            Debug.LogFormat("Think we have taken {0} of {1} steps on REV", Revlog2, RevSymSteps);
 
             link.Update(Math.Min(link.FwdMetric, link.RevMetric));
         }
@@ -215,6 +196,7 @@ namespace RealAntennas
         private bool IsPaused => (KSCPauseMenu.Instance && KSCPauseMenu.Instance.enabled) || (PauseMenu.exists && PauseMenu.isOpen);
         public virtual void StartRebuild()
         {
+            Profiler.BeginSample("RealAntennas StartRebuild");
             tempWatch.Reset();
             tempWatch.Start();
             isDirty = false;
@@ -225,21 +207,30 @@ namespace RealAntennas
             UpdateOccluders();
             precompute.DoThings();
             tempWatch.Stop();
+            Profiler.EndSample();
             (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("EarlyRebuild", tempWatch.Elapsed.TotalMilliseconds);
         }
         public virtual void CompleteRebuild()
         {
             if (calculating)
             {
+                Profiler.BeginSample("RealAntennas CompleteRebuild");
                 tempWatch.Reset();
                 tempWatch.Start();
+                PrecomputeLateWatch.Reset();
+                PrecomputeLateWatch.Start();
                 calculating = false;
+                Profiler.BeginSample("RealAntennas CompleteRebuild.UpdateNetwork");
                 UpdateNetwork();
+                Profiler.EndSample();
+                PrecomputeLateWatch.Stop();
                 PostUpdateNodes();
                 if (OnNetworkPostUpdate is Action)
                     OnNetworkPostUpdate();
                 tempWatch.Stop();
-                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("LateRebuild", tempWatch.Elapsed.TotalMilliseconds);
+                Profiler.EndSample();
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Precompute LateRebuild", PrecomputeLateWatch.Elapsed.TotalMilliseconds);
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Full LateRebuild", tempWatch.Elapsed.TotalMilliseconds);
             }
         }
 
@@ -250,8 +241,6 @@ namespace RealAntennas
         }
 
         internal void DoDisconnect(CommNode a, CommNode b) => Disconnect(a, b, true);
-        internal void DoConnect(RACommNode a, RACommNode b, double distance, RealAntenna fwdTx, RealAntenna fwdRx, RealAntenna revTx, RealAntenna revRx, double fwdRate, double revRate) =>
-            MakeLink(fwdTx, fwdRx, revTx, revRx, a, b, distance, fwdRate, revRate);
 
         public override void Rebuild()
         {
@@ -349,8 +338,8 @@ namespace RealAntennas
             if (!(cnStart is RACommNode start && where != null))
                 return base.FindClosestWhere(cnStart, path, where);
             Profiler.BeginSample("RealAntennas.FindClosestWhere");
-            tempWatch.Reset();
-            tempWatch.Start();
+            PathfindWatch.Reset();
+            PathfindWatch.Start();
             path?.Clear();
             sptSet.Clear();
             pathSortList.Clear();
@@ -401,8 +390,8 @@ namespace RealAntennas
                 }
                 path?.UpdateFromPath();
             }
-            tempWatch.Stop();
-            (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Pathfinding", tempWatch.Elapsed.TotalMilliseconds);
+            PathfindWatch.Stop();
+            (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Pathfinding", PathfindWatch.Elapsed.TotalMilliseconds);
             Profiler.EndSample();
             return found ? candidate : null;
         }
