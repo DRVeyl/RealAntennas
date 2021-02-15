@@ -319,10 +319,14 @@ namespace RealAntennas.MapUI
                             }
                             foreach (CommLink link in commPath)
                             {
-                                commLinkList.Clear();
-                                commLinkList.Add(link.start[link.end]);
-                                GatherLinkLines(commLinkList);
-                                GatherAntennaCones(link.start as RACommNode);
+                                if (link.start.TryGetValue(link.end, out var x))
+                                {
+                                    commLinkList.Clear();
+                                    commLinkList.Add(x);
+                                    GatherLinkLines(commLinkList);
+                                    GatherAntennaCones(link.start as RACommNode);
+                                }
+                                else Debug.LogWarning($"[RealAntennas.MapUI] {commNode} has broken link {link}");
                             }
                             break;
                     }
