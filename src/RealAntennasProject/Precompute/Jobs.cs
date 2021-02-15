@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using System;
 
 namespace RealAntennas.Precompute
 {
@@ -11,7 +12,7 @@ namespace RealAntennas.Precompute
     {
         [ReadOnly] public NativeArray<AntennaData> antennas;
         [ReadOnly] public NativeArray<OccluderInfo> occluders;
-        [WriteOnly] public NativeArray<double> noiseTemp;
+        [WriteOnly] public NativeArray<float> noiseTemp;
 
         public void Execute(int index)
         {
@@ -28,11 +29,11 @@ namespace RealAntennas.Precompute
         [ReadOnly] public NativeArray<AntennaData> antennas;
         [ReadOnly] public NativeArray<CNInfo> nodes;
         [ReadOnly] public NativeArray<OccluderInfo> occluders;
-        [ReadOnly] public NativeArray<double> noiseTempPrecalc;
-        [WriteOnly] public NativeArray<double> atmosphereNoise;
-        [WriteOnly] public NativeArray<double> bodyNoise;
-        [WriteOnly] public NativeArray<double> noiseTemp;
-        [WriteOnly] public NativeArray<double> N0;
+        [ReadOnly] public NativeArray<float> noiseTempPrecalc;
+        [WriteOnly] public NativeArray<float> atmosphereNoise;
+        [WriteOnly] public NativeArray<float> bodyNoise;
+        [WriteOnly] public NativeArray<float> noiseTemp;
+        [WriteOnly] public NativeArray<float> N0;
 
         public void Execute(int index)
         {
@@ -42,9 +43,10 @@ namespace RealAntennas.Precompute
             AntennaData ant = antennas[w];
             CNInfo txNode = nodes[x];
             CNInfo rxNode = nodes[y];
-            double vBodyNoise = ant.isHome ? Precompute.NoiseFromOccluders(ant, occluders) : noiseTempPrecalc[w];
-            double vAtmoNoise = ant.isHome ? Physics.AtmosphericTemp(ant.position, rxNode.surfaceNormal, txNode.position, ant.freq) : 0;
-            double vNoiseTemp = vBodyNoise + ant.AMW + vAtmoNoise + Physics.CMB;
+//            float vBodyNoise = ant.isHome ? Precompute.NoiseFromOccluders(ant, occluders) : noiseTempPrecalc[w];
+            float vBodyNoise = ant.isHome ? Precompute.NoiseFromOccluders(ant.position, ant.gain, ant.dir, ant.freq, occluders) : noiseTempPrecalc[w];
+            float vAtmoNoise = ant.isHome ? Convert.ToSingle(Physics.AtmosphericTemp(ant.position, rxNode.surfaceNormal, txNode.position, ant.freq)) : 0;
+            float vNoiseTemp = vBodyNoise + ant.AMW + vAtmoNoise + Physics.CMB;
             atmosphereNoise[index] = vAtmoNoise;
             bodyNoise[index] = vBodyNoise;
             noiseTemp[index] = vNoiseTemp;
@@ -52,27 +54,29 @@ namespace RealAntennas.Precompute
         }
     }
 
+    [BurstCompile]
     public struct PathLossJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<int4> pairs;
         [ReadOnly] public NativeArray<AntennaData> antennas;
-        [WriteOnly] public NativeArray<double> pathloss;
+        [WriteOnly] public NativeArray<float> pathloss;
 
         public void Execute(int index)
         {
             double3 pos1 = antennas[pairs[index].z].position;
             double3 pos2 = antennas[pairs[index].w].position;
-            double freq = antennas[pairs[index].w].freq;
-            double dist = math.distance(pos1, pos2);
+            float freq = antennas[pairs[index].w].freq;
+            float dist = Convert.ToSingle(math.distance(pos1, pos2));
             pathloss[index] = Physics.PathLoss(dist, freq);
         }
     }
 
+    [BurstCompile]
     public struct PointingLossJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<int4> pairs;
         [ReadOnly] public NativeArray<AntennaData> antennas;
-        [WriteOnly] public NativeArray<double> losses;
+        [WriteOnly] public NativeArray<float> losses;
 
         public void Execute(int index)
         {
@@ -81,21 +85,22 @@ namespace RealAntennas.Precompute
             double3 txToRx = rx.position - tx.position;
             double3 rxToTx = tx.position - rx.position;
 
-            double txToRxAngle = MathUtils.Angle2(txToRx, tx.dir);
-            double rxToTxAngle = MathUtils.Angle2(rxToTx, rx.dir);
-            double txPointLoss = Physics.PointingLoss(txToRxAngle, Physics.Beamwidth(tx.gain));
-            double rxPointLoss = Physics.PointingLoss(rxToTxAngle, Physics.Beamwidth(rx.gain));
+            float txToRxAngle = Convert.ToSingle(MathUtils.Angle2(txToRx, tx.dir));
+            float rxToTxAngle = Convert.ToSingle(MathUtils.Angle2(rxToTx, rx.dir));
+            float txPointLoss = Physics.PointingLoss(txToRxAngle, Physics.Beamwidth(tx.gain));
+            float rxPointLoss = Physics.PointingLoss(rxToTxAngle, Physics.Beamwidth(rx.gain));
             losses[index] = txPointLoss + rxPointLoss;
         }
     }
 
+    [BurstCompile]
     public struct RxPowerJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<int4> pairs;
         [ReadOnly] public NativeArray<AntennaData> antennas;
-        [ReadOnly] public NativeArray<double> pointLoss;
-        [ReadOnly] public NativeArray<double> pathLoss;
-        [WriteOnly] public NativeArray<double> rxPower;
+        [ReadOnly] public NativeArray<float> pointLoss;
+        [ReadOnly] public NativeArray<float> pathLoss;
+        [WriteOnly] public NativeArray<float> rxPower;
 
         public void Execute(int index)
         {
@@ -105,11 +110,12 @@ namespace RealAntennas.Precompute
         }
     }
 
+    [BurstCompile]
     public struct MinEbJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<Encoder> encoder;
-        [ReadOnly] public NativeArray<double> N0;
-        [WriteOnly] public NativeArray<double> minEb;
+        [ReadOnly] public NativeArray<float> N0;
+        [WriteOnly] public NativeArray<float> minEb;
 
         public void Execute(int index)
         {
@@ -117,33 +123,37 @@ namespace RealAntennas.Precompute
         }
     }
 
-    public struct MaxBitRateJob : IJobParallelForDefer
+    [BurstCompile]
+    public struct MaxTheoreticalBitRateJob : IJobParallelForDefer
     {
-        [ReadOnly] public NativeArray<double> rxPower;
-        [ReadOnly] public NativeArray<double> minEb;
-        [WriteOnly] public NativeArray<double> maxBitRate;
+        [ReadOnly] public NativeArray<float> rxPower;
+        [ReadOnly] public NativeArray<float> minEb;
+        [WriteOnly] public NativeArray<float> maxBitRate;
 
         public void Execute(int index)
         {
-            double maxBitRateLog = rxPower[index] - minEb[index];       // in dB*Hz
+            float maxBitRateLog = rxPower[index] - minEb[index];       // in dB*Hz
             maxBitRate[index] = RATools.LinearScale(maxBitRateLog);
         }
     }
 
+    [BurstCompile]
     public struct SelectBitRateJob : IJobParallelForDefer
     {
-        [ReadOnly] public NativeArray<double> maxBitRate;
+        [ReadOnly] public NativeArray<float> maxBitRate;
         [ReadOnly] public NativeArray<float> maxSymbolRate;
         [ReadOnly] public NativeArray<float> minSymbolRate;
         [ReadOnly] public NativeArray<int> maxModulationBits;
-        [ReadOnly] public NativeArray<double> rxPower;
-        [ReadOnly] public NativeArray<double> minEb;
-        [WriteOnly] public NativeArray<double> chosenSymbolRate;
+        [ReadOnly] public NativeArray<float> rxPower;
+        [ReadOnly] public NativeArray<float> minEb;
+        [ReadOnly] public NativeArray<Encoder> encoder;
+        [WriteOnly] public NativeArray<float> chosenSymbolRate;
         [WriteOnly] public NativeArray<int> modulationBits;
+        [WriteOnly] public NativeArray<float> chosenBitRate;
 
         public void Execute(int index)
         {
-            double targetRate = 0;
+            float targetRate = 0;
             int negotiatedBits = 0;
             if (maxBitRate[index] < minSymbolRate[index]) { }
             else if (maxBitRate[index] <= maxSymbolRate[index])
@@ -152,8 +162,8 @@ namespace RealAntennas.Precompute
                 // Step down the symbol rate and modulate at 1 bit/sec/Hz (BPSK).
                 // (What if the modulator only supports schemes with >1 bits/symbol?)
                 // (Then our minimum EbN0 is an underestimate.)
-                double ratio = maxBitRate[index] / maxSymbolRate[index];
-                double log2 = math.trunc(math.log2(ratio));
+                float ratio = maxBitRate[index] / maxSymbolRate[index];
+                float log2 = math.trunc(math.log2(ratio));
                 targetRate = maxSymbolRate[index] * math.pow(2, log2);
                 negotiatedBits = 1;
             }
@@ -162,17 +172,19 @@ namespace RealAntennas.Precompute
                 // margin = RxPower - (N0 + LogScale(MaxSymbolRate) - Encoder.RequriedEbN0)
                 //        = RxPower - minEb - LogScale(MaxSymbolRate)
 
-                double margin = rxPower[index] - minEb[index] - RATools.LogScale(maxSymbolRate[index]);
+                float margin = rxPower[index] - minEb[index] - RATools.LogScale(maxSymbolRate[index]);
                 margin = math.clamp(margin, 0, 100);
                 negotiatedBits = math.min(maxModulationBits[index], 1 + System.Convert.ToInt32(math.floor(margin / 3)));
                 targetRate = maxSymbolRate[index];
             }
             chosenSymbolRate[index] = targetRate;
             modulationBits[index] = negotiatedBits;
+            chosenBitRate[index] = targetRate * encoder[index].CodingRate * math.pow(2, negotiatedBits - 1);
         }
     }
 
 
+    [BurstCompile]
     public struct MatchedEncoderJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<int4> pairs;
@@ -187,13 +199,18 @@ namespace RealAntennas.Precompute
         }
     }
 
-    public struct BoundSymbolRateJob : IJobParallelForDefer
+    [BurstCompile]
+    public struct RateBoundariesJob : IJobParallelForDefer
     {
         [ReadOnly] public NativeArray<int4> pairs;
         [ReadOnly] public NativeArray<AntennaData> antennas;
+        [ReadOnly] public NativeArray<Encoder> encoder;
         [WriteOnly] public NativeArray<float> maxSymbolRate;
         [WriteOnly] public NativeArray<float> minSymbolRate;
         [WriteOnly] public NativeArray<int> maxModulationBits;
+        [WriteOnly] public NativeArray<float> maxDataRate;
+        [WriteOnly] public NativeArray<float> minDataRate;
+        [WriteOnly] public NativeArray<int> maxSteps;
 
         public void Execute(int index)
         {
@@ -201,48 +218,57 @@ namespace RealAntennas.Precompute
             AntennaData rx = antennas[pairs[index].w];
             float max = math.min(tx.maxSymbolRate, rx.maxSymbolRate);
             float min = math.max(tx.minSymbolRate, rx.minSymbolRate);
+            int bits = math.min(tx.modulationBits, rx.modulationBits);
             if (min > max)
             {
                 min = 0;
                 max = 0;
             }
+            float maxData = max * encoder[index].CodingRate * math.pow(2, bits - 1);
+            float minData = min * encoder[index].CodingRate;
             maxSymbolRate[index] = max;
             minSymbolRate[index] = min;
-            maxModulationBits[index] = math.min(tx.modulationBits, rx.modulationBits);
+            maxModulationBits[index] = bits;
+            maxDataRate[index] = maxData;
+            minDataRate[index] = minData;
+            maxSteps[index] = minData > 0 ? System.Convert.ToInt32(math.trunc(math.log2(maxData / minData))) : 0;
         }
     }
 
-    public struct SortCalculationsJob : IJob
+    [BurstCompile]
+    public struct CountRateSteps : IJobParallelForDefer
     {
-        [ReadOnly] public NativeArray<int4> pairs;
-        [WriteOnly] public NativeMultiHashMap<int2, int> connections;
+        [ReadOnly] public NativeArray<float> bestRate;
+        [ReadOnly] public NativeArray<float> actualRate;
+        [WriteOnly] public NativeArray<int> numSteps;
 
-        public void Execute()
+        public void Execute(int index)
         {
-            for (int i=0; i<pairs.Length; i++)
-            {
-                connections.Add(new int2(pairs[i].x, pairs[i].y), i);
-            }
+            float best = bestRate[index];
+            float actual = actualRate[index];
+            numSteps[index] = actual > 0 ? System.Convert.ToInt32(math.trunc(math.log2(best / actual))) : 0;
         }
     }
 
+    [BurstCompile]
     public struct GetBestLinkJob : IJob
     {
         [ReadOnly] public NativeMultiHashMap<int2, int> connections;
-        [ReadOnly] public NativeArray<double> symbolRate;
-        [ReadOnly] public NativeArray<int> bits;
+        [ReadOnly] public NativeArray<float> dataRate;
         [WriteOnly] public NativeHashMap<int2, int> best;
         public void Execute()
         {
-            using var keys = connections.GetKeyArray(Allocator.Temp);
+            var keys = connections.GetKeyArray(Allocator.Temp);
             for (int i=0; i<keys.Length; i++)
             {
-                double bestRate = -1;
+                float bestRate = -1;
                 int bestIndex = -1;
                 int2 key = keys[i];
-                foreach (var index in connections.GetValuesForKey(key))
+                var iter = connections.GetValuesForKey(key);
+                while (iter.MoveNext())
                 {
-                    double rate = symbolRate[index] * bits[index];
+                    int index = iter.Current;
+                    float rate = dataRate[index];
                     if (rate > bestRate)
                     {
                         bestRate = rate;
@@ -251,8 +277,7 @@ namespace RealAntennas.Precompute
                 }
                 best.TryAdd(key, bestIndex);
             }
+            keys.Dispose();
         }
     }
-
 }
-

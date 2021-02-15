@@ -10,7 +10,7 @@ namespace RealAntennas.Precompute
     public struct AntennaData
     {
         internal float txPower;
-        internal double freq;
+        internal float freq;
         internal float gain;
         internal bool isHome;
         internal double3 position;
@@ -33,16 +33,16 @@ namespace RealAntennas.Precompute
     public struct OccluderInfo
     {
         internal double3 position;
-        internal double radius;
-        internal double temp;
+        internal float radius;
+        internal float temp;
         internal bool isStar;
     }
 
     public struct Encoder
     {
         public int TechLevel;
-        public double CodingRate;
-        public double RequiredEbN0;
+        public float CodingRate;
+        public float RequiredEbN0;
 
         public Encoder(in Antenna.Encoder e)
         {
@@ -65,7 +65,7 @@ namespace RealAntennas.Precompute
         private JobHandle precomputeJobHandle;
 
         // Job data, allocated at start of job scatter, de-allocated during gather method.
-        private NativeArray<double> antennaNoise;
+        private NativeArray<float> antennaNoise;
         private NativeArray<bool> nodePairsValid;
         private NativeArray<bool> occlusionValid;
         private NativeList<int4> allValidAntennaPairs;
@@ -73,18 +73,23 @@ namespace RealAntennas.Precompute
         private NativeArray<int> maxModulationBits;
         private NativeArray<float> minSymbolRate;
         private NativeArray<float> maxSymbolRate;
-        private NativeArray<double> pathLoss;
-        private NativeArray<double> pointingLoss;
-        private NativeArray<double> rxPower;
-        private NativeArray<double> atmosphereNoise;
-        private NativeArray<double> bodyNoise;
-        private NativeArray<double> noiseTemp;
-        private NativeArray<double> n0;
-        private NativeArray<double> minEb;
-        private NativeArray<double> maxBitRate;
-        private NativeArray<double> symbolRate;
+        private NativeArray<float> pathLoss;
+        private NativeArray<float> pointingLoss;
+        private NativeArray<float> rxPower;
+        private NativeArray<float> atmosphereNoise;
+        private NativeArray<float> bodyNoise;
+        private NativeArray<float> noiseTemp;
+        private NativeArray<float> n0;
+        private NativeArray<float> minEb;
+        private NativeArray<float> maxTheoreticalBitRate;
+        private NativeArray<float> symbolRate;
         private NativeArray<int> modulationBits;
-        private NativeMultiHashMap<int2, int> map1;
+        private NativeArray<float> dataRate;
+        private NativeArray<float> maxDataRate;
+        private NativeArray<float> minDataRate;
+        private NativeArray<int> maxSteps;
+        private NativeArray<int> rateSteps;
+        private NativeMultiHashMap<int2, int> nodeRowMap;
 
         public NativeList<CNInfo> allNodes;
         public NativeArray<OccluderInfo> occluders;
@@ -116,20 +121,20 @@ namespace RealAntennas.Precompute
         // Use the persistent antenna data structure, though.
         public void DoThings()
         {
-            Profiler.BeginSample("RealAntennas PreCompute Early");
-            Profiler.BeginSample("RA PreCompute SetupCommNodes");
+            Profiler.BeginSample("RealAntennas PreCompute.Early");
+            Profiler.BeginSample("RealAntennas PreCompute.Early.SetupCommNodes");
             SetupCommNodes(out allNodes);
             Profiler.EndSample();
-            Profiler.BeginSample("RA PreCompute SetupOccluders");
+            Profiler.BeginSample("RealAntennas PreCompute.Early.SetupOccluders");
             SetupOccluders(out occluders);
             Profiler.EndSample();
-            Profiler.BeginSample("RA PreCompute UpdateAllAntennas");
+            Profiler.BeginSample("RealAntennas PreCompute.Early.UpdateAllAntennas");
             UpdateAllAntennas();
             Profiler.EndSample();
             Profiler.EndSample();
 
-            Profiler.BeginSample("RealAntennas PreCompute JobCreate");
-            antennaNoise = new NativeArray<double>(antennaDataList.Length, Allocator.TempJob);
+            Profiler.BeginSample("RealAntennas PreCompute.Early.JobCreate");
+            antennaNoise = new NativeArray<float>(antennaDataList.Length, Allocator.TempJob);
             var noisePrecalcHandle = new PreCalcAntennaNoise
             {
                 antennas = antennaDataList,
@@ -171,12 +176,14 @@ namespace RealAntennas.Precompute
                 validPairs = allValidAntennaPairs
             }.Schedule(validPairMapJobHandle);
 
-            map1 = new NativeMultiHashMap<int2, int>(allNodePairs.Capacity, Allocator.TempJob);
-            var sortCalculations = new SortCalculationsJob
+            nodeRowMap = new NativeMultiHashMap<int2, int>(allAntennaPairs.Length, Allocator.TempJob);
+            var sortCalculations = new MapCommNodesToCalcRowsJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                connections = map1,
-            }.Schedule(allValidAntennaPairsHandle);
+                connections = nodeRowMap.AsParallelWriter(),
+            }.Schedule(allValidAntennaPairs, 64, allValidAntennaPairsHandle);
+
+            JobHandle.ScheduleBatchedJobs();
 
             matchedEncoder = new NativeArray<Encoder>(allAntennaPairs.Length, Allocator.TempJob);
             var matchedEncoderJob = new MatchedEncoderJob
@@ -189,16 +196,23 @@ namespace RealAntennas.Precompute
             maxModulationBits = new NativeArray<int>(allAntennaPairs.Length, Allocator.TempJob);
             minSymbolRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             maxSymbolRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
-            var boundSymbolRateJob = new BoundSymbolRateJob
+            maxDataRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            minDataRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            maxSteps = new NativeArray<int>(allAntennaPairs.Length, Allocator.TempJob);
+            var boundSymbolRateJob = new RateBoundariesJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
                 antennas = antennaDataList,
+                encoder = matchedEncoder,
                 maxModulationBits = maxModulationBits,
                 minSymbolRate = minSymbolRate,
-                maxSymbolRate = maxSymbolRate
+                maxSymbolRate = maxSymbolRate,
+                maxDataRate = maxDataRate,
+                minDataRate = minDataRate,
+                maxSteps = maxSteps
             }.Schedule(allValidAntennaPairs, 16, matchedEncoderJob);
 
-            pathLoss = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            pathLoss = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var pathLossJob = new PathLossJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
@@ -206,7 +220,7 @@ namespace RealAntennas.Precompute
                 pathloss = pathLoss
             }.Schedule(allValidAntennaPairs, 16, allValidAntennaPairsHandle);
 
-            pointingLoss = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            pointingLoss = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var pointingLossJob = new PointingLossJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
@@ -214,7 +228,7 @@ namespace RealAntennas.Precompute
                 losses = pointingLoss
             }.Schedule(allValidAntennaPairs, 16, allValidAntennaPairsHandle);
 
-            rxPower = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            rxPower = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var rxPowerJob = new RxPowerJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
@@ -224,10 +238,10 @@ namespace RealAntennas.Precompute
                 rxPower = rxPower
             }.Schedule(allValidAntennaPairs, 128, JobHandle.CombineDependencies(pathLossJob, pointingLossJob));
 
-            atmosphereNoise = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
-            bodyNoise = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
-            noiseTemp = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
-            n0 = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            atmosphereNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            bodyNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            noiseTemp = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            n0 = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var noiseCalcHandle = new LateCalcAntennaNoise
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
@@ -241,44 +255,56 @@ namespace RealAntennas.Precompute
                 N0 = n0,
             }.Schedule(allValidAntennaPairs, 8, JobHandle.CombineDependencies(allValidAntennaPairsHandle, noisePrecalcHandle));
 
-            minEb = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            minEb = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var minEbJob = new MinEbJob
             {
                 encoder = matchedEncoder,
                 N0 = n0,
                 minEb = minEb,
-            }.Schedule(allValidAntennaPairs, 128, JobHandle.CombineDependencies(noiseCalcHandle, boundSymbolRateJob));
+            }.Schedule(allValidAntennaPairs, 128, JobHandle.CombineDependencies(noiseCalcHandle, matchedEncoderJob));
 
-            maxBitRate = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
-            var maxBitRateJob = new MaxBitRateJob
+            maxTheoreticalBitRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            var maxTheoreticalBitRateJob = new MaxTheoreticalBitRateJob
             {
                 rxPower = rxPower,
                 minEb = minEb,
-                maxBitRate = maxBitRate,
+                maxBitRate = maxTheoreticalBitRate,
             }.Schedule(allValidAntennaPairs, 128, JobHandle.CombineDependencies(rxPowerJob, minEbJob));
 
-            symbolRate = new NativeArray<double>(allAntennaPairs.Length, Allocator.TempJob);
+            symbolRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             modulationBits = new NativeArray<int>(allAntennaPairs.Length, Allocator.TempJob);
+            dataRate = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var selectBitRateJob = new SelectBitRateJob
             {
-                maxBitRate = maxBitRate,
+                maxBitRate = maxTheoreticalBitRate,
                 minSymbolRate = minSymbolRate,
                 maxSymbolRate = maxSymbolRate,
                 maxModulationBits = maxModulationBits,
                 rxPower = rxPower,
                 minEb = minEb,
+                encoder = matchedEncoder,
                 chosenSymbolRate = symbolRate,
-                modulationBits = modulationBits
-            }.Schedule(allValidAntennaPairs, 16, maxBitRateJob);
+                modulationBits = modulationBits,
+                chosenBitRate = dataRate,
+            }.Schedule(allValidAntennaPairs, 16, JobHandle.CombineDependencies(maxTheoreticalBitRateJob, boundSymbolRateJob));
+
+            rateSteps = new NativeArray<int>(allAntennaPairs.Length, Allocator.TempJob);
+            var rateStepsJob = new CountRateSteps
+            {
+                actualRate = dataRate,
+                bestRate = maxDataRate,
+                numSteps = rateSteps
+            }.Schedule(allValidAntennaPairs, 16, selectBitRateJob);
 
             bestMap = new NativeHashMap<int2, int>(allNodePairs.Capacity, Allocator.TempJob);
-            precomputeJobHandle = new GetBestLinkJob
+            var bestLinkJob = new GetBestLinkJob
             {
-                connections = map1,
-                bits = modulationBits,
-                symbolRate = symbolRate,
+                connections = nodeRowMap,
+                dataRate = dataRate,
                 best = bestMap,
             }.Schedule(JobHandle.CombineDependencies(selectBitRateJob, sortCalculations));
+
+            precomputeJobHandle = JobHandle.CombineDependencies(bestLinkJob, rateStepsJob);
 
             /*
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
@@ -289,10 +315,10 @@ namespace RealAntennas.Precompute
 
         public void complete(RACommNetwork RACN)
         {
-            Profiler.BeginSample("RA PreCompute Gather");
+            Profiler.BeginSample("RealAntennas PreCompute.Complete.Gather");
             precomputeJobHandle.Complete();
             Profiler.EndSample();
-            Profiler.BeginSample("RealAntennas PreCompute Complete");
+            Profiler.BeginSample("RealAntennas PreCompute.Complete.Linkages");
 
             foreach (var pair in allNodePairs)
             {
@@ -303,21 +329,39 @@ namespace RealAntennas.Precompute
                         validMap.TryGetValue(p2, out bool valid2) && valid2 &&
                         bestMap.TryGetValue(pair, out int row) && 
                         bestMap.TryGetValue(p2, out int row2) &&
-                        row >= 0 && row2 >= 0 && 
-                        symbolRate[row] > 0 && symbolRate[row2] > 0)
+                        row >= 0 && row2 >= 0 &&
+                        dataRate[row] > 0 && dataRate[row2] > 0)
                     {
                         // Connect Successful
+                        RACommNode a = RACN.Nodes[pair.x] as RACommNode;
+                        RACommNode b = RACN.Nodes[pair.y] as RACommNode;
                         int4 fwdQuad = allValidAntennaPairs[row];
                         int4 revQuad = allValidAntennaPairs[row2];
+                        /*
                         RealAntenna fwdTx = allAntennasReverse[fwdQuad.z];
                         RealAntenna fwdRx = allAntennasReverse[fwdQuad.w];
                         RealAntenna revTx = allAntennasReverse[revQuad.z];
                         RealAntenna revRx = allAntennasReverse[revQuad.w];
-                        RACommNode a = RACN.Nodes[pair.x] as RACommNode;
-                        RACommNode b = RACN.Nodes[pair.y] as RACommNode;
-                        double fwd = symbolRate[row] * math.pow(2, modulationBits[row]-1) * matchedEncoder[row].CodingRate;
-                        double rev = symbolRate[row2] * math.pow(2, modulationBits[row2]-1) * matchedEncoder[row2].CodingRate;
-                        RACN.MakeLink(fwdTx, fwdRx, revTx, revRx, a, b, (a.position - b.position).magnitude, fwd, rev);
+                        double fwd = dataRate[row];
+                        double rev = dataRate[row2];
+                        double FwdBestDataRate = maxDataRate[row];
+                        double RevBestDataRate = maxDataRate[row2];
+                        */
+                        double FwdMetric = 1.0 - ((float)rateSteps[row] / (maxSteps[row] + 1));
+                        double RevMetric = 1.0 - ((float)rateSteps[row2] / (maxSteps[row2] + 1));
+                        //RACN.MakeLink(fwdTx, fwdRx, revTx, revRx, a, b, (a.position - b.position).magnitude, fwd, rev, FwdBestDataRate, FwdMetric, RevMetric);
+                        RACN.MakeLink(allAntennasReverse[fwdQuad.z],
+                            allAntennasReverse[fwdQuad.w],
+                            allAntennasReverse[revQuad.z],
+                            allAntennasReverse[revQuad.w],
+                            a,
+                            b,
+                            (a.position - b.position).magnitude,
+                            dataRate[row],
+                            dataRate[row2],
+                            maxDataRate[row],
+                            FwdMetric,
+                            RevMetric);
                     } else
                     {
                         RACN.DoDisconnect(RACN.Nodes[pair.x], RACN.Nodes[pair.y]);
@@ -350,19 +394,27 @@ namespace RealAntennas.Precompute
             noiseTemp.Dispose();
             n0.Dispose();
             minEb.Dispose();
-            maxBitRate.Dispose();
+            maxTheoreticalBitRate.Dispose();
             symbolRate.Dispose();
             modulationBits.Dispose();
-            map1.Dispose();
+            dataRate.Dispose();
+            maxDataRate.Dispose();
+            minDataRate.Dispose();
+            maxSteps.Dispose();
+            rateSteps.Dispose();
+            nodeRowMap.Dispose();
         }
-        internal static double NoiseFromOccluders(in AntennaData ant, in NativeArray<OccluderInfo> occluders)
+
+        internal static float NoiseFromOccluders(in AntennaData ant, in NativeArray<OccluderInfo> occluders) =>
+            NoiseFromOccluders(ant.position, ant.gain, ant.dir, ant.freq, occluders);
+        internal static float NoiseFromOccluders(double3 position, float gain, double3 dir, float freq, in NativeArray<OccluderInfo> occluders)
         {
-            double noise = 0;
+            float noise = 0;
             for (int i = 0; i < occluders.Length; i++)
             {
                 OccluderInfo occluder = occluders[i];
-                double t = occluder.isStar ? Physics.StarRadioTemp(occluder.temp, ant.freq) : occluder.temp;
-                noise += Physics.BodyNoiseTemp(ant.position, ant.gain, ant.dir, occluder.position, occluder.radius, t);
+                float t = occluder.isStar ? Physics.StarRadioTemp(occluder.temp, freq) : occluder.temp;
+                noise += Physics.BodyNoiseTemp(position, gain, dir, occluder.position, occluder.radius, t);
             }
             return noise;
         }
@@ -399,7 +451,7 @@ namespace RealAntennas.Precompute
                 occluders[index] = new OccluderInfo()
                 {
                     position = new double3(body.position.x, body.position.y, body.position.z),
-                    radius = body.Radius,
+                    radius = Convert.ToSingle(body.Radius),
                     temp = Physics.BodyBaseTemperature(body),
                     isStar = body.isStar,
                     //name = $"{body}",
@@ -424,11 +476,11 @@ namespace RealAntennas.Precompute
                         allAntennasReverse.Add(index, ra);
                         antennaDatas.Add(new AntennaData()
                         {
-                            txPower = Convert.ToSingle(ra.TxPower),
+                            txPower = ra.TxPower,
                             freq = ra.Frequency,
-                            gain = Convert.ToSingle(ra.Gain),
+                            gain = ra.Gain,
                             isHome = node.isHome,
-                            AMW = Convert.ToSingle(Physics.AntennaMicrowaveTemp(ra)),
+                            AMW = Physics.AntennaMicrowaveTemp(ra),
                             encoder = new Encoder(ra.Encoder),
                             maxSymbolRate = Convert.ToSingle(ra.SymbolRate),
                             minSymbolRate = Convert.ToSingle(ra.MinSymbolRate),

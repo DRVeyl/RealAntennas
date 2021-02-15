@@ -67,6 +67,7 @@ namespace RealAntennas.Precompute
         }
     }
 
+    [BurstCompile]
     public struct FilterAntennaPairsJob : IJob
     {
         [ReadOnly] public NativeHashMap<int2, bool> valid;
@@ -83,6 +84,7 @@ namespace RealAntennas.Precompute
         }
     }
 
+    [BurstCompile]
     public struct CreateValidPairMapJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<int2> pairs;
@@ -92,6 +94,18 @@ namespace RealAntennas.Precompute
         public void Execute(int index)
         {
             output.TryAdd(pairs[index], valid[index]);
+        }
+    }
+
+    [BurstCompile]
+    public struct MapCommNodesToCalcRowsJob : IJobParallelForDefer
+    {
+        [ReadOnly] public NativeArray<int4> pairs;
+        [WriteOnly] public NativeMultiHashMap<int2, int>.ParallelWriter connections;
+
+        public void Execute(int index)
+        {
+            connections.Add(new int2(pairs[index].x, pairs[index].y), index);
         }
     }
 }
