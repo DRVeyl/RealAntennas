@@ -9,7 +9,7 @@ namespace RealAntennas.Antenna
     {
         [Persistent] public string name;
         [Persistent] public int TechLevel;
-        [Persistent] public double Frequency;
+        [Persistent] public float Frequency;
         [Persistent] public float ChannelWidth;
 
         public static bool initialized = false;

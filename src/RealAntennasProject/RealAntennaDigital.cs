@@ -44,7 +44,7 @@ namespace RealAntennas
             Antenna.Encoder encoder = Antenna.Encoder.BestMatching(tx.Encoder, rx.Encoder);
             codeRate = encoder.CodingRate;
             Vector3d toSource = rx.Position - tx.Position;
-            double distance = toSource.magnitude;
+            float distance = Convert.ToSingle(toSource.magnitude);
             RAModulator txMod = tx.modulator, rxMod = (rx as RealAntennaDigital).modulator;
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
             if (distance < 0.1f)
@@ -58,7 +58,7 @@ namespace RealAntennas
             double minSymbolRate = Math.Max(txMod.MinSymbolRate, rxMod.MinSymbolRate);
 
             double RxPower = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
-            double temp = Physics.NoiseTemperature(rx, tx.Position);
+            float temp = Physics.NoiseTemperature(rx, tx.Position);
             double N0 = Physics.NoiseSpectralDensity(temp);     // In dBm
             double minEb = encoder.RequiredEbN0 + N0;           // in dBm
             double maxBitRateLog = RxPower - minEb;                // in dB*Hz

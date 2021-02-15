@@ -10,15 +10,15 @@ namespace RealAntennas.Antenna
         // 810-005, Module 208, Rev B, Page 30, Figure 14.  For calculating BER ~= 10^-5.
         [Persistent] public string name;
         [Persistent] public int TechLevel;
-        [Persistent] public double CodingRate;
-        [Persistent] public double RequiredEbN0;
+        [Persistent] public float CodingRate;
+        [Persistent] public float RequiredEbN0;
         public static bool initialized = false;
 
         public static Dictionary<string, Encoder> All = new Dictionary<string, Encoder>();
         private const string ModTag = "[RealAntennas.Encoder]";
 
         public Encoder() { }
-        public Encoder(string name, int techLevel, double rate, double minEbN0)
+        public Encoder(string name, int techLevel, float rate, float minEbN0)
         {
             this.name = name;
             TechLevel = techLevel;

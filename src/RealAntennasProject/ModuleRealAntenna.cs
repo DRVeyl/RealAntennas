@@ -15,7 +15,7 @@ namespace RealAntennas
         public bool _enabled = true;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1", groupName = PAWGroup, groupDisplayName = PAWGroup)]
-        public double Gain;          // Physical directionality, measured in dBi
+        public float Gain;          // Physical directionality, measured in dBi
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1", groupName = PAWGroup),
         UI_FloatRange(maxValue = 60f, minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor)]
@@ -27,10 +27,10 @@ namespace RealAntennas
         private int techLevel => Convert.ToInt32(TechLevel);
 
         [KSPField] private int maxTechLevel = 0;
-        [KSPField(isPersistant = true)] public double AMWTemp;    // Antenna Microwave Temperature
-        [KSPField(isPersistant = true)] public double antennaDiameter = 0;
-        [KSPField(isPersistant = true)] public double referenceGain = 0;
-        [KSPField(isPersistant = true)] public double referenceFrequency = 0;
+        [KSPField(isPersistant = true)] public float AMWTemp;    // Antenna Microwave Temperature
+        [KSPField(isPersistant = true)] public float antennaDiameter = 0;
+        [KSPField(isPersistant = true)] public float referenceGain = 0;
+        [KSPField(isPersistant = true)] public float referenceFrequency = 0;
         [KSPField] public bool applyMassModifier = true;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band", groupName = PAWGroup),
@@ -80,7 +80,7 @@ namespace RealAntennas
 
         public void OnGUI() { targetGUI.OnGUI(); planner.plannerGUI.OnGUI(); }
 
-        protected static readonly string ModTag = "[ModuleRealAntenna] ";
+        protected const string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
         public RealAntenna RAAntenna;
         public Antenna.AntennaGUI targetGUI = new Antenna.AntennaGUI();
@@ -92,12 +92,12 @@ namespace RealAntennas
         public float ElectronicsMass(TechLevelInfo techLevel, float txPower) => (techLevel.BaseMass + techLevel.MassPerWatt * txPower) / 1000;
 
         private float StockRateModifier = 0.001f;
-        public static double InactivePowerConsumptionMult = 0.1;
+        public static float InactivePowerConsumptionMult = 0.1f;
         private float DefaultPacketInterval = 1.0f;
         private bool scienceMonitorActive = false;
 
-        public double PowerDraw => RATools.LogScale(PowerDrawLinear);
-        public double PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
+        public float PowerDraw => RATools.LogScale(PowerDrawLinear);
+        public float PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
         public override void OnAwake()
         {
             base.OnAwake();
@@ -178,7 +178,7 @@ namespace RealAntennas
         {
             if (HighLogic.LoadedSceneIsFlight && _enabled)
             {
-                RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : part.temperature;
+                RAAntenna.AMWTemp = (AMWTemp > 0) ? AMWTemp : Convert.ToSingle(part.temperature);
                 //part.AddThermalFlux(req / Time.fixedDeltaTime);
                 if (Kerbalism.Kerbalism.KerbalismAssembly is null)
                 {
@@ -194,7 +194,7 @@ namespace RealAntennas
             RAAntenna.TxPower = TxPower;
             RAAntenna.RFBand = Antenna.BandInfo.All[RFBand];
             RAAntenna.SymbolRate = RAAntenna.RFBand.MaxSymbolRate(techLevel);
-            RAAntenna.Gain = Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, RFBandInfo.Frequency);
+            RAAntenna.Gain = Gain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, RFBandInfo.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6f, RFBandInfo.Frequency);
             double idleDraw = RAAntenna.IdlePowerDraw * 1000;
             sIdlePowerConsumed = $"{idleDraw:F2} Watts";
             sActivePowerConsumed = $"{idleDraw + (PowerDrawLinear / 1000):F2} Watts";
@@ -288,7 +288,7 @@ namespace RealAntennas
             {
                 foreach (Antenna.BandInfo band in Antenna.BandInfo.All.Values)
                 {
-                    double tGain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, band.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6, band.Frequency);
+                    float tGain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, band.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6f, band.Frequency);
                     res += $"<color=green><b>{band.name}</b></color>: {tGain:F1} dBi, {Physics.Beamwidth(tGain):F1} beamwidth\n";
                 }
             } else

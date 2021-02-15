@@ -10,6 +10,7 @@ namespace RealAntennas
         public static double LinearScale(double x) => math.pow(10, x / 10);
         public static float LinearScale(float x) => math.pow(10, x / 10);
         public static double LogScale(double x) => 10 * math.log10(x);
+        public static float LogScale(float x) => 10 * math.log10(x);
 
         public static string PrettyPrintDataRate(double rate) => $"{PrettyPrint(rate)}bps";
 

@@ -19,36 +19,63 @@ namespace RealAntennas
             var bam = b * math.length(a);
             return math.degrees(2 * math.atan2(math.length(abm - bam), math.length(abm + bam)));
         }
-
+        public static float Angle2(float3 a, float3 b)
+        {
+            var abm = a * math.length(b);
+            var bam = b * math.length(a);
+            return math.degrees(2 * math.atan2(math.length(abm - bam), math.length(abm + bam)));
+        }
 
         // https://mathworld.wolfram.com/Circle-CircleIntersection.html
         public static double CircleCircleIntersectionArea(double R, double r, double d)
         {
-            double res = r * r * Math.Acos(((d * d) + (r * r) - (R * R)) / (2 * d * r));
-            res += R * R * Math.Acos(((d * d) + (R * R) - (r * r)) / (2 * d * R));
+            double res = r * r * math.acos(((d * d) + (r * r) - (R * R)) / (2 * d * r));
+            res += R * R * math.acos(((d * d) + (R * R) - (r * r)) / (2 * d * R));
             double A = -d + r + R;
             double B = d + r - R;
             double C = d - r + R;
             double D = d + r + R;
-            res -= Math.Sqrt(A * B * C * D) / 2;
+            res -= math.sqrt(A * B * C * D) / 2;
             return res;
         }
-
+        public static float CircleCircleIntersectionArea(float R, float r, float d)
+        {
+            float res = r * r * math.acos(((d * d) + (r * r) - (R * R)) / (2 * d * r));
+            res += R * R * math.acos(((d * d) + (R * R) - (r * r)) / (2 * d * R));
+            float A = -d + r + R;
+            float B = d + r - R;
+            float C = d - r + R;
+            float D = d + r + R;
+            res -= math.sqrt(A * B * C * D) / 2;
+            return res;
+        }
         //  Offset from circle radius R to chord passing through intersections of circles R and r
         public static double CircleCircleIntersectionOffset(double R, double r, double d) =>
+            ((d * d) - (r * r) + (R * R)) / (2 * d);
+        public static float CircleCircleIntersectionOffset(float R, float r, float d) =>
             ((d * d) - (r * r) + (R * R)) / (2 * d);
 
         public static double AngularRadius(double radius, double distance)
         {
-            Vector2d center = Vector2d.zero;
-            Vector2d point = center + distance * Vector2d.right;
+            double3 center = new double3(0, 0, 0);
+            double3 point = center + distance * new double3(1, 0, 0);
             double x_offset = CircleCircleIntersectionOffset(radius, distance / 2, distance / 2);
             // offset is the x-coord of a point on the body.
-            double y_offset = Math.Sqrt((radius * radius) - (x_offset * x_offset));
-            Vector2d calc;
-            calc.x = x_offset;
-            calc.y = y_offset;
-            return Vector2d.Angle(center - point, calc - point);
+            double y_offset = math.sqrt((radius * radius) - (x_offset * x_offset));
+            double3 calc = new double3(x_offset, y_offset, 0);
+            return Angle2(center - point, calc - point);
+        }
+
+        public static float AngularRadius(float radius, float distance)
+        {
+            float3 center = new float3(0, 0, 0);
+            float3 point = center + distance * new float3(1, 0, 0);
+            float x_offset = Convert.ToSingle(CircleCircleIntersectionOffset(radius, distance / 2, distance / 2));
+            // offset is the x-coord of a point on the body.
+            float y_offset = math.sqrt((radius * radius) - (x_offset * x_offset));
+            float3 calc = new float3(x_offset, y_offset, 0);
+            return Angle2(center - point, calc - point);
+
         }
     }
 }
