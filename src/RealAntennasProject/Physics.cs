@@ -145,14 +145,15 @@ namespace RealAntennas
                                             double3 dir,
                                             double3 bodyPos,
                                             float bodyRadius,
-                                            float bodyTemp)
+                                            float bodyTemp,
+                                            float beamwidth = -1)
         {
             if (gain < MaxOmniGain) return 0;
             if (bodyTemp < float.Epsilon) return 0;
             double3 toBody = bodyPos - antPos;
             float angle = (float) MathUtils.Angle2(toBody, dir);
             float distance = (float) math.length(toBody);
-            float beamwidth = Beamwidth(gain);
+            beamwidth = (beamwidth < 0) ? Beamwidth(gain) : beamwidth;
             float bodyRadiusAngularRad = (distance > 10 * bodyRadius)
                     ? math.atan2(bodyRadius, distance)
                     : math.radians(MathUtils.AngularRadius(bodyRadius, distance));

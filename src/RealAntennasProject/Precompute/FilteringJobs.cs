@@ -78,34 +78,37 @@ namespace RealAntennas.Precompute
         {
             for (int i = 0; i < allPairs.Length; i++)
             {
-                if (valid.TryGetValue(new int2(allPairs[i].x, allPairs[i].y), out bool v) && v)
+                if (valid.TryGetValue(allPairs[i].xy, out bool v) && v)
                     validPairs.Add(allPairs[i]);
             }
         }
     }
 
+    // Parallel writing version ends up much slower due to use of TryAdd
     [BurstCompile]
-    public struct CreateValidPairMapJob : IJobParallelFor
+    public struct CreateValidPairMapJob : IJob
     {
         [ReadOnly] public NativeArray<int2> pairs;
         [ReadOnly] public NativeArray<bool> valid;
-        [WriteOnly] public NativeHashMap<int2, bool>.ParallelWriter output;
+        [WriteOnly] public NativeHashMap<int2, bool> output;
 
-        public void Execute(int index)
+        public void Execute()
         {
-            output.TryAdd(pairs[index], valid[index]);
+            for (int i = 0; i < pairs.Length; i++)
+                output[pairs[i]] = valid[i];
         }
     }
 
     [BurstCompile]
-    public struct MapCommNodesToCalcRowsJob : IJobParallelForDefer
+    public struct MapCommNodesToCalcRowsJob : IJob
     {
         [ReadOnly] public NativeArray<int4> pairs;
-        [WriteOnly] public NativeMultiHashMap<int2, int>.ParallelWriter connections;
+        [WriteOnly] public NativeMultiHashMap<int2, int> connections;
 
-        public void Execute(int index)
+        public void Execute()
         {
-            connections.Add(new int2(pairs[index].x, pairs[index].y), index);
+            for (int index = 0; index < pairs.Length; index++)
+                connections.Add(pairs[index].xy, index);
         }
     }
 }

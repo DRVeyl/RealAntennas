@@ -12,6 +12,7 @@ namespace RealAntennas.Precompute
         internal float txPower;
         internal float freq;
         internal float gain;
+        internal float beamwidth;
         internal bool isHome;
         internal double3 position;
         internal float3 dir;
@@ -69,6 +70,25 @@ namespace RealAntennas.Precompute
         private NativeArray<bool> nodePairsValid;
         private NativeArray<bool> occlusionValid;
         private NativeList<int4> allValidAntennaPairs;
+
+        private NativeArray<float> txPower;
+        private NativeArray<float> txFreq;
+        private NativeArray<float> txGain;
+        private NativeArray<float> txBeamwidth;
+        private NativeArray<bool> txHome;
+        private NativeArray<double3> txPos;
+        private NativeArray<float3> txDir;
+
+        private NativeArray<float> rxFreq;
+        private NativeArray<float> rxGain;
+        private NativeArray<float> rxBeamwidth;
+        private NativeArray<bool> rxHome;
+        private NativeArray<double3> rxPos;
+        private NativeArray<float3> rxDir;
+        private NativeArray<float> rxAMW;
+        private NativeArray<float> rxPrecalcNoise;
+        private NativeArray<double3> rxSurfaceNormal;
+
         private NativeArray<Encoder> matchedEncoder;
         private NativeArray<int> maxModulationBits;
         private NativeArray<float> minSymbolRate;
@@ -134,14 +154,6 @@ namespace RealAntennas.Precompute
             Profiler.EndSample();
 
             Profiler.BeginSample("RealAntennas PreCompute.Early.JobCreate");
-            antennaNoise = new NativeArray<float>(antennaDataList.Length, Allocator.TempJob);
-            var noisePrecalcHandle = new PreCalcAntennaNoise
-            {
-                antennas = antennaDataList,
-                occluders = occluders,
-                noiseTemp = antennaNoise
-            }.Schedule(antennaDataList.Length, 4);
-
             nodePairsValid = new NativeArray<bool>(allNodePairs.Length, Allocator.TempJob);
             var filter1 = new FilterCommNodes
             {
@@ -165,8 +177,8 @@ namespace RealAntennas.Precompute
             {
                 pairs = allNodePairs,
                 valid = occlusionValid,
-                output = validMap.AsParallelWriter()
-            }.Schedule(allNodePairs.Length, 64, filter3);
+                output = validMap
+            }.Schedule(filter3);
 
             allValidAntennaPairs = new NativeList<int4>(allAntennaPairs.Length, Allocator.TempJob);
             var allValidAntennaPairsHandle = new FilterAntennaPairsJob
@@ -180,10 +192,60 @@ namespace RealAntennas.Precompute
             var sortCalculations = new MapCommNodesToCalcRowsJob
             {
                 pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                connections = nodeRowMap.AsParallelWriter(),
-            }.Schedule(allValidAntennaPairs, 64, allValidAntennaPairsHandle);
+                connections = nodeRowMap,
+            }.Schedule(allValidAntennaPairsHandle);
 
             JobHandle.ScheduleBatchedJobs();
+
+            antennaNoise = new NativeArray<float>(antennaDataList.Length, Allocator.TempJob);
+            var noisePrecalcHandle = new PreCalcAntennaNoise
+            {
+                antennas = antennaDataList,
+                occluders = occluders,
+                noiseTemp = antennaNoise
+            }.Schedule(antennaDataList.Length, 4);
+
+            txPower = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            txFreq = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            txGain = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            txBeamwidth = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            txHome = new NativeArray<bool>(allAntennaPairs.Length, Allocator.TempJob);
+            txPos = new NativeArray<double3>(allAntennaPairs.Length, Allocator.TempJob);
+            txDir = new NativeArray<float3>(allAntennaPairs.Length, Allocator.TempJob);
+
+            rxFreq = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            rxGain = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            rxBeamwidth = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            rxHome = new NativeArray<bool>(allAntennaPairs.Length, Allocator.TempJob);
+            rxPos = new NativeArray<double3>(allAntennaPairs.Length, Allocator.TempJob);
+            rxDir = new NativeArray<float3>(allAntennaPairs.Length, Allocator.TempJob);
+            rxAMW = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            rxPrecalcNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            rxSurfaceNormal = new NativeArray<double3>(allAntennaPairs.Length, Allocator.TempJob);
+
+            var extractDataJob = new ExtractDataJob
+            {
+                pairs = allValidAntennaPairs.AsDeferredJobArray(),
+                antennas = antennaDataList,
+                nodes = allNodes,
+                antennaNoise = antennaNoise,
+                txPos = txPos,
+                rxPos = rxPos,
+                txDir = txDir,
+                rxDir = rxDir,
+                txGain = txGain,
+                rxGain = rxGain,
+                txBeamwidth = txBeamwidth,
+                rxBeamwidth = rxBeamwidth,
+                txHome = txHome,
+                rxHome = rxHome,
+                txFreq = txFreq,
+                rxFreq = rxFreq,
+                txPower = txPower,
+                rxAMW = rxAMW,
+                rxPrecalcNoise = rxPrecalcNoise,
+                rxSurfaceNormal = rxSurfaceNormal
+            }.Schedule(allValidAntennaPairs, 16, JobHandle.CombineDependencies(noisePrecalcHandle, allValidAntennaPairsHandle));
 
             matchedEncoder = new NativeArray<Encoder>(allAntennaPairs.Length, Allocator.TempJob);
             var matchedEncoderJob = new MatchedEncoderJob
@@ -211,49 +273,75 @@ namespace RealAntennas.Precompute
                 minDataRate = minDataRate,
                 maxSteps = maxSteps
             }.Schedule(allValidAntennaPairs, 16, matchedEncoderJob);
+            JobHandle.ScheduleBatchedJobs();
 
             pathLoss = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var pathLossJob = new PathLossJob
             {
-                pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                antennas = antennaDataList,
+                txPos = txPos,
+                rxPos = rxPos,
+                freq = txFreq,
                 pathloss = pathLoss
-            }.Schedule(allValidAntennaPairs, 16, allValidAntennaPairsHandle);
+            }.Schedule(allValidAntennaPairs, 16, extractDataJob);
 
             pointingLoss = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var pointingLossJob = new PointingLossJob
             {
-                pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                antennas = antennaDataList,
+                txPos = txPos,
+                rxPos = rxPos,
+                txDir = txDir,
+                rxDir = rxDir,
+                txBeamwidth = txBeamwidth,
+                rxBeamwidth = rxBeamwidth,
                 losses = pointingLoss
-            }.Schedule(allValidAntennaPairs, 16, allValidAntennaPairsHandle);
+            }.Schedule(allValidAntennaPairs, 16, extractDataJob);
 
             rxPower = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var rxPowerJob = new RxPowerJob
             {
-                pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                antennas = antennaDataList,
+                txGain = txGain,
+                rxGain = rxGain,
+                txPower = txPower,
                 pathLoss = pathLoss,
                 pointLoss = pointingLoss,
                 rxPower = rxPower
             }.Schedule(allValidAntennaPairs, 128, JobHandle.CombineDependencies(pathLossJob, pointingLossJob));
 
-            atmosphereNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             bodyNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            var bodyNoiseJob = new CalcAntennaBodyNoise
+            {
+                occluders = occluders,
+                rxPrecalcNoise = rxPrecalcNoise,
+                rxHome = rxHome,
+                rxPos = rxPos,
+                rxGain = rxGain,
+                rxBeamwidth = rxBeamwidth,
+                rxDir = rxDir,
+                rxFreq = rxFreq,
+                bodyNoise = bodyNoise,
+            }.Schedule(allValidAntennaPairs, 8, extractDataJob);
+
+            atmosphereNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            var atmoNoiseJob = new CalcAntennaAtmoNoise
+            {
+                txPos = txPos,
+                rxPos = rxPos,
+                rxFreq = rxFreq,
+                rxHome = rxHome,
+                rxSurfaceNormal = rxSurfaceNormal,
+                atmoNoise = atmosphereNoise
+            }.Schedule(allValidAntennaPairs, 8, extractDataJob);
+
             noiseTemp = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             n0 = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var noiseCalcHandle = new LateCalcAntennaNoise
             {
-                pairs = allValidAntennaPairs.AsDeferredJobArray(),
-                antennas = antennaDataList,
-                nodes = allNodes,
-                occluders = occluders,
-                noiseTempPrecalc = antennaNoise,
-                atmosphereNoise = atmosphereNoise,
                 bodyNoise = bodyNoise,
+                atmoNoise = atmosphereNoise,
+                rxAMW = rxAMW,
                 noiseTemp = noiseTemp,
                 N0 = n0,
-            }.Schedule(allValidAntennaPairs, 8, JobHandle.CombineDependencies(allValidAntennaPairsHandle, noisePrecalcHandle));
+            }.Schedule(allValidAntennaPairs, 64, JobHandle.CombineDependencies(bodyNoiseJob, atmoNoiseJob));
 
             minEb = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var minEbJob = new MinEbJob
@@ -382,6 +470,25 @@ namespace RealAntennas.Precompute
             nodePairsValid.Dispose();
             occlusionValid.Dispose();
             allValidAntennaPairs.Dispose();
+
+            txPower.Dispose();
+            txFreq.Dispose();
+            txGain.Dispose();
+            txBeamwidth.Dispose();
+            txHome.Dispose();
+            txPos.Dispose();
+            txDir.Dispose();
+
+            rxFreq.Dispose();
+            rxGain.Dispose();
+            rxBeamwidth.Dispose();
+            rxHome.Dispose();
+            rxPos.Dispose();
+            rxDir.Dispose();
+            rxAMW.Dispose();
+            rxPrecalcNoise.Dispose();
+            rxSurfaceNormal.Dispose();
+
             matchedEncoder.Dispose();
             maxModulationBits.Dispose();
             minSymbolRate.Dispose();
@@ -403,18 +510,20 @@ namespace RealAntennas.Precompute
             maxSteps.Dispose();
             rateSteps.Dispose();
             nodeRowMap.Dispose();
+
         }
 
         internal static float NoiseFromOccluders(in AntennaData ant, in NativeArray<OccluderInfo> occluders) =>
-            NoiseFromOccluders(ant.position, ant.gain, ant.dir, ant.freq, occluders);
-        internal static float NoiseFromOccluders(double3 position, float gain, double3 dir, float freq, in NativeArray<OccluderInfo> occluders)
+            NoiseFromOccluders(ant.position, ant.gain, ant.dir, ant.freq, ant.beamwidth, occluders);
+        internal static float NoiseFromOccluders(double3 position, float gain, float3 dir, float freq, float beamwidth, in NativeArray<OccluderInfo> occluders)
         {
+            if (gain <= Physics.MaxOmniGain) return 0;
             float noise = 0;
             for (int i = 0; i < occluders.Length; i++)
             {
                 OccluderInfo occluder = occluders[i];
                 float t = occluder.isStar ? Physics.StarRadioTemp(occluder.temp, freq) : occluder.temp;
-                noise += Physics.BodyNoiseTemp(position, gain, dir, occluder.position, occluder.radius, t);
+                noise += Physics.BodyNoiseTemp(position, gain, dir, occluder.position, occluder.radius, t, beamwidth);
             }
             return noise;
         }
@@ -479,6 +588,7 @@ namespace RealAntennas.Precompute
                             txPower = ra.TxPower,
                             freq = ra.Frequency,
                             gain = ra.Gain,
+                            beamwidth = ra.Beamwidth,
                             isHome = node.isHome,
                             AMW = Physics.AntennaMicrowaveTemp(ra),
                             encoder = new Encoder(ra.Encoder),
