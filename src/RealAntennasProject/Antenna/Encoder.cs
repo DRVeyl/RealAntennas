@@ -46,14 +46,15 @@ namespace RealAntennas.Antenna
 
         public static void Init(ConfigNode config)
         {
-            Debug.LogFormat($"{ModTag} Init()");
+            string res = $"{ModTag} Init()";
             All.Clear();
             foreach (ConfigNode node in config.GetNodes("EncoderInfo"))
             {
                 Encoder obj = ConfigNode.CreateObjectFromConfig<Encoder>(node);
-                Debug.LogFormat($"{ModTag} Adding Encoder {obj}");
+                res += $"\n{ModTag} Adding Encoder {obj}";
                 All.Add(obj.name, obj);
             }
+            Debug.Log(res);
             initialized = true;
         }
     }

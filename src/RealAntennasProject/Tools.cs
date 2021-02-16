@@ -2,6 +2,7 @@
 using CommNet;
 using System.Linq;
 using Unity.Mathematics;
+using System.Text;
 
 namespace RealAntennas
 {
@@ -59,21 +60,22 @@ namespace RealAntennas
 
         public static string VesselWalk(RACommNetwork net, string ModTag = "[RealAntennas] ")
         {
-            string res = $"{ModTag} VesselWalk()\n";
-            res += $"FlightData has {FlightGlobals.Vessels.Count} vessels.\n";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} VesselWalk()\n");
+            sb.Append($"FlightData has {FlightGlobals.Vessels.Count} vessels.\n");
             foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection == null))
             {
-                res += $"Vessel {v.vesselName} has a null connection.\n";
+                sb.Append($"Vessel {v.vesselName} has a null connection.\n");
             }
             foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection is CommNetVessel))
             {
-                res += $"Vessel {v.vesselName}: {v.Connection?.name} CommNode: {v.Connection?.Comm}\n";
+                sb.Append($"Vessel {v.vesselName}: {v.Connection?.name} CommNode: {v.Connection?.Comm}\n");
                 foreach (ModuleRealAntenna ra in v.FindPartModulesImplementing<ModuleRealAntenna>())
                 {
-                    res += $"... Contains RealAntenna part {ra.part} / {ra}.\n";
+                    sb.Append($"... Contains RealAntenna part {ra.part} / {ra}.\n");
                 }
             }
-            return res;
+            return sb.ToStringAndRelease();
         }
     }
 }

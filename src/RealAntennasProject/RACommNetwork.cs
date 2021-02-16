@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
-using Unity.Mathematics;
+using System.Text;
 
 namespace RealAntennas
 {
@@ -30,7 +30,7 @@ namespace RealAntennas
                 Debug.LogWarning($"{ModTag} Wrong commnode type, so ignoring.");
                 return conn;
             }
-            Debug.Log($"{ModTag} Adding {c.DebugToString()}");
+            //Debug.Log($"{ModTag} Adding {c.DebugToString()}");
             return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
@@ -270,22 +270,24 @@ namespace RealAntennas
 
         protected string CommNodeWalk()
         {
-            string res = $"{ModTag} CommNode walk\n";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} CommNode walk");
             foreach (RACommNode item in nodes)
             {
-                res += $"{item.DebugToString()}\n";
+                sb.Append($"\n{item.DebugToString()}");
             }
-            return res;
+            return sb.ToStringAndRelease();
         }
 
         protected string CommLinkWalk()
         {
-            string res = $"{ModTag} CommLink walk\n";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} CommLink walk");
             foreach (CommLink item in Links)
             {
-                res += $"{item}\n";
+                sb.Append($"\n{item}");
             }
-            return res;
+            return sb.ToStringAndRelease();
         }
 
         public void Validate()

@@ -29,14 +29,15 @@ namespace RealAntennas.Antenna
         }
         public static void Init(ConfigNode config)
         {
-            Debug.Log($"{ModTag} Init()");
+            string res = $"{ModTag} Init()";
             All.Clear();
             foreach (ConfigNode node in config.GetNodes("BandInfo"))
             {
                 BandInfo obj = ConfigNode.CreateObjectFromConfig<BandInfo>(node);
-                Debug.Log($"{ModTag} Adding BandInfo {obj.ToDetailedString()}");
+                res += $"\n{ModTag} Adding BandInfo {obj.ToDetailedString()}";
                 All.Add(obj.name, obj);
             }
+            Debug.Log(res);
             initialized = true;
         }
       
