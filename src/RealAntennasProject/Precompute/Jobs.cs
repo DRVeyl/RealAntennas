@@ -47,14 +47,14 @@ namespace RealAntennas.Precompute
             txBeamwidth[index] = tx.beamwidth;
             txHome[index] = tx.isHome;
             txPos[index] = tx.position;
-            txDir[index] = tx.dir;
+            txDir[index] = tx.isHome ? (float3) (rx.position - tx.position) : tx.dir;
 
             rxFreq[index] = rx.freq;
             rxGain[index] = rx.gain;
             rxBeamwidth[index] = rx.beamwidth;
             rxHome[index] = rx.isHome;
             rxPos[index] = rx.position;
-            rxDir[index] = rx.dir;
+            rxDir[index] = rx.isHome ? (float3) (tx.position - rx.position) : rx.dir;
             rxAMW[index] = rx.AMW;
         }
     }
@@ -233,7 +233,7 @@ namespace RealAntennas.Precompute
                 // (What if the modulator only supports schemes with >1 bits/symbol?)
                 // (Then our minimum EbN0 is an underestimate.)
                 float ratio = maxBitRate[index] / maxSymbolRate[index];
-                float log2 = math.trunc(math.log2(ratio));
+                float log2 = math.floor(math.log2(ratio));
                 targetRate = maxSymbolRate[index] * math.pow(2, log2);
                 negotiatedBits = 1;
             }
@@ -301,7 +301,7 @@ namespace RealAntennas.Precompute
             maxModulationBits[index] = bits;
             maxDataRate[index] = maxData;
             minDataRate[index] = minData;
-            maxSteps[index] = minData > 0 ? Convert.ToInt32(math.trunc(math.log2(maxData / minData))) : 0;
+            maxSteps[index] = minData > 0 ? (int) math.floor(math.log2(maxData / minData)) : 0;
         }
     }
 
@@ -316,7 +316,7 @@ namespace RealAntennas.Precompute
         {
             float best = bestRate[index];
             float actual = actualRate[index];
-            numSteps[index] = actual > 0 ? Convert.ToInt32(math.trunc(math.log2(best / actual))) : 0;
+            numSteps[index] = actual > 0 ? (int) math.floor(math.log2(best / actual)) : 0;
         }
     }
 

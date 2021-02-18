@@ -538,7 +538,7 @@ namespace RealAntennas.Precompute
                     Vector3d surfN = node.GetSurfaceNormalVector();
                     infos.Add(new CNInfo()
                     {
-                        position = new double3(node.position.x, node.position.y, node.position.z),
+                        position = new double3(node.precisePosition.x, node.precisePosition.y, node.precisePosition.z),
                         isHome = node.isHome,
                         canComm = node.CanComm(),
                         surfaceNormal = new double3(surfN.x, surfN.y, surfN.z),
