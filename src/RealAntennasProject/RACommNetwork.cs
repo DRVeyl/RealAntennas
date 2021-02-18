@@ -194,21 +194,24 @@ namespace RealAntennas
         private bool calculating = false;
 
         private bool IsPaused => (KSCPauseMenu.Instance && KSCPauseMenu.Instance.enabled) || (PauseMenu.exists && PauseMenu.isOpen);
-        public virtual void StartRebuild()
+        public virtual void StartRebuild(bool compute)
         {
-            Profiler.BeginSample("RealAntennas StartRebuild");
-            tempWatch.Reset();
-            tempWatch.Start();
             isDirty = false;
-            calculating = true;
+            calculating = compute;
             if (OnNetworkPreUpdate is Action)
                 OnNetworkPreUpdate();
             PreUpdateNodes();
             UpdateOccluders();
-            precompute.DoThings();
-            tempWatch.Stop();
-            Profiler.EndSample();
-            (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("EarlyRebuild", tempWatch.Elapsed.TotalMilliseconds);
+            if (compute)
+            {
+                Profiler.BeginSample("RealAntennas StartRebuild");
+                tempWatch.Reset();
+                tempWatch.Start();
+                precompute.DoThings();
+                tempWatch.Stop();
+                Profiler.EndSample();
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("EarlyRebuild", tempWatch.Elapsed.TotalMilliseconds);
+            }
         }
         public virtual void CompleteRebuild()
         {

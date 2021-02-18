@@ -85,10 +85,10 @@ namespace RealAntennas.Network
             // double tm = Time.timeSinceLevelLoad;
             double tm = Planetarium.GetUniversalTime();
             graphDirty |= tm > prevUpdate + interval;
-            if (graphDirty || queueRebuild || commNet.IsDirty)
+            bool compute = graphDirty || queueRebuild || commNet.IsDirty;
+            (commNet as RACommNetwork).StartRebuild(compute);
+            if (compute)
             {
-                //commNet.Rebuild();
-                (commNet as RACommNetwork).StartRebuild();
                 prevUpdate = tm;
                 graphDirty = queueRebuild = false;
             }
