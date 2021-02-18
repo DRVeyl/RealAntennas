@@ -28,8 +28,6 @@ namespace RealAntennas
         public virtual float AMWTemp { get; set; }
         public virtual float Beamwidth => Physics.Beamwidth(Gain);
 
-        internal float cachedRemoteBodyNoiseTemp;
-
         public Antenna.Encoder Encoder => Antenna.Encoder.GetFromTechLevel(TechLevelInfo.Level); 
         public virtual float RequiredCI => Encoder.RequiredEbN0;
 
