@@ -206,7 +206,7 @@ namespace RealAntennas
         public static float BodyNoiseTemp(RealAntenna rx, CelestialBody body, Vector3d rxPointing) =>
             BodyNoiseTemp(new double3(rx.PrecisePosition.x, rx.PrecisePosition.y, rx.PrecisePosition.z),
                         rx.Gain,
-                        new double3(rx.ToTarget.x, rx.ToTarget.y, rx.ToTarget.z),
+                        new double3(rxPointing.x, rxPointing.y, rxPointing.z),
                         new double3(body.position.x, body.position.y, body.position.z),
                         (float) body.Radius,
                         body.isStar ? StarRadioTemp(BodyBaseTemperature(body), rx.Frequency) : BodyBaseTemperature(body));
@@ -227,9 +227,8 @@ namespace RealAntennas
             float amt = AntennaMicrowaveTemp(rx);
             float atmos = AtmosphericTemp(rx, origin);
             float cosmic = CosmicBackgroundTemp(rx, origin);
-            //double allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : AllBodyTemps(rx, rx.ToTarget);
             // Home Stations are directional, but treated as always pointing towards the peer.
-            float allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : rx.cachedRemoteBodyNoiseTemp;
+            float allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : AllBodyTemps(rx, rx.ToTarget);
             float total = amt + atmos + cosmic + allbody;
             //            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
             return total;
