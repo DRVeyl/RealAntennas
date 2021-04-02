@@ -114,10 +114,13 @@ namespace RealAntennas.Precompute
         public NativeList<CNInfo> allNodes;
         public NativeArray<OccluderInfo> occluders;
 
+        private bool tempAllocationsActive = false;
+
         public void Destroy()
         {
             if (antennaDataList.IsCreated) antennaDataList.Dispose();
             allAntennaPairs.Dispose();
+            DisposeJobData();
         }
 
         public void Initialize()
@@ -142,6 +145,11 @@ namespace RealAntennas.Precompute
         public void DoThings()
         {
             Profiler.BeginSample("RealAntennas PreCompute.Early");
+            if (tempAllocationsActive)
+            {
+                UnityEngine.Debug.LogError($"[RealAntennas.Precompute] Jobs were already allocated!\n{new System.Diagnostics.StackTrace()}");
+                DisposeJobData();
+            }
             Profiler.BeginSample("RealAntennas PreCompute.Early.SetupCommNodes");
             SetupCommNodes(out allNodes);
             Profiler.EndSample();
@@ -397,12 +405,15 @@ namespace RealAntennas.Precompute
             /*
             if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return false;
             */
+            tempAllocationsActive = true;
             JobHandle.ScheduleBatchedJobs();
             Profiler.EndSample();
         }
 
-        public void complete(RACommNetwork RACN)
+        public void Complete(RACommNetwork RACN)
         {
+            if (!tempAllocationsActive)
+                return;
             Profiler.BeginSample("RealAntennas PreCompute.Complete.Gather");
             precomputeJobHandle.Complete();
             Profiler.EndSample();
@@ -456,12 +467,64 @@ namespace RealAntennas.Precompute
                     }
                 }
             }
+
+            if (RACN.DebugAntenna is RealAntenna)
+            {
+                var nodePairs = StringBuilderCache.Acquire();
+                var antPairs = StringBuilderCache.Acquire();
+                allAntennas.TryGetValue(RACN.DebugAntenna, out int targetIndex);
+                foreach (var pair in allNodePairs)
+                {
+                    if (pair.x <= pair.y)
+                    {
+                        var p2 = new int2(pair.y, pair.x);
+                        if (validMap.TryGetValue(pair, out bool valid) &&
+                            validMap.TryGetValue(p2, out bool valid2))
+                        {
+                            RACommNode a = RACN.Nodes[pair.x] as RACommNode;
+                            RACommNode b = RACN.Nodes[pair.y] as RACommNode;
+                            if (a == RACN.DebugAntenna.ParentNode || b == RACN.DebugAntenna.ParentNode)
+                            {
+                                nodePairs.AppendLine($"Nodes: {a.name} -> {b.name} Valid: {valid} / {valid2}");
+                            }
+                        }
+                    }
+                }
+                for (int i = 0; i < allValidAntennaPairs.Length; i++)
+                {
+                    var quad = allValidAntennaPairs[i];
+                    if (targetIndex == quad.z || targetIndex == quad.w)
+                    {
+                        RACommNode a = RACN.Nodes[quad.x] as RACommNode;
+                        RACommNode b = RACN.Nodes[quad.y] as RACommNode;
+                        RealAntenna tx = allAntennasReverse[quad.z];
+                        RealAntenna rx = allAntennasReverse[quad.w];
+                        if (tx == RACN.DebugAntenna || rx == RACN.DebugAntenna)
+                        {
+                            float noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i];
+                            antPairs.Append($"Testing {a.name}:{tx} -> {b.name}:{rx}");
+                            antPairs.Append($"TxP:{txPower[i]:F1} RxP:{rxPower[i]:F1} Noise:{noise:F2} N0:{n0[i]:F2} minEb:{minEb[i]:F2}");
+                            antPairs.AppendLine($"rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1} steps:{rateSteps[i]}");
+                        }
+                        else
+                        {
+                            antPairs.AppendLine($"Thought indices {quad.z} or {quad.w} matched target {targetIndex} but discovered antennas {tx} | {rx} | looking for {RACN.DebugAntenna}");
+                        }
+                    }
+                }
+                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {nodePairs.ToStringAndRelease()}");
+                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {antPairs.ToStringAndRelease()}");
+                RACN.DebugAntenna = null;
+            }
             DisposeJobData();
             Profiler.EndSample();
         }
 
         private void DisposeJobData()
         {
+            if (!tempAllocationsActive)
+                return;
+
             allNodes.Dispose();
             occluders.Dispose();
             validMap.Dispose();
@@ -511,6 +574,7 @@ namespace RealAntennas.Precompute
             rateSteps.Dispose();
             nodeRowMap.Dispose();
 
+            tempAllocationsActive = false;
         }
 
         internal static float NoiseFromOccluders(in AntennaData ant, in NativeArray<OccluderInfo> occluders) =>
