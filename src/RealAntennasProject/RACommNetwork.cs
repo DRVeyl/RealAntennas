@@ -22,6 +22,7 @@ namespace RealAntennas
         private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
         private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
         public List<CommNode> Nodes { get => nodes; }
+        public RealAntenna DebugAntenna = null;
 
         public override CommNode Add(CommNode conn)
         {
@@ -240,7 +241,7 @@ namespace RealAntennas
         protected override void UpdateNetwork()
         {
             //base.UpdateNetwork();
-            precompute.complete(this);
+            precompute.Complete(this);
         }
 
         internal void DoDisconnect(CommNode a, CommNode b) => Disconnect(a, b, true);

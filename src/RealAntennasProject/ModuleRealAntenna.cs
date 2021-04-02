@@ -98,6 +98,13 @@ namespace RealAntennas
 
         public float PowerDraw => RATools.LogScale(PowerDrawLinear);
         public float PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
+
+        [KSPEvent(active = true, name ="Debug Antenna", groupName = PAWGroup, guiActive = true)]
+        public void DebugAntenna()
+        {
+            ScreenMessages.PostScreenMessage($"Debugging {RAAntenna}", 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+            ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet as RACommNetwork).DebugAntenna = RAAntenna;
+        }
         public override void OnAwake()
         {
             base.OnAwake();
