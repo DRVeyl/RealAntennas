@@ -52,7 +52,6 @@
     <Compile Include="Planner.cs" />
     <Compile Include="PlannerGUI.cs" />
     <Compile Include="Precompute\FilteringJobs.cs" />
-    <Compile Include="Precompute\IJobParallelForDefer.cs" />
     <Compile Include="Precompute\Jobs.cs" />
     <Compile Include="Precompute\Precompute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -87,13 +86,19 @@
     <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
     <Reference Include="Unity.Burst, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\UnityPlugins\Unity.Burst.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Burst.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Collections">
-      <HintPath>..\..\..\..\..\UnityPlugins\Unity.Collections.dll</HintPath>
+    <Reference Include="Unity.Collections, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Collections.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Mathematics">
-      <HintPath>..\..\..\..\..\UnityPlugins\Unity.Mathematics.dll</HintPath>
+    <Reference Include="Unity.Jobs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Jobs.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
