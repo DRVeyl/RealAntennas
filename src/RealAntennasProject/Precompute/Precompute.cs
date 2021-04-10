@@ -410,6 +410,14 @@ namespace RealAntennas.Precompute
             Profiler.EndSample();
         }
 
+        public void Abort()
+        {
+            if (!tempAllocationsActive)
+                return;
+            precomputeJobHandle.Complete();
+            DisposeJobData();
+        }
+
         public void Complete(RACommNetwork RACN)
         {
             if (!tempAllocationsActive)
@@ -421,12 +429,12 @@ namespace RealAntennas.Precompute
 
             foreach (var pair in allNodePairs)
             {
-                if (pair.x <= pair.y)
+                if (pair.x <= pair.y && pair.y < RACN.Nodes.Count)
                 {
                     var p2 = new int2(pair.y, pair.x);
                     if (validMap.TryGetValue(pair, out bool valid) && valid &&
                         validMap.TryGetValue(p2, out bool valid2) && valid2 &&
-                        bestMap.TryGetValue(pair, out int row) && 
+                        bestMap.TryGetValue(pair, out int row) &&
                         bestMap.TryGetValue(p2, out int row2) &&
                         row >= 0 && row2 >= 0 &&
                         dataRate[row] > 0 && dataRate[row2] > 0)
@@ -504,7 +512,8 @@ namespace RealAntennas.Precompute
                             float noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i];
                             antPairs.Append($"Testing {a.name}:{tx} -> {b.name}:{rx}");
                             antPairs.Append($"TxP:{txPower[i]:F1} RxP:{rxPower[i]:F1} Noise:{noise:F2} N0:{n0[i]:F2} minEb:{minEb[i]:F2}");
-                            antPairs.AppendLine($"rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1} steps:{rateSteps[i]}");
+                            antPairs.Append($" TxBW:{txBeamwidth[i]:F1} RxBW:{rxBeamwidth[i]:F1} PathLoss:{pathLoss[i]:F1}dB PointLoss:{pointingLoss[i]:F1}dB");
+                            antPairs.AppendLine($" Rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1} steps:{rateSteps[i]}");
                         }
                         else
                         {

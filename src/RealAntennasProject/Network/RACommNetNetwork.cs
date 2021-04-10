@@ -69,7 +69,10 @@ namespace RealAntennas.Network
 
         protected override void Update()
         {
-            (commNet as RACommNetwork).CompleteRebuild();
+            if (requestInit)
+                (commNet as RACommNetwork).Abort();
+            else
+                (commNet as RACommNetwork).CompleteRebuild();
         }
 
         protected virtual void UpdateEarly()

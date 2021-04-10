@@ -238,6 +238,14 @@ namespace RealAntennas
             }
         }
 
+        // Call this to abort a pre-computation pass that has already started.
+        // Main use case is the node list changed during processing, ie a vessel was created or destroyed.
+        public virtual void Abort()
+        {
+            calculating = false;
+            precompute.Abort();
+        }
+
         protected override void UpdateNetwork()
         {
             //base.UpdateNetwork();
