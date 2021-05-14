@@ -153,11 +153,11 @@ namespace RealAntennas.Precompute
 
         public void Execute(int index)
         {
-            float3 txToRx = (float3) (rxPos[index] - txPos[index]);
-            float3 rxToTx = (float3) (txPos[index] - rxPos[index]);
+            double3 txToRx = rxPos[index] - txPos[index];
+            double3 rxToTx = txPos[index] - rxPos[index];
 
-            float txToRxAngle = MathUtils.Angle2(txToRx, txDir[index]);
-            float rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[index]);
+            double txToRxAngle = MathUtils.Angle2(txToRx, txDir[index]);
+            double rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[index]);
             float txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[index]);
             float rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[index]);
             losses[index] = txPointLoss + rxPointLoss;

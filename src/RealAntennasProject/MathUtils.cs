@@ -19,12 +19,6 @@ namespace RealAntennas
             var bam = b * math.length(a);
             return math.degrees(2 * math.atan2(math.length(abm - bam), math.length(abm + bam)));
         }
-        public static float Angle2(float3 a, float3 b)
-        {
-            var abm = a * math.length(b);
-            var bam = b * math.length(a);
-            return math.degrees(2 * math.atan2(math.length(abm - bam), math.length(abm + bam)));
-        }
 
         // https://mathworld.wolfram.com/Circle-CircleIntersection.html
         public static double CircleCircleIntersectionArea(double R, double r, double d)
@@ -74,7 +68,7 @@ namespace RealAntennas
             // offset is the x-coord of a point on the body.
             float y_offset = math.sqrt((radius * radius) - (x_offset * x_offset));
             float3 calc = new float3(x_offset, y_offset, 0);
-            return Angle2(center - point, calc - point);
+            return (float) Angle2(center - point, calc - point);
 
         }
     }
