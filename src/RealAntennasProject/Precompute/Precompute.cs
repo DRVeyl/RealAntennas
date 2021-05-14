@@ -510,10 +510,28 @@ namespace RealAntennas.Precompute
                         if (tx == RACN.DebugAntenna || rx == RACN.DebugAntenna)
                         {
                             float noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i];
-                            antPairs.Append($"Testing {a.name}:{tx} -> {b.name}:{rx}");
-                            antPairs.Append($"TxP:{txPower[i]:F1} RxP:{rxPower[i]:F1} Noise:{noise:F2} N0:{n0[i]:F2} minEb:{minEb[i]:F2}");
-                            antPairs.Append($" TxBW:{txBeamwidth[i]:F1} RxBW:{rxBeamwidth[i]:F1} PathLoss:{pathLoss[i]:F1}dB PointLoss:{pointingLoss[i]:F1}dB");
-                            antPairs.AppendLine($" Rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1} steps:{rateSteps[i]}");
+                            double3 txToRx = rxPos[i] - txPos[i];
+                            double3 rxToTx = txPos[i] - rxPos[i];
+                            double txToRxAngle = MathUtils.Angle2(txToRx, txDir[i]);
+                            double rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[i]);
+                            float txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[i]);
+                            float rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[i]);
+
+                            antPairs.AppendLine($"Testing {a.name}:{tx} --> {b.name}:{rx}");
+                            antPairs.AppendLine($"  TxP: {txPower[i]:F1}dBm");
+                            antPairs.AppendLine($"  RxP: {rxPower[i]:F1}dBm");
+                            antPairs.AppendLine($"  Noise:{noise:F2}");
+                            antPairs.AppendLine($"  N0:{n0[i]:F2}dB/Hz");
+                            antPairs.AppendLine($"  minEb:{minEb[i]:F2}");
+                            antPairs.AppendLine($"  txPos: {txPos[i]}  rxPos: {rxPos[i]}");
+                            antPairs.AppendLine($"  txToRx: {txToRx}  rxToTx: {rxToTx}");
+                            antPairs.AppendLine($"  txDir: {txDir[i]}  rxDir: {rxDir[i]}");
+                            antPairs.AppendLine($"  TxBW: {txBeamwidth[i]:F2}  RxBW: {rxBeamwidth[i]:F2}");
+                            antPairs.AppendLine($"  TxToRxAngle: {txToRxAngle:F2}  RxToTxAngle: {rxToTxAngle:F2}");
+                            antPairs.AppendLine($"  TxPointLoss: {txPointLoss:F1}dB  RxPointLoss: {rxPointLoss:F1}dB");
+                            antPairs.AppendLine($"  PointLoss:{pointingLoss[i]:F1}dB");
+                            antPairs.AppendLine($"  PathLoss:{pathLoss[i]:F1}dB");
+                            antPairs.AppendLine($"  Rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1}  steps:{rateSteps[i]}");
                         }
                         else
                         {
