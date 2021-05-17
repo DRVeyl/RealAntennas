@@ -43,17 +43,14 @@ namespace RealAntennas
 
         public override void OnAwake()
         {
-            if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm)
+            if (RealAntennas.Network.CommNetPatcher.GetCommNetScenarioModule() is ProtoScenarioModule psm &&
+                !RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
             {
-                Debug.Log($"{ModTag} Scenario check: Found {RATools.DisplayGamescenes(psm)}");
-                if (!RealAntennas.Network.CommNetPatcher.CommNetPatched(psm))
-                {
-                    RealAntennas.Network.CommNetPatcher.UnloadCommNet();
-                    DestroyNetwork();
-                    RebuildHomes();
-                    Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately following this.");
-                }
+                RealAntennas.Network.CommNetPatcher.UnloadCommNet();
+                DestroyNetwork();
+                Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately after Homes rebuild logging.");
             }
+            RebuildHomes();
             if (CommNetEnabled)     // Don't self-delete if we are not enabled.
                 base.OnAwake();     // Will set CommNetScenario.Instance to this
         }
@@ -141,12 +138,15 @@ namespace RealAntennas
 
         private void UnloadHomes()
         {
+            var logger = StringBuilderCache.Acquire();
+            logger.Append($"{ModTag} Unloaded the following homes: ");
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                Debug.Log($"{ModTag} Immediately destroying {home}");
+                logger.Append($"{home}  ");
                 DestroyImmediate(home);
             }
             GroundStations.Clear();
+            Debug.Log(logger.ToStringAndRelease());
         }
 
         private void BuildHome(ConfigNode node, CelestialBody body)
