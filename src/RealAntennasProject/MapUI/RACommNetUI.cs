@@ -24,9 +24,12 @@ namespace RealAntennas.MapUI
         public bool drawCone10 = true;
         public float lineScaleWidth = 2.5f;
 
-        private readonly List<Vector3> targetPoints = new List<Vector3>();
-        private readonly List<Vector3> cone3Points = new List<Vector3>();
-        private readonly List<Vector3> cone10Points = new List<Vector3>();
+        private readonly List<Vector3d> targetPoints = new List<Vector3d>();
+        private readonly List<Vector3> targetPoints_out = new List<Vector3>();
+        private readonly List<Vector3d> cone3Points = new List<Vector3d>();
+        private readonly List<Vector3> cone3Points_out = new List<Vector3>();
+        private readonly List<Vector3d> cone10Points = new List<Vector3d>();
+        private readonly List<Vector3> cone10Points_out = new List<Vector3>();
         private readonly List<CommLink> commLinkList = new List<CommLink>();
         private readonly Cone cone3 = new Cone();
         private readonly Cone cone10 = new Cone();
@@ -90,12 +93,12 @@ namespace RealAntennas.MapUI
                 go = linkRenderers[link];
                 LineRenderer renderer = go.GetComponent<LineRenderer>();
                 renderer.enabled = true;
-                Vector3 scaledStart = ScaledSpace.LocalToScaledSpace(link.start.position);
-                Vector3 scaledEnd = ScaledSpace.LocalToScaledSpace(link.end.position);
+                Vector3d scaledStart = ScaledSpace.LocalToScaledSpace(link.start.precisePosition);
+                Vector3d scaledEnd = ScaledSpace.LocalToScaledSpace(link.end.precisePosition);
                 Camera cam = PlanetariumCamera.Camera;
                 Vector3 camPos = cam.transform.position;
-                float dStart = Vector3.Distance(camPos, scaledStart);
-                float dEnd = Vector3.Distance(camPos, scaledEnd);
+                float dStart = (float) Vector3d.Distance(camPos, scaledStart);
+                float dEnd = (float) Vector3d.Distance(camPos, scaledEnd);
                 renderer.startWidth = dStart * lineScaleWidth / 1000;
                 renderer.endWidth = dEnd * lineScaleWidth / 1000;
                 Color startColor = (linkEndPerspective == RadioPerspective.Transmit) ? LinkColor(link.FwdMetric) : LinkColor(link.RevMetric);
@@ -104,6 +107,13 @@ namespace RealAntennas.MapUI
                 renderer.positionCount = 2;
                 renderer.SetPositions(new Vector3[] { scaledStart, scaledEnd });
             }
+        }
+
+        private void LocalToScaledSpace(List<Vector3d> local, List<Vector3> scaled)
+        {
+            scaled.Clear();
+            foreach (var x in local)
+                scaled.Add(ScaledSpace.LocalToScaledSpace(x));
         }
 
         public void GatherAntennaCones(RACommNode node)
@@ -128,8 +138,8 @@ namespace RealAntennas.MapUI
                         len = Math.Min(len, axis.magnitude - body.Radius);
                     axis.Normalize();
                     axis *= len;
-                    cone10.Init(node.position, axis, Vector3.up, ra.Beamwidth);
-                    cone3.Init(node.position, axis, Vector3.up, ra.Beamwidth / 2);
+                    cone10.Init(node.precisePosition, axis, Vector3.up, ra.Beamwidth);
+                    cone3.Init(node.precisePosition, axis, Vector3.up, ra.Beamwidth / 2);
 
                     targetPoints.Clear();
                     cone3Points.Clear();
@@ -140,9 +150,9 @@ namespace RealAntennas.MapUI
 
                     if (drawTarget)
                     {
-                        targetPoints.Add(node.position);
-                        targetPoints.Add(node.position + ra.ToTargetByTransform);
-                        ScaledSpace.LocalToScaledSpace(targetPoints);
+                        targetPoints.Add(node.precisePosition);
+                        targetPoints.Add(node.precisePosition + ra.ToTargetByTransform);
+                        LocalToScaledSpace(targetPoints, targetPoints_out);
                         float dStart = Vector3.Distance(camPos, targetPoints[0]);
                         float dEnd = Vector3.Distance(camPos, targetPoints[1]);
                         targetRenderer.startWidth = dStart * lineScaleWidth / 1000;
@@ -158,8 +168,7 @@ namespace RealAntennas.MapUI
                             MakeCircles(cone3Points, cone3, numCircles);
                         else
                             cone3Points.Add(cone3.end2);
-
-                        ScaledSpace.LocalToScaledSpace(cone3Points);
+                        LocalToScaledSpace(cone3Points, cone3Points_out);
                         float dStart = Vector3.Distance(camPos, ScaledSpace.LocalToScaledSpace(cone3.vertex));
                         cone3Renderer.startWidth = dStart * lineScaleWidth / 1000;
                         cone3Renderer.endWidth = dStart * lineScaleWidth / 1000;
@@ -175,7 +184,7 @@ namespace RealAntennas.MapUI
                         else
                             cone10Points.Add(cone10.end2);
 
-                        ScaledSpace.LocalToScaledSpace(cone10Points);
+                        LocalToScaledSpace(cone10Points, cone10Points_out);
                         float dStart = Vector3.Distance(camPos, ScaledSpace.LocalToScaledSpace(cone10.vertex));
                         cone10Renderer.startWidth = dStart * lineScaleWidth / 1000;
                         cone10Renderer.endWidth = dStart * lineScaleWidth / 1000;
@@ -183,15 +192,15 @@ namespace RealAntennas.MapUI
                     }
 
                     targetRenderer.positionCount = targetPoints.Count;
-                    targetRenderer.SetPositions(targetPoints.ToArray());
+                    targetRenderer.SetPositions(targetPoints_out.ToArray());
                     targetRenderer.enabled = drawTarget;
 
                     cone3Renderer.positionCount = cone3Points.Count;
-                    cone3Renderer.SetPositions(cone3Points.ToArray());
+                    cone3Renderer.SetPositions(cone3Points_out.ToArray());
                     cone3Renderer.enabled = drawCone3 && drawConesMode != DrawConesMode.None;
 
                     cone10Renderer.positionCount = cone10Points.Count;
-                    cone10Renderer.SetPositions(cone10Points.ToArray());
+                    cone10Renderer.SetPositions(cone10Points_out.ToArray());
                     cone10Renderer.enabled = drawCone10 && drawConesMode != DrawConesMode.None;
                 }
             }
@@ -203,7 +212,7 @@ namespace RealAntennas.MapUI
             return Color.Lerp(Color.red, Color.green, Convert.ToSingle(metric));
         }
 
-        private void MakeCircles(List<Vector3> points, Cone cone, int numCircles)
+        private void MakeCircles(List<Vector3d> points, Cone cone, int numCircles)
         {
             if (numCircles == 0)        // No circles, just complete the cone.
                 points.Add(cone.end2);
@@ -212,11 +221,11 @@ namespace RealAntennas.MapUI
             {
                 float scale = 1f * circ / numCircles;
                 // Traverse to next circle
-                points.Add(Vector3.Lerp(cone.vertex, cone.end2, scale));
+                points.Add(Vector3d.Lerp(cone.vertex, cone.end2, scale));
                 DrawCircle(points,
-                            Vector3.Lerp(cone.vertex, cone.Midpoint, scale),
+                            Vector3d.Lerp(cone.vertex, cone.Midpoint, scale),
                             cone.Midpoint - cone.vertex,
-                            Vector3.Lerp(cone.vertex, cone.end2, scale),
+                            Vector3d.Lerp(cone.vertex, cone.end2, scale),
                             360,
                             numCirclePts);
             }
@@ -224,7 +233,7 @@ namespace RealAntennas.MapUI
 
         // Given a circle center and its normal, draw an arc through <angle> degrees starting at startPoint on the circle using numPoints vertices
         // Direction is right-hand clockwise (normal cross startPoint)
-        private void DrawCircle(List<Vector3> points, Vector3 center, Vector3 normal, Vector3 startPoint, float angle, int numPoints)
+        private void DrawCircle(List<Vector3d> points, Vector3d center, Vector3d normal, Vector3d startPoint, float angle, int numPoints)
         {
             normal.Normalize();
             Vector3 start = startPoint - center;
@@ -319,10 +328,14 @@ namespace RealAntennas.MapUI
                             }
                             foreach (CommLink link in commPath)
                             {
-                                commLinkList.Clear();
-                                commLinkList.Add(link.start[link.end]);
-                                GatherLinkLines(commLinkList);
-                                GatherAntennaCones(link.start as RACommNode);
+                                if (link.start.TryGetValue(link.end, out var x))
+                                {
+                                    commLinkList.Clear();
+                                    commLinkList.Add(x);
+                                    GatherLinkLines(commLinkList);
+                                    GatherAntennaCones(link.start as RACommNode);
+                                }
+                                else Debug.LogWarning($"[RealAntennas.MapUI] {commNode} has broken link {link}");
                             }
                             break;
                     }

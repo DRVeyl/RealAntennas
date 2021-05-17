@@ -19,11 +19,12 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;ENABLE_PROFILER</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ENABLE_PROFILER; ENABLE_MORE_CONTAINER_SUPPORT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>8.0</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -50,6 +51,9 @@
     <Compile Include="Physics.cs" />
     <Compile Include="Planner.cs" />
     <Compile Include="PlannerGUI.cs" />
+    <Compile Include="Precompute\FilteringJobs.cs" />
+    <Compile Include="Precompute\Jobs.cs" />
+    <Compile Include="Precompute\Precompute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Network\RACommLink.cs" />
     <Compile Include="RAModulator.cs" />
@@ -80,6 +84,22 @@
       <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
+    <Reference Include="Unity.Burst, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Burst.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Collections, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Jobs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Jobs.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\000_KSPBurst\Plugins\Unity.Mathematics.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.7.3 Dev\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>

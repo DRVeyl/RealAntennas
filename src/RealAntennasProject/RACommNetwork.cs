@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
+using System.Text;
 
 namespace RealAntennas
 {
@@ -13,10 +14,15 @@ namespace RealAntennas
 
         private float lastRun = 0f;
         private readonly System.Diagnostics.Stopwatch RebuildStopWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch PathfindWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch PrecomputeLateWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch tempWatch = new System.Diagnostics.Stopwatch();
+        internal readonly Precompute.Precompute precompute = new Precompute.Precompute();
 
         private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
         private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
         public List<CommNode> Nodes { get => nodes; }
+        public RealAntenna DebugAntenna = null;
 
         public override CommNode Add(CommNode conn)
         {
@@ -25,7 +31,7 @@ namespace RealAntennas
                 Debug.LogWarning($"{ModTag} Wrong commnode type, so ignoring.");
                 return conn;
             }
-            Debug.Log($"{ModTag} Adding {c.DebugToString()}");
+            //Debug.Log($"{ModTag} Adding {c.DebugToString()}");
             return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
@@ -48,7 +54,7 @@ namespace RealAntennas
 
         protected override void PostUpdateNodes()
         {
-            if (TimeToValidate()) ValidateNodes();
+            if (TimeToValidate()) { Validate(); LogState(); }
             base.PostUpdateNodes();
         }
 
@@ -65,7 +71,7 @@ namespace RealAntennas
                 return false;
             }
             // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
-            Profiler.BeginSample("RACommNetwork TryConnect");
+            Profiler.BeginSample("RealAntennas CommNetwork TryConnect");
             bestFwdAntPair[0] = null;
             bestFwdAntPair[1] = null;
             bestRevAntPair[0] = null;
@@ -78,56 +84,46 @@ namespace RealAntennas
                 Profiler.EndSample();
                 return false;
             }
+            //MakeLink(bestFwdAntPair[0], bestFwdAntPair[1], bestRevAntPair[0], bestRevAntPair[1], rac_a, rac_b, distance, FwdDataRate, RevDataRate);
 
-            RACommLink link = Connect(rac_a, rac_b, distance) as RACommLink;
+            Profiler.EndSample();
+            return true;
+        }
+
+        internal void MakeLink(RealAntenna fwdTx,
+                               RealAntenna fwdRx,
+                               RealAntenna revTx,
+                               RealAntenna revRx,
+                               RACommNode a,
+                               RACommNode b,
+                               double distance,
+                               double FwdDataRate,
+                               double RevDataRate,
+                               double FwdBestDataRate,
+                               double FwdMetric,
+                               double RevMetric
+                               )
+        {
+            RACommLink link = Connect(a, b, distance) as RACommLink;
             link.aCanRelay = true;
             link.bCanRelay = true;      // All antennas can relay.
             link.bothRelay = link.aCanRelay && link.bCanRelay;
 
-            link.FwdAntennaTx = bestFwdAntPair[0];
-            link.FwdAntennaRx = bestFwdAntPair[1];
-            link.RevAntennaTx = bestRevAntPair[0];
-            link.RevAntennaRx = bestRevAntPair[1];
+            link.FwdAntennaTx = fwdTx;
+            link.FwdAntennaRx = fwdRx;
+            link.RevAntennaTx = revTx;
+            link.RevAntennaRx = revRx;
             link.FwdDataRate = FwdDataRate;
             link.RevDataRate = RevDataRate;
             link.cost = link.CostFunc((FwdDataRate + RevDataRate) / 2);
-
-            Antenna.Encoder FwdEncoder = Antenna.Encoder.BestMatching(bestFwdAntPair[0].Encoder, bestFwdAntPair[1].Encoder);
-            Antenna.Encoder RevEncoder = Antenna.Encoder.BestMatching(bestRevAntPair[0].Encoder, bestRevAntPair[1].Encoder);
-
-            RAModulator FwdAntennaTxMod = (link.FwdAntennaTx as RealAntennaDigital).modulator;
-            RAModulator FwdAntennaRxMod = (link.FwdAntennaRx as RealAntennaDigital).modulator;
-            RAModulator RevAntennaTxMod = (link.RevAntennaTx as RealAntennaDigital).modulator;
-            RAModulator RevAntennaRxMod = (link.RevAntennaRx as RealAntennaDigital).modulator;
-            int FwdMaxModSteps = Math.Min(FwdAntennaTxMod.ModulationBits, FwdAntennaRxMod.ModulationBits) - 1;
-            int RevMaxModSteps = Math.Min(RevAntennaTxMod.ModulationBits, RevAntennaRxMod.ModulationBits) - 1;
-            double FwdBestSymRate = Math.Min(bestFwdAntPair[0].SymbolRate, bestFwdAntPair[1].SymbolRate);
-            double RevBestSymRate = Math.Min(bestRevAntPair[0].SymbolRate, bestRevAntPair[1].SymbolRate);
-            double FwdMinSymRate = Math.Max(bestFwdAntPair[0].MinSymbolRate, bestFwdAntPair[1].MinSymbolRate);
-            double RevMinSymRate = Math.Max(bestRevAntPair[0].MinSymbolRate, bestRevAntPair[1].MinSymbolRate);
-            double FwdBestDataRate = FwdBestSymRate * FwdEncoder.CodingRate * Math.Pow(2, FwdMaxModSteps);
-            double RevBestDataRate = RevBestSymRate * RevEncoder.CodingRate * Math.Pow(2, RevMaxModSteps);
-            double FwdMinDataRate = FwdMinSymRate * FwdEncoder.CodingRate;
-            double RevMinDataRate = RevMinSymRate * RevEncoder.CodingRate;
-            double FwdMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestSymRate / FwdMinSymRate), 2));
-            double RevMaxSymSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestSymRate / RevMinSymRate), 2));
-            double FwdRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(FwdBestDataRate / FwdDataRate), 2));
-            double RevRateSteps = Math.Floor(Mathf.Log(Convert.ToSingle(RevBestDataRate / RevDataRate), 2));
-
-            if (Convert.ToSingle(FwdBestDataRate / FwdDataRate) < 1.0)
-            {
+            link.FwdMetric = FwdMetric;
+            link.RevMetric = RevMetric;
+            if (FwdBestDataRate < FwdDataRate)
                 Debug.LogWarning($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
-            }
-
-            link.FwdMetric = 1 - (FwdRateSteps / (FwdMaxSymSteps + FwdMaxModSteps + 1));
-            link.RevMetric = 1 - (RevRateSteps / (RevMaxSymSteps + RevMaxModSteps + 1));
-//            Debug.LogFormat("Think we have taken {0} of {1} steps on FWD", Fwdlog2, FwdSymSteps);
-//            Debug.LogFormat("Think we have taken {0} of {1} steps on REV", Revlog2, RevSymSteps);
 
             link.Update(Math.Min(link.FwdMetric, link.RevMetric));
-            Profiler.EndSample();
-            return true;
         }
+
         protected virtual bool SelectBestAntennaPairs(List<RealAntenna> fwdList, List<RealAntenna> revList, RealAntenna[] bestFwdAntPair, RealAntenna[] bestRevAntPair, out double FwdDataRate, out double RevDataRate)
         {
             FwdDataRate = RevDataRate = 0;
@@ -196,10 +192,82 @@ namespace RealAntennas
             }
             return data_rate;
         }
+        private bool calculating = false;
 
         private bool IsPaused => (KSCPauseMenu.Instance && KSCPauseMenu.Instance.enabled) || (PauseMenu.exists && PauseMenu.isOpen);
+        public virtual void StartRebuild(bool compute)
+        {
+            isDirty = false;
+            calculating = compute;
+            if (OnNetworkPreUpdate is Action)
+                OnNetworkPreUpdate();
+            PreUpdateNodes();
+            UpdateOccluders();
+            if (compute)
+            {
+                Profiler.BeginSample("RealAntennas StartRebuild");
+                tempWatch.Reset();
+                tempWatch.Start();
+                precompute.DoThings();
+                tempWatch.Stop();
+                Profiler.EndSample();
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("EarlyRebuild", tempWatch.Elapsed.TotalMilliseconds);
+            }
+        }
+        public virtual void CompleteRebuild()
+        {
+            if (calculating)
+            {
+                Profiler.BeginSample("RealAntennas CompleteRebuild");
+                tempWatch.Reset();
+                tempWatch.Start();
+                PrecomputeLateWatch.Reset();
+                PrecomputeLateWatch.Start();
+                calculating = false;
+                Profiler.BeginSample("RealAntennas CompleteRebuild.UpdateNetwork");
+                UpdateNetwork();
+                Profiler.EndSample();
+                PrecomputeLateWatch.Stop();
+                PostUpdateNodes();
+                if (OnNetworkPostUpdate is Action)
+                    OnNetworkPostUpdate();
+                tempWatch.Stop();
+                Profiler.EndSample();
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Precompute LateRebuild", PrecomputeLateWatch.Elapsed.TotalMilliseconds);
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Full LateRebuild", tempWatch.Elapsed.TotalMilliseconds);
+            }
+        }
+
+        // Call this to abort a pre-computation pass that has already started.
+        // Main use case is the node list changed during processing, ie a vessel was created or destroyed.
+        public virtual void Abort()
+        {
+            calculating = false;
+            precompute.Abort();
+        }
+
+        protected override void UpdateNetwork()
+        {
+            //base.UpdateNetwork();
+            precompute.Complete(this);
+        }
+
+        internal void DoDisconnect(CommNode a, CommNode b) => Disconnect(a, b, true);
+
         public override void Rebuild()
         {
+            // Base behavior is:
+            // set isDirty = false
+            // this?.OnNetworkPreUpdate()
+            // this.PreUpdateNodes();
+            // this.UpdateOccluders();
+            // -- This far is fine
+
+            // -- This should be deferred.
+            // this.UpdateNetwork();
+            // this.PostUpdateNodes();
+            // this?.OnNetworkPostUpdate();
+
             if (!IsPaused)
             {
                 Profiler.BeginSample("RealAntennas CommNetwork Rebuild");
@@ -208,18 +276,43 @@ namespace RealAntennas
                 base.Rebuild();
                 RebuildStopWatch.Stop();
                 Profiler.EndSample();
-                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Rebuild", RebuildStopWatch.ElapsedMilliseconds);
+                (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Rebuild", RebuildStopWatch.Elapsed.TotalMilliseconds);
             }
         }
 
         protected string CommNodeWalk()
         {
-            string res = $"{ModTag} CommNode walk\n";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} CommNode walk");
             foreach (RACommNode item in nodes)
             {
-                res += $"{item.DebugToString()}\n";
+                sb.Append($"\n{item.DebugToString()}");
             }
-            return res;
+            return sb.ToStringAndRelease();
+        }
+
+        protected string CommLinkWalk()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} CommLink walk");
+            foreach (CommLink item in Links)
+            {
+                sb.Append($"\n{item}");
+            }
+            return sb.ToStringAndRelease();
+        }
+
+        public void Validate()
+        {
+            foreach (Vessel v in FlightGlobals.Vessels)
+            {
+                if (v.Connection?.Comm is RACommNode vcn && !nodes.Contains(vcn))
+                {
+                    Debug.LogWarning($"{ModTag} Vessel {v} had commnode {vcn} not in the node list.");
+                    Add(vcn);
+                }
+            }
+            CheckNodeConsistency();
         }
 
         public void CheckNodeConsistency()
@@ -228,37 +321,23 @@ namespace RealAntennas
             {
                 home.CheckNodeConsistency();
             }
+
+            foreach (var link in from RACommNode node in Nodes
+                                 from link in node.Values
+                                 where !(Nodes.Contains(link.start) && Nodes.Contains(link.end))
+                                 select link)
+            {
+                Debug.LogWarning($"{ModTag} Found defunct link {link}");
+            }
         }
 
-        protected string CommLinkWalk()
+        public void LogState()
         {
-            string res = $"{ModTag} CommLink walk\n";
-            foreach (CommLink item in Links)
-            {
-                res += $"{item}\n";
-            }
-            return res;
-        }
-
-        public void ValidateNodes()
-        {
-            //Debug.Log(RATools.VesselWalk(this, ModTag));
-            foreach (Vessel v in FlightGlobals.Vessels)
-            {
-                if (v.Connection is RACommNetVessel cnv)
-                {
-                    if ((cnv.Comm is RACommNode vcn) && (!nodes.Contains(vcn)))
-                    {
-                        Debug.LogWarning($"{ModTag} Vessel {v} had commnode {vcn} not in the node list.");
-                        Add(vcn);
-                    }
-                }
-            }
-            CheckNodeConsistency();
             Debug.Log(CommNodeWalk());
             Debug.Log(CommLinkWalk());
         }
 
+        #region Pathfinding
         /*
         public override bool FindPath(CommNode start, CommPath path, CommNode end)
         {
@@ -273,6 +352,8 @@ namespace RealAntennas
             if (!(cnStart is RACommNode start && where != null))
                 return base.FindClosestWhere(cnStart, path, where);
             Profiler.BeginSample("RealAntennas.FindClosestWhere");
+            PathfindWatch.Reset();
+            PathfindWatch.Start();
             path?.Clear();
             sptSet.Clear();
             pathSortList.Clear();
@@ -323,8 +404,11 @@ namespace RealAntennas
                 }
                 path?.UpdateFromPath();
             }
+            PathfindWatch.Stop();
+            (RACommNetScenario.Instance as RACommNetScenario).metrics.AddMeasurement("Pathfinding", PathfindWatch.Elapsed.TotalMilliseconds);
             Profiler.EndSample();
             return found ? candidate : null;
         }
+        #endregion
     }
 }

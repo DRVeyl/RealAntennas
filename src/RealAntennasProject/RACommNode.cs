@@ -20,17 +20,6 @@ namespace RealAntennas
         }
         public RACommNode(CommNet.CommNode cn) : this(cn.transform) { }
 
-        public override void NetworkPreUpdate()
-        {
-            base.NetworkPreUpdate();
-            if (!isHome)
-            {
-                foreach (RealAntenna ra in RAAntennaList)
-                {
-                    ra.cachedRemoteBodyNoiseTemp = Physics.AllBodyTemps(ra, ra.ToTarget);
-                }
-            }
-        }
 
         public Vector3d GetSurfaceNormalVector()
         {
@@ -42,7 +31,7 @@ namespace RealAntennas
         public bool CanComm()
         {
             if (ParentBody != null) return true;
-            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered : false;
+            return (ParentVessel?.Connection is RACommNetVessel raCNV) ? raCNV.powered && raCNV.CanComm : false;
         }
 
         public virtual string DebugToString()

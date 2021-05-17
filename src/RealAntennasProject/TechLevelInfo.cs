@@ -31,15 +31,16 @@ namespace RealAntennas
 
         public static void Init(ConfigNode config)
         {
-            Debug.LogFormat($"{ModTag} Init()");
+            string res = $"{ModTag} Init()";
             All.Clear();
             foreach (ConfigNode node in config.GetNodes("TechLevelInfo"))
             {
                 TechLevelInfo obj = ConfigNode.CreateObjectFromConfig<TechLevelInfo>(node);
-                Debug.LogFormat($"{ModTag} Adding TL {obj}");
+                res += $"\n{ModTag} Adding TL {obj}";
                 All.Add(obj.Level, obj);
                 MaxTL = Math.Max(MaxTL, obj.Level);
             }
+            Debug.Log(res);
             initialized = true;
         }
 

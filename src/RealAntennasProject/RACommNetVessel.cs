@@ -92,13 +92,16 @@ namespace RealAntennas
 
         protected override void UpdateComm()
         {
-            comm.name = gameObject.name;
-            comm.displayName = vessel.GetDisplayName();
-            comm.isControlSource = false;
-            comm.isControlSourceMultiHop = false;
-            comm.antennaRelay.power = comm.antennaTransmit.power = 0.0;
-            hasScienceAntenna = (comm as RACommNode).RAAntennaList.Count > 0;
-            if (vessel.loaded) DetermineControlLoaded(); else DetermineControlUnloaded();
+            if (comm is RACommNode)
+            {
+                comm.name = gameObject.name;
+                comm.displayName = vessel.GetDisplayName();
+                comm.isControlSource = false;
+                comm.isControlSourceMultiHop = false;
+                comm.antennaRelay.power = comm.antennaTransmit.power = 0.0;
+                hasScienceAntenna = (comm as RACommNode).RAAntennaList.Count > 0;
+                if (vessel.loaded) DetermineControlLoaded(); else DetermineControlUnloaded();
+            }
         }
 
         private int CountControllingCrew()

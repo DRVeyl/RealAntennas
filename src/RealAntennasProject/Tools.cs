@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CommNet;
 using System.Linq;
-using UnityEngine;
+using Unity.Mathematics;
+using System.Text;
 
 namespace RealAntennas
 {
     public class RATools : object
     {
-        public static double LinearScale(double x) => Math.Pow(10, x / 10);
-        public static float LinearScale(float x) => Mathf.Pow(10, x / 10);
-        public static double LogScale(double x) => 10 * Math.Log10(x);
-        public static double RadToDeg(double x) => x * 180 / Math.PI;
-        public static double DegToRad(double x) => x * Math.PI / 180;
+        public static double LinearScale(double x) => math.pow(10, x / 10);
+        public static float LinearScale(float x) => math.pow(10, x / 10);
+        public static double LogScale(double x) => 10 * math.log10(x);
+        public static float LogScale(float x) => 10 * math.log10(x);
 
         public static string PrettyPrintDataRate(double rate) => $"{PrettyPrint(rate)}bps";
 
@@ -59,49 +58,24 @@ namespace RealAntennas
             return $"{psm} {psm.moduleName} [{s}]";
         }
 
-        public static string VesselWalk(RACommNetwork net, string ModTag="[RealAntennas] ")
+        public static string VesselWalk(RACommNetwork net, string ModTag = "[RealAntennas] ")
         {
-            string res = $"{ModTag} VesselWalk()\n";
-            res += $"FlightData has {FlightGlobals.Vessels.Count} vessels.\n";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{ModTag} VesselWalk()\n");
+            sb.Append($"FlightData has {FlightGlobals.Vessels.Count} vessels.\n");
             foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection == null))
             {
-                res += $"Vessel {v.vesselName} has a null connection.\n";
+                sb.Append($"Vessel {v.vesselName} has a null connection.\n");
             }
             foreach (Vessel v in FlightGlobals.Vessels.Where(x => x is Vessel && x.Connection is CommNetVessel))
             {
-                res += $"Vessel {v.vesselName}: {v.Connection?.name} CommNode: {v.Connection?.Comm}\n";
+                sb.Append($"Vessel {v.vesselName}: {v.Connection?.name} CommNode: {v.Connection?.Comm}\n");
                 foreach (ModuleRealAntenna ra in v.FindPartModulesImplementing<ModuleRealAntenna>())
                 {
-                    res += $"... Contains RealAntenna part {ra.part} / {ra}.\n";
+                    sb.Append($"... Contains RealAntenna part {ra.part} / {ra}.\n");
                 }
             }
-            return res;
-        }
-
-        public static string DumpLink(CommLink link)
-        {
-            return $"A/B/Both CanRelay: {link.aCanRelay}/{link.bCanRelay}/{link.bothRelay}\n" +
-                $"StrengthAR/BR/RR: {link.strengthAR}/{link.strengthBR}/{link.strengthRR}\n" +
-                $"Best signal: {link.GetBestSignal()}" +
-                $"Cost: {link.cost}\n" +
-                $"Start: {link.start}\n" +
-                $"End: {link.end}\n" +
-                $"GetSignalStrength(start) / (end) / (no relays) / (both relays): {link.GetSignalStrength(link.start)}/{link.GetSignalStrength(link.end)}/{link.GetSignalStrength(false, false)}/{link.GetSignalStrength(true, true)}\n" +
-                $"signalStrength: {link.signalStrength}";
-
-            /* Some sample results:
-            [LOG 13:25:45.815] [RealAntennasCommNetwork] [Trace] Link: Kerbin: Mesa South -to- RA-1-CS16 : 150727254.72 (Green)
-            [LOG 13:25:45.815] [RealAntennasCommNetwork] [Trace] A/B/Both CanRelay: True/False/False
-            StrengthAR/BR/RR: 0.609718471365098/0/0
-            Best signal: 0.609718471365098  Cost: 150727254.721891
-            Start: Node: Kerbin: Mesa South Links=3 : Home  Control  MultiHop : RealAntennas Gain:40dBi TxP:60dBm BW:10000KHz Draw:60dBm Coding:12dB
-            End: Node: RA-1-CS16 Links=6 :   : RealAntennas Gain:6dBi TxP:30dBm BW:10000KHz Draw:33dBm Coding:1dB
-            GetSignalStrength(start): 0
-            GetSignalStrength(end): 0.609718471365098
-            GetSignalStrength(no relays): 0
-
-            Note the different Strength fields based on A/B/Both Relay state.  So... there can be a notion of direction?
-            */
+            return sb.ToStringAndRelease();
         }
     }
 }
