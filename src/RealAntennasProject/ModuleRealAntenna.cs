@@ -56,8 +56,8 @@ namespace RealAntennas
         public string plannerTargetString = string.Empty;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude", guiUnits = "m", guiFormat = "N0", groupName = PAWGroupPlanner),
-         UI_ScaleEdit(incrementSlide = new float[] { 1e4f, 1e6f, 1e8f, 1e10f, 1e12f }, intervals = new float[] { 1e4f, 1e6f, 1e8f, 1e10f, 1e12f, 1e14f }, sigFigs = 3, suppressEditorShipModified = true, unit = "m", useSI = true)]
-        public float plannerAltitude = 1;
+         UI_ScaleEdit(intervals = new float[] { 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f, 1e11f, 1e12f, 1e13f, 1e14f }, incrementSlide = new float[] { 1e3f, 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f, 1e11f, 1e12f, 1e13f, 1e14f, 1e15f }, sigFigs = 2, suppressEditorShipModified = true, unit = "m", useSI = true)]
+        public float plannerAltitude = 1e6f;
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit", groupName = PAWGroupPlanner)]
         public string sDownlinkPlanningResult = string.Empty;
