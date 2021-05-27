@@ -33,6 +33,7 @@ namespace RealAntennas.Network
             //CommNetNetwork.Reset();       // Don't call this way, it will invoke the parent class' ResetNetwork()
         }
 
+        public void InvalidateCache() => requestInit = true;
         private void VesselCreateHandler(Vessel v) => requestInit = true;
         private void VesselDestroyHandler(Vessel v)
         {

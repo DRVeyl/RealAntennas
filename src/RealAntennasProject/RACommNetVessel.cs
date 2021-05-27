@@ -162,6 +162,7 @@ namespace RealAntennas
         {
             antennaList.Clear();
             inactiveAntennas.Clear();
+            (RACommNetScenario.Instance as RACommNetScenario)?.Network.InvalidateCache();
             if (Vessel == null) return antennaList;
             if (Vessel.loaded)
             {
