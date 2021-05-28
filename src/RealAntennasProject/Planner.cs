@@ -92,7 +92,7 @@ namespace RealAntennas
                     isHome = (ra?.ParentNode as RACommNode)?.isHome ?? false,
                 };
                 peerAnt = new RealAntennaDigital(ra) { ParentNode = peerComm };
-                peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + (closestDistance / 2 * Vector3d.up), Quaternion.identity);
+                peerAnt.ParentNode.transform.SetPositionAndRotation(home.position + ((home.Radius + closestDistance) * Vector3d.up), Quaternion.identity);
                 peerAnt.ParentNode.precisePosition = peerAnt.ParentNode.position;
                 if (peerAnt.ToTarget != Vector3.zero) dir = peerAnt.ToTarget.normalized;
             }

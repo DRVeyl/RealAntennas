@@ -55,7 +55,8 @@ namespace RealAntennas
             double3 point = center + distance * new double3(1, 0, 0);
             double x_offset = CircleCircleIntersectionOffset(radius, distance / 2, distance / 2);
             // offset is the x-coord of a point on the body.
-            double y_offset = math.sqrt((radius * radius) - (x_offset * x_offset));
+            double y_offset_sq = Math.Max(0, ((radius * radius) - (x_offset * x_offset)));
+            double y_offset = math.sqrt(y_offset_sq);
             double3 calc = new double3(x_offset, y_offset, 0);
             return Angle2(center - point, calc - point);
         }
@@ -66,10 +67,10 @@ namespace RealAntennas
             float3 point = center + distance * new float3(1, 0, 0);
             float x_offset = Convert.ToSingle(CircleCircleIntersectionOffset(radius, distance / 2, distance / 2));
             // offset is the x-coord of a point on the body.
-            float y_offset = math.sqrt((radius * radius) - (x_offset * x_offset));
+            float y_offset_sq = Math.Max(0, (radius * radius) - (x_offset * x_offset));
+            float y_offset = math.sqrt(y_offset_sq);
             float3 calc = new float3(x_offset, y_offset, 0);
             return (float) Angle2(center - point, calc - point);
-
         }
     }
 }
