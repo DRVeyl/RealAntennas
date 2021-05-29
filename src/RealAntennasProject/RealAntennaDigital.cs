@@ -97,7 +97,7 @@ namespace RealAntennas
                 targetRate = maxSymbolRate;
                 // Someone got this Convert.ToInt32 to overflow?
                 double d = 1 + Math.Floor(margin / 3);
-                if (d < Int32.MinValue || d > Int32.MaxValue)
+                if (d < Int32.MinValue || d > Int32.MaxValue || double.IsNaN(d))
                 {
                     Debug.LogError($"{ModTag} Max bits {d} OUT OF RANGE of Int32 for Tx: {tx} Rx: {rx} N0: {N0} MaxSymbolRate: {maxSymbolRate} Noise: {Noise} RxP: {RxPower} CI: {CI} Encoder: {encoder} margin: {margin} distance: {distance} freq: {tx.Frequency} txNode: {tx.ParentNode} rxNode: {rx.ParentNode}");
                     negotiatedBits = 1;
