@@ -47,6 +47,8 @@ namespace RealAntennas.Targeting
         public virtual void Save(ConfigNode node)
         {
         }
+
+        public virtual bool Validate() => true;
     }
 
     public class AntennaTargetLatLonAlt : AntennaTarget
@@ -103,6 +105,8 @@ namespace RealAntennas.Targeting
             tgtNode.AddValue("name", $"{TargetMode.Vessel}");
             var res = ConfigNode.CreateConfigFromObject(this, tgtNode);
         }
+
+        public override bool Validate() => vessel is Vessel || FlightGlobals.FindVessel(new Guid(vesselId)) is Vessel;
     }
 
     public class AntennaTargetAzEl : AntennaTarget
@@ -156,6 +160,8 @@ namespace RealAntennas.Targeting
             }
             return dir;
         }
+
+        public override bool Validate() => vessel is Vessel || FlightGlobals.FindVessel(new Guid(vesselId)) is Vessel;
     }
 
 
@@ -210,5 +216,7 @@ namespace RealAntennas.Targeting
             }
             return dir;
         }
+
+        public override bool Validate() => vessel is Vessel || FlightGlobals.FindVessel(new Guid(vesselId)) is Vessel;
     }
 }

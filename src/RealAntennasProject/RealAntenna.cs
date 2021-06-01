@@ -134,6 +134,8 @@ namespace RealAntennas
             AMWTemp = (config.HasValue("AMWTemp")) ? float.Parse(config.GetValue("AMWTemp")) : 290f;
             if (config.HasNode("TARGET"))
                 Target = Targeting.AntennaTarget.LoadFromConfig(config.GetNode("TARGET"), this);
+            if (CanTarget && !(Target?.Validate() == true))
+                Target = Targeting.AntennaTarget.LoadFromConfig(SetDefaultTarget(), this);
         }
 
         public virtual void ProcessUpgrades(float tsLevel, ConfigNode node)
@@ -162,6 +164,15 @@ namespace RealAntennas
             if (config.TryGetValue("SymbolRate", ref d)) SymbolRate = d;
             if (config.TryGetValue("AMWTemp", ref f)) AMWTemp = f;
             if (config.TryGetValue("RFBand", ref s)) RFBand = Antenna.BandInfo.All[s];
+        }
+
+        public virtual ConfigNode SetDefaultTarget()
+        {
+            var x = new ConfigNode(Targeting.AntennaTarget.nodeName);
+            x.AddValue("name", $"{Targeting.AntennaTarget.TargetMode.BodyLatLonAlt}");
+            x.AddValue("bodyName", Planetarium.fetch.Home.name);
+            x.AddValue("latLonAlt", new Vector3(0, 0, (float)-Planetarium.fetch.Home.Radius));
+            return x;
         }
     }
 }
