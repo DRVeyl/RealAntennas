@@ -189,7 +189,7 @@ namespace RealAntennas
                         // Doesn't get the correct PartModule if multiple, but the only impact is the name, which defaults to the part anyway.
                         if (_enabled && part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
-                            RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm, ParentSnapshot = snap };
+                            RealAntenna ra = new RealAntennaDigital(part.partPrefab.partInfo.title) { ParentNode = Comm, ParentSnapshot = snap };
                             ra.LoadFromConfigNode(snap.moduleValues);
                             if (DeployedUnloaded(part)) antennaList.Add(ra);
                             else inactiveAntennas.Add(ra);

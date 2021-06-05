@@ -110,7 +110,7 @@ namespace RealAntennas
                     if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
                         ModuleRealAntenna mra = part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>();
-                        RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = null };
+                        RealAntenna ra = new RealAntennaDigital(part.partInfo.title) { ParentNode = null };
                         ra.LoadFromConfigNode(snap.moduleValues);
                         antennas.Add(ra);
                     }
