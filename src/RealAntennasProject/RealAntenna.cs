@@ -39,44 +39,25 @@ namespace RealAntennas
         public Vector3d TransformPosition => ParentNode.position;
         public virtual AntennaShape Shape => Gain <= Physics.MaxOmniGain ? AntennaShape.Omni : AntennaShape.Dish;
         public virtual bool CanTarget => Shape != AntennaShape.Omni && (ParentNode == null || !ParentNode.isHome);
-        public Vector3 ToTarget {
-            get {
-                if (!(CanTarget && Target != null)) return Vector3.zero;
-                return (Target is Vessel v) ? v.transform.position - Position : (Vector3)(Target as CelestialBody).position - Position;
-            }
-        }
+        public Vector3 ToTarget => (CanTarget && Target != null) ? (Vector3) (Target.transform.position - Position) : Vector3.zero;
 
-        public Vector3 ToTargetByTransform
-        {
-            get
-            {
-                if (!(CanTarget && Target != null)) return Vector3.zero;
-                return (Target is Vessel v) ? v.transform.position - TransformPosition : (Vector3)(Target as CelestialBody).position - TransformPosition;
-            }
-        }
-
-        public string TargetID { get; set; }
-        private object _target = null;
-        public object Target
+        private Targeting.AntennaTarget _target;
+        public Targeting.AntennaTarget Target
         {
             get => _target;
             set
             {
-                if (!CanTarget || value is null) SetTarget(null, DefaultTargetName, DefaultTargetName);
-                else if (value is Vessel v) SetTarget(v, v.name, v.id.ToString());
-                else if (value is CelestialBody body) SetTarget(body, body.name, body.name);
-                else if (value is Network.RACommNetHome home) SetTarget(home, home.name, home.name);
-                else Debug.LogWarningFormat($"{ModTag} Tried to set antenna target to {value} and failed");
+                _target = value;
+                if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = $"{_target}"; }
+                if (ParentSnapshot is ProtoPartModuleSnapshot snap)
+                {
+                    snap.moduleValues.RemoveNode(Targeting.AntennaTarget.nodeName);
+                    _target.Save(snap.moduleValues);
+                }
             }
         }
 
-        public string TargetString => (Target is Vessel v) ? v.vesselName :
-                                      (Target is CelestialBody b) ? b.name :
-                                      (Target is Network.RACommNetHome h) ? h.name :
-                                      string.Empty;
-
         public float PowerDraw => RATools.LogScale(PowerDrawLinear);
-//        public virtual double IdlePowerDraw => PowerDrawLinear * 1e-6 * ModuleRealAntenna.InactivePowerConsumptionMult;
         public virtual float IdlePowerDraw => TechLevelInfo.BasePower / 1000;    // Base power in W, 1ec/s = 1kW
         public virtual float PowerDrawLinear => RATools.LinearScale(TxPower) / PowerEfficiency;
         public virtual float MinimumDistance => (CanTarget && Beamwidth < 90 ? minimumSpotRadius / Mathf.Tan(Beamwidth) : 0);
@@ -86,7 +67,7 @@ namespace RealAntennas
         private readonly float minimumSpotRadius = 1e3f;
 
         public override string ToString() => $"[+RA] {Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
-        public virtual string ToStringShort() => $"{Name} [{RFBand.name} {TxPower} dBm] {(CanTarget ? $" ->{TargetString}" : null)}";
+        public virtual string ToStringShort() => $"{Name} [{RFBand.name} {TxPower} dBm] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
         public RealAntenna(string name, double dataRate = 1000)
@@ -151,14 +132,10 @@ namespace RealAntennas
             TxPower = (config.HasValue("TxPower")) ? float.Parse(config.GetValue("TxPower")) : 30f;
             SymbolRate = RFBand.MaxSymbolRate(TechLevelInfo.Level);
             AMWTemp = (config.HasValue("AMWTemp")) ? float.Parse(config.GetValue("AMWTemp")) : 290f;
-            if (config.HasValue("targetID"))
-            {
-                TargetID = config.GetValue("targetID");
-                if (CanTarget && (_target == null))
-                {
-                    Target = FindTargetFromID(TargetID);
-                }
-            }
+            if (config.HasNode("TARGET"))
+                Target = Targeting.AntennaTarget.LoadFromConfig(config.GetNode("TARGET"), this);
+            if (CanTarget && !(Target?.Validate() == true))
+                Target = Targeting.AntennaTarget.LoadFromConfig(SetDefaultTarget(), this);
         }
 
         public virtual void ProcessUpgrades(float tsLevel, ConfigNode node)
@@ -189,28 +166,13 @@ namespace RealAntennas
             if (config.TryGetValue("RFBand", ref s)) RFBand = Antenna.BandInfo.All[s];
         }
 
-        private ITargetable FindTargetFromID(string id)
+        public virtual ConfigNode SetDefaultTarget()
         {
-            if (FlightGlobals.fetch && CanTarget)
-            {
-                if (string.IsNullOrEmpty(id)) return FlightGlobals.GetHomeBody();
-                if (string.Equals(DefaultTargetName, id)) return FlightGlobals.GetHomeBody();
-                if (FlightGlobals.GetBodyByName(id) is CelestialBody body) return body;
-                try
-                {
-                    if (FlightGlobals.FindVessel(new Guid(id)) is Vessel v) return v;
-                }
-                catch (FormatException) { }
-            }
-            return null;
-        }
-
-        private void SetTarget(object tgt, string dispString, string tgtId)
-        {
-            _target = tgt; TargetID = tgtId;
-            if (Parent is ModuleRealAntenna) { Parent.sAntennaTarget = dispString; Parent.targetID = tgtId; }
-            ParentSnapshot?.moduleValues.SetValue("targetID", tgtId);
+            var x = new ConfigNode(Targeting.AntennaTarget.nodeName);
+            x.AddValue("name", $"{Targeting.AntennaTarget.TargetMode.BodyLatLonAlt}");
+            x.AddValue("bodyName", Planetarium.fetch.Home.name);
+            x.AddValue("latLonAlt", new Vector3(0, 0, (float)-Planetarium.fetch.Home.Radius));
+            return x;
         }
     }
-
 }

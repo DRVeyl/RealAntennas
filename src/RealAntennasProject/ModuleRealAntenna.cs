@@ -48,9 +48,7 @@ namespace RealAntennas
         [KSPField(guiActive = true, guiName = "Antenna Target", groupName = PAWGroup)]
         public string sAntennaTarget = string.Empty;
 
-        [KSPField(isPersistant = true)]
-        public string targetID = RealAntenna.DefaultTargetName;
-        public object Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
+        public Targeting.AntennaTarget Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
         [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Peer", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner)]
         public string plannerTargetString = string.Empty;
@@ -70,20 +68,19 @@ namespace RealAntennas
         public float plannerActiveTxTime = 0;
 
         [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
-        void AntennaTargetGUI() => targetGUI.showGUI = !targetGUI.showGUI;
-
+        void AntennaTargetGUI() => Targeting.AntennaTargetManager.AcquireGUI(RAAntenna);
+        
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI", groupName = PAWGroupPlanner)]
         public void AntennaPlanningGUI() => planner.plannerGUI.showGUI = !planner.plannerGUI.showGUI;
 
         [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Refresh Planner", groupName = PAWGroupPlanner)]
         public void RefreshPlanner() { RecalculateFields(); MonoUtilities.RefreshPartContextWindow(part); }
 
-        public void OnGUI() { targetGUI.OnGUI(); planner.plannerGUI.OnGUI(); }
+        public void OnGUI() { planner.plannerGUI.OnGUI(); }
 
         protected const string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
         public RealAntenna RAAntenna;
-        public Antenna.AntennaGUI targetGUI = new Antenna.AntennaGUI();
         public Planner planner;
 
         private ModuleDeployableAntenna deployableAntenna;
@@ -119,6 +116,13 @@ namespace RealAntennas
             if (node.name != "CURRENTUPGRADE")
                 Configure(node);
             Debug.Log($"{ModTag} OnLoad from {node.name}: {this}");
+        }
+
+        public override void OnSave(ConfigNode node)
+        {
+            base.OnSave(node);
+            if (RAAntenna.CanTarget)
+                RAAntenna.Target?.Save(node);
         }
 
         public void Configure(ConfigNode node)
@@ -235,9 +239,6 @@ namespace RealAntennas
 
         private void SetupGUIs()
         {
-            targetGUI.ParentPart = part;
-            targetGUI.ParentPartModule = this;
-            targetGUI.Start();
             planner.plannerGUI.Start();
         }
 

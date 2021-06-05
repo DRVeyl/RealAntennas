@@ -19,7 +19,7 @@ namespace RealAntennas
         public static readonly Dictionary<string, Network.RACommNetHome> GroundStations = new Dictionary<string, Network.RACommNetHome>();
         public static int GroundStationTechLevel = 0;
         public static int MaxTL => Mathf.Min(TechLevelInfo.MaxTL, HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().MaxTechLevel);
-
+        public static int minRelayTL = 0;
 
         public Network.RACommNetNetwork Network { get; private set; } = null;
         public MapUI.RACommNetUI UI { get; private set; } = null;
@@ -99,6 +99,8 @@ namespace RealAntennas
                 Antenna.BandInfo.Init(RAParamNode);
                 Antenna.Encoder.Init(RAParamNode);
                 TechLevelInfo.Init(RAParamNode);
+                Targeting.TargetModeInfo.Init(RAParamNode);
+                RAParamNode.TryGetValue("minRelayTL", ref minRelayTL);
                 staticInit = true;
             }
 

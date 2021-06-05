@@ -162,7 +162,7 @@ namespace RealAntennas
         {
             antennaList.Clear();
             inactiveAntennas.Clear();
-            (RACommNetScenario.Instance as RACommNetScenario)?.Network.InvalidateCache();
+            (RACommNetScenario.Instance as RACommNetScenario)?.Network?.InvalidateCache();
             if (Vessel == null) return antennaList;
             if (Vessel.loaded)
             {
@@ -173,6 +173,7 @@ namespace RealAntennas
                         ant.RAAntenna.ParentNode = Comm;
                         if (DeployedLoaded(ant.part)) antennaList.Add(ant.RAAntenna);
                         else inactiveAntennas.Add(ant.RAAntenna);
+                        ValidateAntennaTarget(ant.RAAntenna);
                     }
                 }
                 return antennaList;
@@ -188,15 +189,21 @@ namespace RealAntennas
                         // Doesn't get the correct PartModule if multiple, but the only impact is the name, which defaults to the part anyway.
                         if (_enabled && part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>() is ModuleRealAntenna mra && mra.CanCommUnloaded(snap))
                         {
-                            RealAntenna ra = new RealAntennaDigital(mra.name) { ParentNode = Comm, ParentSnapshot = snap };
+                            RealAntenna ra = new RealAntennaDigital(part.partPrefab.partInfo.title) { ParentNode = Comm, ParentSnapshot = snap };
                             ra.LoadFromConfigNode(snap.moduleValues);
                             if (DeployedUnloaded(part)) antennaList.Add(ra);
                             else inactiveAntennas.Add(ra);
+                            ValidateAntennaTarget(ra);
                         }
                     }
                 }
             }
             return antennaList;
+        }
+        private void ValidateAntennaTarget(RealAntenna ra)
+        {
+            if (ra.CanTarget && !(ra.Target?.Validate() == true))
+                ra.Target = Targeting.AntennaTarget.LoadFromConfig(ra.SetDefaultTarget(), ra);
         }
         public static bool DeployedUnloaded(ProtoPartSnapshot part)
         {

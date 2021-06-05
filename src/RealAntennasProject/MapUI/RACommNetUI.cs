@@ -132,10 +132,8 @@ namespace RealAntennas.MapUI
                     LineRenderer cone3Renderer = cone3Renderers[node][ra].GetComponent<LineRenderer>();
                     LineRenderer cone10Renderer = cone10Renderers[node][ra].GetComponent<LineRenderer>();
 
-                    Vector3d axis = ra.ToTargetByTransform;
+                    Vector3d axis = ra.ToTarget;
                     double len = Math.Min(1e8f, axis.magnitude);
-                    if (ra.Target is CelestialBody body)
-                        len = Math.Min(len, axis.magnitude - body.Radius);
                     axis.Normalize();
                     axis *= len;
                     cone10.Init(node.precisePosition, axis, Vector3.up, ra.Beamwidth);
@@ -151,7 +149,7 @@ namespace RealAntennas.MapUI
                     if (drawTarget)
                     {
                         targetPoints.Add(node.precisePosition);
-                        targetPoints.Add(node.precisePosition + ra.ToTargetByTransform);
+                        targetPoints.Add(node.precisePosition + ra.ToTarget);
                         LocalToScaledSpace(targetPoints, targetPoints_out);
                         float dStart = Vector3.Distance(camPos, targetPoints[0]);
                         float dEnd = Vector3.Distance(camPos, targetPoints[1]);

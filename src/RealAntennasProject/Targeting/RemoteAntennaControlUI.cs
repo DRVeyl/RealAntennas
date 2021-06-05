@@ -1,55 +1,33 @@
-﻿using KSP.UI.Screens.Mapview.MapContextMenuOptions;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-namespace RealAntennas
+namespace RealAntennas.Targeting
 {
     class RemoteAntennaControlUI : MonoBehaviour
     {
         const string GUIName = "Antenna Control Center";
         private Rect Window = new Rect(100, 100, 800, 500);
-        private Vector2 scrollSourcePos, scrollTargetPos;
+        private Vector2 scrollSourcePos;
         private enum SortMode { Alphabetical, VesselType, ParentBody, RFBand };
         private SortMode sourceSortMode = SortMode.Alphabetical;
-        private SortMode targetSortMode = SortMode.Alphabetical;
-
         private readonly List<Vessel> sourceVessels = new List<Vessel>();
-        private readonly List<Vessel> targetVessels = new List<Vessel>();
-        private RealAntenna sourceAntenna;
 
-        GUIStyle styleOpts;
-
-        public void Awake()
-        {
-            Debug.Log($"{this.GetType()} Awake()");
-        }
         public void Start()
         {
-            Debug.Log($"{this.GetType()} Start()");
             sourceVessels.Clear();
-            targetVessels.Clear();
             sourceVessels.AddRange(FlightGlobals.Vessels.Where(v => v.Connection is RACommNetVessel && v.Connection.Comm is RACommNode));
-            targetVessels.AddRange(FlightGlobals.Vessels);
-            styleOpts = new GUIStyle(HighLogic.Skin.button) { fontSize = 10, };
         }
 
         public void OnGUI()
         {
             GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, styleOpts);
+            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
         }
 
 
         void GUIDisplay(int windowID)
         {
-            string s = $"{(sourceAntenna?.ParentNode as RACommNode)?.ParentVessel?.vesselName} {sourceAntenna?.ToStringShort()}";
-            GUILayout.Label($"Antenna: {(sourceAntenna is RealAntenna ? s : "Not Selected")}");
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
             if (GUILayout.Button($"Source Sort Mode: {sourceSortMode}"))
             {
                 //(i1, i2) => i1.ToString().CompareTo(i2.ToString())
@@ -62,32 +40,17 @@ namespace RealAntennas
                                select ra)
             {
                 if (GUILayout.Button($"{(ra.ParentNode as RACommNode)?.ParentVessel?.vesselName} {ra.ToStringShort()}"))
-                    sourceAntenna = ra;
+                {
+                    Targeting.AntennaTargetManager.AcquireGUI(ra);
+                }
             }
             GUILayout.EndScrollView();
-            GUILayout.EndVertical();
 
-            GUILayout.BeginVertical();
-            if (GUILayout.Button($"Target Sort Mode: {targetSortMode}"))
+            if (GUILayout.Button("Close"))
             {
-                targetSortMode = (SortMode)(((int)(targetSortMode + 1)) % System.Enum.GetNames(typeof(SortMode)).Length);
-                SortList(targetVessels, targetSortMode);
+                Destroy(this);
+                gameObject.DestroyGameObject();
             }
-            scrollTargetPos = GUILayout.BeginScrollView(scrollTargetPos, GUILayout.ExpandWidth(true));
-            foreach (var v in targetVessels)
-            {
-                if (sourceAntenna is RealAntenna && GUILayout.Button($"{v.vesselName}"))
-                    sourceAntenna.Target = v;
-            }
-            foreach (var v in FlightGlobals.Bodies)
-            {
-                if (sourceAntenna is RealAntenna && GUILayout.Button($"{v.name}"))
-                    sourceAntenna.Target = v;
-            }
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
             GUI.DragWindow();
         }
 
