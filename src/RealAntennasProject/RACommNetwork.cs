@@ -376,7 +376,10 @@ namespace RealAntennas
                 {
                     foreach (KeyValuePair<CommNode, CommLink> kvp in candidate)
                     {
-                        if (kvp.Key is RACommNode node && kvp.Value is RACommLink link && !sptSet.Contains(node))
+                        if (kvp.Key is RACommNode node && kvp.Value is RACommLink link && !sptSet.Contains(node)
+                            && (link.start == candidate ? link.FwdAntennaRx : link.RevAntennaRx) is RealAntenna rxAntenna
+                            // Skip if the peer is unable to relay and is also not the destination
+                            && (rxAntenna.TechLevelInfo.Level >= RACommNetScenario.minRelayTL || where(start, node)))
                         {
                             double cost = link.start == candidate ? link.FwdCost : link.RevCost;
                             if (node.bestCost > candidate.bestCost + cost)
