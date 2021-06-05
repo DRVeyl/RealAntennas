@@ -333,7 +333,11 @@ namespace RealAntennas.MapUI
                                     GatherLinkLines(commLinkList);
                                     GatherAntennaCones(link.start as RACommNode);
                                 }
-                                else Debug.LogWarning($"[RealAntennas.MapUI] {commNode} has broken link {link}");
+                                else
+                                {
+                                    Debug.LogWarning($"[RealAntennas.MapUI] {commNode} has broken link {link}");
+                                    commNet.DoDisconnect(link.start, link.end);
+                                }
                             }
                             break;
                     }
