@@ -1,12 +1,8 @@
-﻿using KSP.UI.Screens.Mapview.MapContextMenuOptions;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
-namespace RealAntennas
+namespace RealAntennas.Targeting
 {
     class RemoteAntennaControlUI : MonoBehaviour
     {

@@ -79,7 +79,7 @@ namespace RealAntennas
             if (antennaConsoleGO is null && GUILayout.Button("Launch Control Console"))
             {
                 antennaConsoleGO = new GameObject();
-                antennaConsoleGO.AddComponent(typeof(RemoteAntennaControlUI));
+                antennaConsoleGO.AddComponent(typeof(Targeting.RemoteAntennaControlUI));
             } else if (antennaConsoleGO is GameObject && GUILayout.Button("Close Control Console")) {
                 antennaConsoleGO.DestroyGameObject();
                 antennaConsoleGO = null;

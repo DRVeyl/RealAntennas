@@ -15,17 +15,17 @@ namespace RealAntennas.Targeting
             guis.Clear();
         }
 
-        public static Antenna.AntennaGUI AcquireGUI(RealAntenna ant)
+        public static AntennaTargetGUI AcquireGUI(RealAntenna ant)
         {
             if (!guis.ContainsKey(ant))
             {
                 var go = new GameObject($"{ant.ParentNode?.name}:{ant.Name}:TargetGUI_GO");
-                var gui = go.AddComponent<Antenna.AntennaGUI>();
+                var gui = go.AddComponent<AntennaTargetGUI>();
                 gui.name = $"{ant.ParentNode?.name}:{ant.Name}:TargetGUI";
                 gui.antenna = ant;
                 guis[ant] = go;
             }
-            return guis[ant].GetComponent<Antenna.AntennaGUI>();
+            return guis[ant].GetComponent<AntennaTargetGUI>();
         }
 
         public static GameObject AcquireTarget(RealAntenna a)
@@ -35,7 +35,7 @@ namespace RealAntennas.Targeting
             return targets[a];
         }
 
-        public static void Release(RealAntenna a, Antenna.AntennaGUI _)
+        public static void Release(RealAntenna a, AntennaTargetGUI _)
         {
             if (guis.TryGetValue(a, out var go))
             {

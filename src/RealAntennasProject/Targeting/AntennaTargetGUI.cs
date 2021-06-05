@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using RealAntennas.Targeting;
 using static RealAntennas.Targeting.AntennaTarget;
 
-namespace RealAntennas.Antenna
+namespace RealAntennas.Targeting
 {
-    public class AntennaGUI : MonoBehaviour
+    public class AntennaTargetGUI : MonoBehaviour
     {
         const string GUIName = "Antenna Targeting";
         Rect Window = new Rect(20, 100, 280, 200);
@@ -273,8 +272,8 @@ namespace RealAntennas.Antenna
         {
             public int Compare(Vessel x, Vessel y)
             {
-                if ((x.connection?.Comm as RACommNode)?.RAAntennaList.FirstOrDefault()?.RFBand is BandInfo rfband1 &&
-                    (y.connection?.Comm as RACommNode)?.RAAntennaList.FirstOrDefault()?.RFBand is BandInfo rfband2)
+                if ((x.connection?.Comm as RACommNode)?.RAAntennaList.FirstOrDefault()?.RFBand is Antenna.BandInfo rfband1 &&
+                    (y.connection?.Comm as RACommNode)?.RAAntennaList.FirstOrDefault()?.RFBand is Antenna.BandInfo rfband2)
                     return rfband1.name.CompareTo(rfband2.name);
                 else return x.name.CompareTo(y.name);
             }
