@@ -71,6 +71,7 @@
     <Compile Include="Targeting\RemoteAntennaControlUI.cs" />
     <Compile Include="Targeting\AntennaTarget.cs" />
     <Compile Include="Targeting\AntennaTargetManager.cs" />
+    <Compile Include="Targeting\TargetModeInfo.cs" />
     <Compile Include="TechLevelInfo.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Network\RACommNetNetwork.cs" />

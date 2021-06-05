@@ -12,7 +12,7 @@ namespace RealAntennas.Targeting
         Vector2 scrollVesselPos, scrollBodyPos;
         enum SortMode { Alphabetical, Distance, VesselType, ParentBody, RFBand };
         SortMode sortMode = SortMode.Alphabetical;
-        private TargetMode targetMode = TargetMode.Vessel;
+        private TargetModeInfo targetMode = TargetModeInfo.All.Values.First();
         private string sLat = "0", sLon = "0", sAlt = "0", sAzimuth = "0", sElevation = "0", sForward = "0", sUp = "0";
         float deflection = 0;
         private int minVesselTL = 0, minBodyCenterTL = 0, minBodyLLATL = 0, minAzElTL = 0, minOrbitRelTL = 0;
@@ -26,14 +26,6 @@ namespace RealAntennas.Targeting
         {
             vessels.Clear();
             vessels.AddRange(FlightGlobals.Vessels);
-            if (GameDatabase.Instance.GetConfigNode("RealAntennas/RealAntennasCommNetParams/RealAntennasCommNetParams") is ConfigNode RAParamNode)
-            {
-                int.TryParse(RAParamNode.GetNode("TargetingMode", "name", $"{TargetMode.Vessel}")?.GetValue("TechLevel") ?? "0", out minVesselTL);
-                int.TryParse(RAParamNode.GetNode("TargetingMode", "name", $"{TargetMode.BodyCenter}")?.GetValue("TechLevel") ?? "0", out minBodyCenterTL);
-                int.TryParse(RAParamNode.GetNode("TargetingMode", "name", $"{TargetMode.BodyLatLonAlt}")?.GetValue("TechLevel") ?? "0", out minBodyLLATL);
-                int.TryParse(RAParamNode.GetNode("TargetingMode", "name", $"{TargetMode.AzEl}")?.GetValue("TechLevel") ?? "0", out minAzElTL);
-                int.TryParse(RAParamNode.GetNode("TargetingMode", "name", $"{TargetMode.OrbitRelative}")?.GetValue("TechLevel") ?? "0", out minOrbitRelTL);
-            }
         }
 
         public void OnGUI()
@@ -50,20 +42,22 @@ namespace RealAntennas.Targeting
             GUILayout.BeginVertical(HighLogic.Skin.box);
             GUILayout.Label($"Vessel: {parentVessel?.name ?? "None"}");
             GUILayout.Label($"Antenna: {antenna.Name}");
-            GUILayout.Label($"Band: {antenna.RFBand.name}   Power: {antenna.TxPower}dBm");
-            GUILayout.Label($"Current Target: {antenna.Target}");
+            GUILayout.Label($"Band: {antenna.RFBand.name}       Power: {antenna.TxPower}dBm");
+            GUILayout.Label($"Target: {antenna.Target}");
             GUILayout.EndVertical();
             GUILayout.Space(7);
 
             GUILayout.BeginVertical(HighLogic.Skin.box);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button($"Target Mode: {targetMode}"))
+            if (GUILayout.Button($"Target Mode: {targetMode.displayName}"))
                 targetMode = GetNextTargetMode();
             showTargetModeInfo = GUILayout.Toggle(showTargetModeInfo, "ⓘ", HighLogic.Skin.button, GUILayout.ExpandWidth(false), GUILayout.Height(20));
             GUILayout.EndHorizontal();
             if (showTargetModeInfo)
             {
-                GUILayout.Label("Here's some info about the target mode!", GUILayout.ExpandWidth(true));
+                GUILayout.Label(targetMode.hint, GUILayout.ExpandWidth(true));
+                if (GameDatabase.Instance.GetTexture(targetMode.texture, false) is Texture2D tex)
+                    GUILayout.Box(tex, GUILayout.Height(200), GUILayout.Width(200));
             }
             GUILayout.EndVertical();
             GUILayout.Space(7);
@@ -71,10 +65,10 @@ namespace RealAntennas.Targeting
             GUILayout.BeginVertical(HighLogic.Skin.box);
             var sortIcon = GetSortIcon(sortMode);
 
-            if (targetMode == TargetMode.Vessel)
+            if (targetMode.mode == TargetMode.Vessel)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Select a vessel to target:", GUILayout.ExpandWidth(true));
+                GUILayout.Label(targetMode.text, GUILayout.ExpandWidth(true));
                 HandleSortMode(sortIcon, parentVessel);
                 GUILayout.EndHorizontal();
                 scrollVesselPos = GUILayout.BeginScrollView(scrollVesselPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
@@ -82,7 +76,7 @@ namespace RealAntennas.Targeting
                 {
                     if (GUILayout.Button(v.name))
                     {
-                        var x = new ConfigNode(AntennaTarget.nodeName, "Set up a new antenna target!");
+                        var x = new ConfigNode(AntennaTarget.nodeName);
                         x.AddValue("name", $"{TargetMode.Vessel}");
                         x.AddValue("vesselId", v.id);
                         antenna.Target = AntennaTarget.LoadFromConfig(x, antenna);
@@ -90,10 +84,10 @@ namespace RealAntennas.Targeting
                 }
                 GUILayout.EndScrollView();
             }
-            if (targetMode == TargetMode.BodyCenter)
+            if (targetMode.mode == TargetMode.BodyCenter)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Select a body to target:", GUILayout.ExpandWidth(true));
+                GUILayout.Label(targetMode.text, GUILayout.ExpandWidth(true));
                 HandleSortMode(sortIcon);
                 GUILayout.EndHorizontal();
                 scrollBodyPos = GUILayout.BeginScrollView(scrollBodyPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
@@ -101,7 +95,7 @@ namespace RealAntennas.Targeting
                 {
                     if (GUILayout.Button(body.name))
                     {
-                        var x = new ConfigNode(AntennaTarget.nodeName, "Set up a new antenna target!");
+                        var x = new ConfigNode(AntennaTarget.nodeName);
                         x.AddValue("name", $"{AntennaTarget.TargetMode.BodyLatLonAlt}");
                         x.AddValue("bodyName", body.name);
                         x.AddValue("latLonAlt", new Vector3(0, 0, (float)-body.Radius));
@@ -110,7 +104,7 @@ namespace RealAntennas.Targeting
                 }
                 GUILayout.EndScrollView();
             }
-            if (targetMode == TargetMode.BodyLatLonAlt)
+            if (targetMode.mode == TargetMode.BodyLatLonAlt)
             {
                 GUILayout.BeginVertical();
                 GUILayout.BeginHorizontal();
@@ -122,7 +116,7 @@ namespace RealAntennas.Targeting
                 sAlt = GUILayout.TextField(sAlt, 15);
                 GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Select a body to target:", GUILayout.ExpandWidth(true));
+                GUILayout.Label(targetMode.text, GUILayout.ExpandWidth(true));
                 HandleSortMode(sortIcon);
                 GUILayout.EndHorizontal();
                 scrollBodyPos = GUILayout.BeginScrollView(scrollBodyPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
@@ -130,7 +124,7 @@ namespace RealAntennas.Targeting
                 {
                     if (GUILayout.Button(body.name))
                     {
-                        var x = new ConfigNode(AntennaTarget.nodeName, "Set up a new antenna target!");
+                        var x = new ConfigNode(AntennaTarget.nodeName);
                         if (float.TryParse(sLat, out float flat) &&
                             float.TryParse(sLon, out float flon) &&
                             float.TryParse(sAlt, out float falt))
@@ -145,7 +139,7 @@ namespace RealAntennas.Targeting
                 GUILayout.EndScrollView();
                 GUILayout.EndVertical();
             }
-            if (targetMode == TargetMode.AzEl)
+            if (targetMode.mode == TargetMode.AzEl)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Azimuth");
@@ -155,7 +149,7 @@ namespace RealAntennas.Targeting
                 GUILayout.EndHorizontal();
                 if (GUILayout.Button("Apply"))
                 {
-                    var x = new ConfigNode(AntennaTarget.nodeName, "Set up a new antenna target!");
+                    var x = new ConfigNode(AntennaTarget.nodeName);
                     if (float.TryParse(sAzimuth, out float azimuth) &&
                         float.TryParse(sElevation, out float elevation))
                     {
@@ -170,11 +164,8 @@ namespace RealAntennas.Targeting
                 }
 
             }
-            if (targetMode == TargetMode.OrbitRelative)
+            if (targetMode.mode == TargetMode.OrbitRelative)
             {
-                Texture2D defaultTex = GameDatabase.Instance.GetTexture("RealAntennas/Textures/OrbitRelative", false);
-                GUILayout.Box(defaultTex, GUILayout.Height(200), GUILayout.Width(200));
-
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Deflection");
                 sForward = GUILayout.TextField($"{deflection}", 4);
@@ -185,7 +176,7 @@ namespace RealAntennas.Targeting
                 deflection = GUILayout.HorizontalSlider(deflection, -180, 180);
                 if (GUILayout.Button("Apply"))
                 {
-                    var x = new ConfigNode(AntennaTarget.nodeName, "Set up a new antenna target!");
+                    var x = new ConfigNode(AntennaTarget.nodeName);
                     if (float.TryParse(sElevation, out float elevation))
                     {
                         deflection = Mathf.Clamp(deflection, -360, 360);
@@ -240,32 +231,18 @@ namespace RealAntennas.Targeting
             }
         }
 
-        public TargetMode GetNextTargetMode()
+        public TargetModeInfo GetNextTargetMode()
         {
-            int x = (int)targetMode;
+            int start = TargetModeInfo.ListAll.IndexOf(targetMode);
             int i = 0;
-            int maxIter = System.Enum.GetNames(typeof(TargetMode)).Length;
-            TargetMode tm;
+            int maxIter = TargetModeInfo.ListAll.Count;
             do
             {
                 i++;
-                x = (x + 1) % maxIter;
-                tm = (TargetMode)x;
-            } while (antenna.TechLevelInfo.Level < GetMinTechLevel(tm) && i <= maxIter);
-            return tm;
-        }
-
-        public int GetMinTechLevel(TargetMode tm)
-        {
-            return tm switch
-            {
-                TargetMode.Vessel => minVesselTL,
-                TargetMode.BodyCenter => minBodyCenterTL,
-                TargetMode.BodyLatLonAlt => minBodyLLATL,
-                TargetMode.AzEl => minAzElTL,
-                TargetMode.OrbitRelative => minOrbitRelTL,
-                _ => minVesselTL
-            };
+                int ind = (start + i) % maxIter;
+                targetMode = TargetModeInfo.ListAll[ind];
+            } while (antenna.TechLevelInfo.Level < targetMode.techLevel && i <= maxIter);
+            return targetMode;
         }
 
         private class RFBandComparer : IComparer<Vessel>
