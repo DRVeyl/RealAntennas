@@ -10,7 +10,6 @@ namespace RealAntennas
         protected const string ModTag = "[RealAntennasCommNetVessel]";
         readonly List<RealAntenna> antennaList = new List<RealAntenna>();
         readonly List<RealAntenna> inactiveAntennas = new List<RealAntenna>();
-        private EventData<Vessel>.OnEvent OnVesselModifiedEvent = null;
         private PartResourceDefinition electricChargeDef;
         public override IScienceDataTransmitter GetBestTransmitter() =>
             (IsConnected && Comm is RACommNode node && node.AntennaTowardsHome() is RealAntenna toHome) ? toHome.Parent : null;
@@ -66,19 +65,15 @@ namespace RealAntennas
                 GameEvents.CommNet.OnNetworkInitialized.Add(OnNetworkInitialized);
                 if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
                     GameEvents.onPlanetariumTargetChanged.Add(OnMapFocusChange);
+                GameEvents.onVesselWasModified.Add(OnVesselModified);
+                foreach (ModuleDeployablePart mdp in Vessel.FindPartModulesImplementing<ModuleDeployablePart>())
+                {
+                    mdp.OnMoving.Add(OnMoving);
+                    mdp.OnStop.Add(OnStop);
+                }
+                overridePostUpdate = true;
+                electricChargeDef = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
             }
-            if (OnVesselModifiedEvent == null)
-            {
-                OnVesselModifiedEvent = OnVesselModified;
-                GameEvents.onVesselWasModified.Add(OnVesselModifiedEvent);
-            }
-            foreach (ModuleDeployablePart mdp in Vessel.FindPartModulesImplementing<ModuleDeployablePart>())
-            {
-                mdp.OnMoving.Add(OnMoving);
-                mdp.OnStop.Add(OnStop);
-            }
-            this.overridePostUpdate = true;
-            electricChargeDef = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
         }
 
         private void OnMoving(float f1, float f2) => DiscoverAntennas();
@@ -86,8 +81,11 @@ namespace RealAntennas
 
         protected override void OnDestroy()
         {
-            if (OnVesselModifiedEvent != null) GameEvents.onVesselWasModified.Remove(OnVesselModifiedEvent);
+            GameEvents.onVesselWasModified.Remove(OnVesselModified);
+            GameEvents.CommNet.OnNetworkInitialized.Remove(OnNetworkInitialized);
+            GameEvents.onPlanetariumTargetChanged.Remove(OnMapFocusChange);
             base.OnDestroy();
+            comm?.Net.Remove(comm);
         }
 
         protected override void UpdateComm()
