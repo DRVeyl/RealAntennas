@@ -168,7 +168,7 @@ namespace RealAntennas.Targeting
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Deflection");
-                sForward = GUILayout.TextField($"{deflection}", 4);
+                sForward = GUILayout.TextField($"{deflection}", 5);
                 GUILayout.Label("Elevation");
                 sElevation = GUILayout.TextField(sElevation, 4);
                 GUILayout.EndHorizontal();
