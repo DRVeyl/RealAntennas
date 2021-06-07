@@ -1,4 +1,5 @@
-﻿using Experience.Effects;
+﻿using Expansions.Serenity.DeployedScience.Runtime;
+using Experience.Effects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,12 @@ namespace RealAntennas
         public override void OnNetworkPreUpdate()
         {
             base.OnNetworkPreUpdate();
-            if (Vessel.loaded && electricChargeDef != null)
+            if (Vessel.vesselType == VesselType.DeployedScienceController)
+            {
+                var cluster = GetDeployedScienceCluster(Vessel);
+                powered = cluster?.IsPowered ?? false;
+            }
+            else if (Vessel.loaded && electricChargeDef != null)
             {
                 Vessel.GetConnectedResourceTotals(electricChargeDef.id, out double amt, out double _);
                 powered = (amt > 0);
@@ -216,5 +222,12 @@ namespace RealAntennas
         public static bool DeployedLoaded(Part part) =>
             (part.FindModuleImplementing<ModuleDeployableAntenna>() is ModuleDeployableAntenna mda) ?
             mda.deployState == ModuleDeployablePart.DeployState.EXTENDED : true;
+
+        private DeployedScienceCluster GetDeployedScienceCluster(Vessel vessel)
+        {
+            var id = vessel.loaded ? vessel.rootPart.persistentId : vessel.protoVessel.protoPartSnapshots[0].persistentId;
+            DeployedScience.Instance.DeployedScienceClusters.TryGetValue(id, out DeployedScienceCluster cluster);
+            return cluster;
+        }
     }
 }
