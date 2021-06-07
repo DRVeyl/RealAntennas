@@ -39,10 +39,18 @@ namespace RealAntennas.Targeting
                                from RealAntenna ra in (v.Connection?.Comm as RACommNode)?.RAAntennaList?.Where(x => x.CanTarget)
                                select ra)
             {
-                if (GUILayout.Button($"{(ra.ParentNode as RACommNode)?.ParentVessel?.vesselName} {ra.ToStringShort()}"))
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"{(ra.ParentNode as RACommNode)?.ParentVessel?.vesselName} {ra.ToStringShort()}");
+                if (GUILayout.Button("Target"))
                 {
                     Targeting.AntennaTargetManager.AcquireGUI(ra);
                 }
+                if (GUILayout.Button("Debug"))
+                {
+                    var dbg = new GameObject($"Antenna Debugger: {ra.Name}").AddComponent<Network.ConnectionDebugger>();
+                    dbg.antenna = ra;
+                }
+                GUILayout.EndHorizontal();
             }
             GUILayout.EndScrollView();
 
