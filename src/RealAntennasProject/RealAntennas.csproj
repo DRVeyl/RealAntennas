@@ -37,6 +37,8 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Network\ConnectionDebugger.cs" />
+    <Compile Include="Network\LinkDetails.cs" />
     <Compile Include="Targeting\AntennaTargetGUI.cs" />
     <Compile Include="Antenna\BandInfo.cs" />
     <Compile Include="Antenna\Encoder.cs" />
@@ -121,6 +123,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\KSP_x64_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.7.3 Dev\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>

@@ -503,35 +503,54 @@ namespace RealAntennas.Precompute
                     var quad = allValidAntennaPairs[i];
                     if (targetIndex == quad.z || targetIndex == quad.w)
                     {
-                        RACommNode a = RACN.Nodes[quad.x] as RACommNode;
-                        RACommNode b = RACN.Nodes[quad.y] as RACommNode;
                         RealAntenna tx = allAntennasReverse[quad.z];
                         RealAntenna rx = allAntennasReverse[quad.w];
+                        var otherAntenna = (tx == RACN.DebugAntenna) ? rx : tx;
                         if (tx == RACN.DebugAntenna || rx == RACN.DebugAntenna)
                         {
-                            float noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i];
                             double3 txToRx = rxPos[i] - txPos[i];
                             double3 rxToTx = txPos[i] - rxPos[i];
                             double txToRxAngle = MathUtils.Angle2(txToRx, txDir[i]);
                             double rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[i]);
-                            float txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[i]);
-                            float rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[i]);
-
-                            antPairs.AppendLine($"Testing {a.name}:{tx} --> {b.name}:{rx}");
-                            antPairs.AppendLine($"  TxP: {txPower[i]:F1}dBm");
-                            antPairs.AppendLine($"  RxP: {rxPower[i]:F1}dBm");
-                            antPairs.AppendLine($"  Noise:{noise:F2}");
-                            antPairs.AppendLine($"  N0:{n0[i]:F2}dB/Hz");
-                            antPairs.AppendLine($"  minEb:{minEb[i]:F2}");
-                            antPairs.AppendLine($"  txPos: {txPos[i]}  rxPos: {rxPos[i]}");
-                            antPairs.AppendLine($"  txToRx: {txToRx}  rxToTx: {rxToTx}");
-                            antPairs.AppendLine($"  txDir: {txDir[i]}  rxDir: {rxDir[i]}");
-                            antPairs.AppendLine($"  TxBW: {txBeamwidth[i]:F2}  RxBW: {rxBeamwidth[i]:F2}");
-                            antPairs.AppendLine($"  TxToRxAngle: {txToRxAngle:F2}  RxToTxAngle: {rxToTxAngle:F2}");
-                            antPairs.AppendLine($"  TxPointLoss: {txPointLoss:F1}dB  RxPointLoss: {rxPointLoss:F1}dB");
-                            antPairs.AppendLine($"  PointLoss:{pointingLoss[i]:F1}dB");
-                            antPairs.AppendLine($"  PathLoss:{pathLoss[i]:F1}dB");
-                            antPairs.AppendLine($"  Rates:{minDataRate[i]:F1}/{dataRate[i]:F1}/{maxDataRate[i]:F1}  steps:{rateSteps[i]}");
+                            var debugData = new Network.LinkDetails
+                            {
+                                txNode = RACN.Nodes[quad.x] as RACommNode,
+                                rxNode = RACN.Nodes[quad.y] as RACommNode,
+                                tx = tx,
+                                rx = rx,
+                                txPower = txPower[i],
+                                rxPower = rxPower[i],
+                                txPos = txPos[i],
+                                rxPos = rxPos[i],
+                                txToRx = txToRx,
+                                rxToTx = rxToTx,
+                                txDir = txDir[i],
+                                rxDir = rxDir[i],
+                                txBeamwidth = txBeamwidth[i],
+                                rxBeamwidth = rxBeamwidth[i],
+                                txToRxAngle = txToRxAngle,
+                                rxToTxAngle = rxToTxAngle,
+                                txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[i]),
+                                rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[i]),
+                                pointingLoss = pointingLoss[i],
+                                pathLoss = pathLoss[i],
+                                atmosphereNoise = atmosphereNoise[i],
+                                bodyNoise = bodyNoise[i],
+                                noiseTemp = noiseTemp[i],
+                                noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i],
+                                N0 = n0[i],
+                                minEb = minEb[i],
+                                minDataRate = minDataRate[i],
+                                dataRate = dataRate[i],
+                                maxDataRate = maxDataRate[i],
+                                rateSteps = rateSteps[i],
+                            };
+                            if (!RACN.connectionDebugger.items.ContainsKey(otherAntenna))
+                                RACN.connectionDebugger.items.Add(otherAntenna, new List<Network.LinkDetails>());
+                            var item = RACN.connectionDebugger.items[otherAntenna];
+                            string sData = $"{debugData}";
+                            item.Add(debugData);
+                            antPairs.AppendLine(sData);
                         }
                         else
                         {
@@ -541,7 +560,7 @@ namespace RealAntennas.Precompute
                 }
                 UnityEngine.Debug.Log($"[RealAntennas.Jobs] {nodePairs.ToStringAndRelease()}");
                 UnityEngine.Debug.Log($"[RealAntennas.Jobs] {antPairs.ToStringAndRelease()}");
-                RACN.DebugAntenna = null;
+                RACN.connectionDebugger = null;
             }
             DisposeJobData();
             Profiler.EndSample();

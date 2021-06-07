@@ -22,7 +22,8 @@ namespace RealAntennas
         private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
         private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
         public List<CommNode> Nodes { get => nodes; }
-        public RealAntenna DebugAntenna = null;
+        public RealAntenna DebugAntenna => connectionDebugger?.antenna;
+        public Network.ConnectionDebugger connectionDebugger = null;
 
         public override CommNode Add(CommNode conn)
         {
