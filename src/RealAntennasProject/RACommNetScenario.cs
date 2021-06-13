@@ -23,6 +23,7 @@ namespace RealAntennas
 
         public Network.RACommNetNetwork Network { get; private set; } = null;
         public MapUI.RACommNetUI UI { get; private set; } = null;
+        public static RACommNetwork RACN => (Instance as RACommNetScenario)?.Network?.CommNet as RACommNetwork;
 
         protected override void Start()
         {

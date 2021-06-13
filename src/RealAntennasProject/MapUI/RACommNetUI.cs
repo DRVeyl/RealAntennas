@@ -289,7 +289,7 @@ namespace RealAntennas.MapUI
             color3dB.a = ConeOpacity;
             color10dB.a = ConeOpacity;
 
-            if ((CommNetScenario.Instance as RACommNetScenario).Network.CommNet is RACommNetwork commNet)
+            if (RACommNetScenario.RACN is RACommNetwork commNet)
             {
                 if (CommNetUI.Mode == CommNetUI.DisplayMode.Network)
                 {

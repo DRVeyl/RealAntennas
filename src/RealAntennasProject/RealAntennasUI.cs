@@ -94,7 +94,7 @@ namespace RealAntennas
         private void VesselCounts(out int vessels, out int groundStations, out int antennas, out string net)
         {
             vessels = groundStations = antennas = 0;
-            if ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet is RACommNetwork racn)
+            if (RACommNetScenario.RACN is RACommNetwork racn)
             {
                 net = $"{racn}";
                 foreach (RACommNode node in racn.Nodes)

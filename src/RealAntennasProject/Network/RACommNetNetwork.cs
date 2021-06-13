@@ -70,18 +70,20 @@ namespace RealAntennas.Network
 
         protected override void Update()
         {
+            var RACN = commNet as RACommNetwork;
             if (requestInit)
-                (commNet as RACommNetwork).Abort();
+                RACN.Abort();
             else
-                (commNet as RACommNetwork).CompleteRebuild();
+                RACN.CompleteRebuild();
         }
 
         protected virtual void UpdateEarly()
         {
+            var RACN = commNet as RACommNetwork;
             if (requestInit)
             {
-                (commNet as RACommNetwork).Validate();
-                (commNet as RACommNetwork).precompute.Initialize();
+                RACN.Validate();
+                RACN.precompute.Initialize();
                 requestInit = false;
             }
 
@@ -90,7 +92,7 @@ namespace RealAntennas.Network
             double tm = Planetarium.GetUniversalTime();
             graphDirty |= tm > prevUpdate + interval;
             bool compute = graphDirty || queueRebuild || commNet.IsDirty;
-            (commNet as RACommNetwork).StartRebuild(compute);
+            RACN.StartRebuild(compute);
             if (compute)
             {
                 prevUpdate = tm;
