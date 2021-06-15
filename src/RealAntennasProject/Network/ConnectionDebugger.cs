@@ -29,7 +29,7 @@ namespace RealAntennas.Network
             else
             {
                 ScreenMessages.PostScreenMessage($"Debugging {antenna}", 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
-                ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet as RACommNetwork).connectionDebugger = this;
+                RACommNetScenario.RACN.connectionDebugger = this;
             }
         }
         public void OnGUI()
@@ -75,17 +75,16 @@ namespace RealAntennas.Network
                         GUILayout.Label($"Power: {data.txPower}dBm");
                         GUILayout.Label($"Target: {data.tx.Target}");
                         GUILayout.Label($"Position: {data.txPos.x:F0}, {data.txPos.y:F0}, {data.txPos.z:F0}");
-                        GUILayout.Label($"Beamwidth: {data.txBeamwidth:F2}");
+                        GUILayout.Label($"Beamwidth (3dB full-width): {data.txBeamwidth:F2}");
                         GUILayout.Label($"Antenna AoA: {data.txToRxAngle:F1}");
                         GUILayout.EndVertical();
-
                         // Display Rx box
                         GUILayout.BeginVertical("Receiver", style, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
                         GUILayout.Label($"Antenna: {data.rx.Name}");
                         GUILayout.Label($"Received Power: {data.rxPower}dBm");
                         GUILayout.Label($"Target: {data.rx.Target}");
                         GUILayout.Label($"Position: {data.rxPos.x:F0}, {data.rxPos.y:F0}, {data.rxPos.z:F0}");
-                        GUILayout.Label($"Beamwidth: {data.rxBeamwidth:F2}");
+                        GUILayout.Label($"Beamwidth (3dB full-width): {data.rxBeamwidth:F2}");
                         GUILayout.Label($"Antenna AoA: {data.rxToTxAngle:F1}");
                         GUILayout.EndVertical();
                         GUILayout.EndHorizontal();
@@ -93,7 +92,6 @@ namespace RealAntennas.Network
                         GUILayout.Space(5);
                         // Display common stats
                         GUILayout.BeginHorizontal(HighLogic.Skin.box);
-                        style.alignment = TextAnchor.UpperCenter;
 
                         GUILayout.BeginVertical("Noise", style, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
                         GUILayout.Label($"Atmosphere Noise: {data.atmosphereNoise:F0}K");
@@ -113,13 +111,22 @@ namespace RealAntennas.Network
                         GUILayout.EndHorizontal();
                         GUILayout.Space(5);
 
+                        style.alignment = TextAnchor.UpperRight;
                         GUILayout.BeginVertical("Link Budget", style);
+                        GUILayout.BeginHorizontal();
                         GUILayout.Label("RxPower = TxGain + TxPower - Losses + RxGain");
                         GUILayout.Label($"{data.rxPower:F1} = {data.tx.Gain:F1} + {data.txPower:F1} - {(data.pathLoss + data.pointingLoss):F1} + {data.rx.Gain:F1}");
+                        GUILayout.EndHorizontal();
+                        GUILayout.BeginHorizontal();
                         GUILayout.Label($"Encoder: {data.tx.Encoder.BestMatching(data.rx.Encoder)}");
+                        GUILayout.Space(20);
                         GUILayout.Label($"Min Eb: {data.minEb:F2}");
-                        GUILayout.Label($"Rates: {data.minDataRate}/{data.dataRate}/{data.maxDataRate}");
+                        GUILayout.EndHorizontal();
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label($"Rates: {data.minDataRate:F1}/{data.dataRate:F1}/{data.maxDataRate:F1}");
+                        GUILayout.Space(20);
                         GUILayout.Label($"Steps: {data.rateSteps}");
+                        GUILayout.EndHorizontal();
                         GUILayout.EndVertical();
                         GUILayout.Space(12);
                     }
