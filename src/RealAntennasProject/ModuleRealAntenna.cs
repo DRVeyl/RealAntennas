@@ -50,38 +50,14 @@ namespace RealAntennas
 
         public Targeting.AntennaTarget Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Peer", groupName = PAWGroupPlanner, groupDisplayName = PAWGroupPlanner)]
-        public string plannerTargetString = string.Empty;
-
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Planning Altitude", guiUnits = "m", guiFormat = "N0", groupName = PAWGroupPlanner),
-         UI_ScaleEdit(intervals = new float[] { 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f, 1e11f, 1e12f, 1e13f, 1e14f }, incrementSlide = new float[] { 1e3f, 1e4f, 1e5f, 1e6f, 1e7f, 1e8f, 1e9f, 1e10f, 1e11f, 1e12f, 1e13f, 1e14f, 1e15f }, sigFigs = 2, suppressEditorShipModified = true, unit = "m", useSI = true)]
-        public float plannerAltitude = 1e6f;
-
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Transmit", groupName = PAWGroupPlanner)]
-        public string sDownlinkPlanningResult = string.Empty;
-
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Receive", groupName = PAWGroupPlanner)]
-        public string sUplinkPlanningResult = string.Empty;
-
         [KSPField(guiName = "Active Transmission Time", guiFormat = "P0", groupName = PAWGroupPlanner),
          UI_FloatRange(minValue = 0, maxValue = 1, stepIncrement = 0.01f, scene = UI_Scene.Editor)]
         public float plannerActiveTxTime = 0;
 
-        [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
-        void AntennaTargetGUI() => Targeting.AntennaTargetManager.AcquireGUI(RAAntenna);
-        
-        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning GUI", groupName = PAWGroupPlanner)]
-        public void AntennaPlanningGUI() => planner.plannerGUI.showGUI = !planner.plannerGUI.showGUI;
-
-        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Refresh Planner", groupName = PAWGroupPlanner)]
-        public void RefreshPlanner() { RecalculateFields(); MonoUtilities.RefreshPartContextWindow(part); }
-
-        public void OnGUI() { planner.plannerGUI.OnGUI(); }
-
         protected const string ModTag = "[ModuleRealAntenna] ";
         public static readonly string ModuleName = "ModuleRealAntenna";
         public RealAntenna RAAntenna;
-        public Planner planner;
+        public PlannerGUI plannerGUI;
 
         private ModuleDeployableAntenna deployableAntenna;
         public bool Deployable => deployableAntenna != null;
@@ -96,7 +72,19 @@ namespace RealAntennas
         public float PowerDraw => RATools.LogScale(PowerDrawLinear);
         public float PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
 
-        [KSPEvent(active = true, name = "Debug Antenna", groupName = PAWGroup, guiActive = true)]
+        [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
+        void AntennaTargetGUI() => Targeting.AntennaTargetManager.AcquireGUI(RAAntenna);
+
+        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning", groupName = PAWGroup)]
+        public void AntennaPlanningGUI()
+        {
+            plannerGUI = new GameObject($"{RAAntenna.Name}-Planning").AddComponent<PlannerGUI>();
+            plannerGUI.peerAntenna = RAAntenna;
+            plannerGUI.fixedAntenna = RAAntenna;
+            plannerGUI.parentPartModule = this;
+        }
+
+        [KSPEvent(active = true, guiActive = true, name = "Debug Antenna", groupName = PAWGroup)]
         public void DebugAntenna()
         {
             var dbg = new GameObject($"Antenna Debugger: {part.partInfo.title}").AddComponent<Network.ConnectionDebugger>();
@@ -106,9 +94,7 @@ namespace RealAntennas
         public override void OnAwake()
         {
             base.OnAwake();
-            RAAntenna = HighLogic.LoadedSceneIsEditor ?
-                new RealAntennaDigital(part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>().RAAntenna.Name) :
-                new RealAntennaDigital();
+            RAAntenna = new RealAntennaDigital(part.partInfo?.title ?? part.name);
         }
 
         public override void OnLoad(ConfigNode node)
@@ -128,7 +114,7 @@ namespace RealAntennas
 
         public void Configure(ConfigNode node)
         {
-            RAAntenna.Name = name;
+            RAAntenna.Name = part.partInfo?.title ?? part.name;
             RAAntenna.Parent = this;
             RAAntenna.LoadFromConfigNode(node);
             Gain = RAAntenna.Gain;
@@ -137,8 +123,6 @@ namespace RealAntennas
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            planner = new Planner(this);
-            planner.ConfigTarget(Planetarium.fetch.Home.name, Planetarium.fetch.Home);
             SetupBaseFields();
             Fields[nameof(_enabled)].uiControlEditor.onFieldChanged = OnAntennaEnableChange;
 
@@ -151,6 +135,7 @@ namespace RealAntennas
             }
             if (TechLevel < 0) TechLevel = maxTechLevel;
 
+            RAAntenna.Name = part.partInfo.title;
             if (!RAAntenna.CanTarget)
             {
                 Fields[nameof(sAntennaTarget)].guiActive = false;
@@ -160,7 +145,6 @@ namespace RealAntennas
             deployableAntenna = part.FindModuleImplementing<ModuleDeployableAntenna>();
 
             ApplyGameSettings();
-            SetupGUIs();
             SetupUICallbacks();
             ConfigBandOptions();
             SetupIdlePower();
@@ -213,8 +197,9 @@ namespace RealAntennas
             int ModulationBits = (RAAntenna as RealAntennaDigital).modulator.ModulationBitsFromTechLevel(TechLevel);
             (RAAntenna as RealAntennaDigital).modulator.ModulationBits = ModulationBits;
 
-            planner.RecalculatePlannerFields();
             RecalculatePlannerECConsumption();
+            if (plannerGUI is PlannerGUI)
+                plannerGUI.RequestUpdate = true;
         }
 
         private void SetupBaseFields()
@@ -238,19 +223,12 @@ namespace RealAntennas
             Fields[nameof(plannerActiveTxTime)].guiActiveEditor = Kerbalism.Kerbalism.KerbalismAssembly is System.Reflection.Assembly;
         }
 
-        private void SetupGUIs()
-        {
-            planner.plannerGUI.Start();
-        }
-
         private void SetupUICallbacks()
         {
             Fields[nameof(TechLevel)].uiControlEditor.onFieldChanged = OnTechLevelChange;
             Fields[nameof(TechLevel)].uiControlEditor.onSymmetryFieldChanged = OnTechLevelChangeSymmetry;
             Fields[nameof(RFBand)].uiControlEditor.onFieldChanged = OnRFBandChange;
             Fields[nameof(TxPower)].uiControlEditor.onFieldChanged = OnTxPowerChange;
-            Fields[nameof(plannerAltitude)].uiControlEditor.onFieldChanged = planner.OnPlanningAltitudeChange;
-            Fields[nameof(plannerAltitude)].uiControlFlight.onFieldChanged = planner.OnPlanningAltitudeChange;
             Fields[nameof(plannerActiveTxTime)].uiControlEditor.onFieldChanged += OnPlannerActiveTxTimeChanged;
         }
 
