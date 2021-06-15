@@ -51,7 +51,6 @@
     <Compile Include="ModuleRealAntenna.cs" />
     <Compile Include="MapUI\RACommNetUI.cs" />
     <Compile Include="Physics.cs" />
-    <Compile Include="Planner.cs" />
     <Compile Include="PlannerGUI.cs" />
     <Compile Include="Precompute\FilteringJobs.cs" />
     <Compile Include="Precompute\Jobs.cs" />
