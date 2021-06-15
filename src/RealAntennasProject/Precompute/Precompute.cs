@@ -123,11 +123,12 @@ namespace RealAntennas.Precompute
             DisposeJobData();
         }
 
-        public void Initialize()
+        public void Initialize(List<CommNet.CommNode> nodes = null)
         {
             if (antennaDataList.IsCreated) antennaDataList.Dispose();
-            antennaDataList = GatherAllAntennas();
-            PairAllAntennasAndNodes();
+            nodes ??= RACommNetScenario.RACN.Nodes;
+            antennaDataList = GatherAllAntennas(allAntennas, allAntennasReverse, nodes);
+            PairAllAntennasAndNodes(allAntennaPairs, allNodePairs, allAntennas, nodes);
         }
 
         // Process:
@@ -142,7 +143,7 @@ namespace RealAntennas.Precompute
         // Each iteration, we have to update elements from KSP and prepare the jobs.
         // We replace so much of the CommNode and Occluder data structures that we might as well reallocate
         // Use the persistent antenna data structure, though.
-        public void DoThings()
+        public void DoThings(List<CelestialBody> bodies = null, List<CommNet.CommNode> nodes = null, bool forceValid = false)
         {
             Profiler.BeginSample("RealAntennas PreCompute.Early");
             if (tempAllocationsActive)
@@ -150,11 +151,13 @@ namespace RealAntennas.Precompute
                 UnityEngine.Debug.LogError($"[RealAntennas.Precompute] Jobs were already allocated!\n{new System.Diagnostics.StackTrace()}");
                 DisposeJobData();
             }
+            nodes ??= RACommNetScenario.RACN.Nodes;
+            bodies ??= FlightGlobals.Bodies;
             Profiler.BeginSample("RealAntennas PreCompute.Early.SetupCommNodes");
-            SetupCommNodes(out allNodes);
+            SetupCommNodes(out allNodes, nodes, forceValid);
             Profiler.EndSample();
             Profiler.BeginSample("RealAntennas PreCompute.Early.SetupOccluders");
-            SetupOccluders(out occluders);
+            SetupOccluders(out occluders, bodies);
             Profiler.EndSample();
             Profiler.BeginSample("RealAntennas PreCompute.Early.UpdateAllAntennas");
             UpdateAllAntennas();
@@ -638,19 +641,19 @@ namespace RealAntennas.Precompute
             return noise;
         }
 
-        private void SetupCommNodes(out NativeList<CNInfo> infos)
+        private void SetupCommNodes(out NativeList<CNInfo> infos, List<CommNet.CommNode> Nodes = null, bool forceValid = false)
         {
-            if ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet is RACommNetwork net)
+            if (Nodes is List<CommNet.CommNode>)
             {
-                infos = new NativeList<CNInfo>(net.Nodes.Count, Allocator.TempJob);
-                foreach (RACommNode node in net.Nodes)
+                infos = new NativeList<CNInfo>(Nodes.Count, Allocator.TempJob);
+                foreach (RACommNode node in Nodes)
                 {
                     Vector3d surfN = node.GetSurfaceNormalVector();
                     infos.Add(new CNInfo()
                     {
                         position = new double3(node.precisePosition.x, node.precisePosition.y, node.precisePosition.z),
                         isHome = node.isHome,
-                        canComm = node.CanComm(),
+                        canComm = forceValid || node.CanComm(),
                         surfaceNormal = new double3(surfN.x, surfN.y, surfN.z),
                         //name = $"{node}",
                     });
@@ -660,12 +663,12 @@ namespace RealAntennas.Precompute
         }
 
         // Gather all CelestialBodies and build Jobs structs
-        private void SetupOccluders(out NativeArray<OccluderInfo> occluders)
+        private void SetupOccluders(out NativeArray<OccluderInfo> occluders, List<CelestialBody> bodies)
         {
-            int num = FlightGlobals.Bodies.Count;
+            int num = bodies.Count;
             occluders = new NativeArray<OccluderInfo>(num, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
             int index = 0;
-            foreach (var body in FlightGlobals.Bodies)
+            foreach (var body in bodies)
             {
                 occluders[index] = new OccluderInfo()
                 {
@@ -681,18 +684,18 @@ namespace RealAntennas.Precompute
 
 
         // Iterate through all comm nodes, collect each RealAntenna, and extract a copy of data for precomputation
-        private NativeArray<AntennaData> GatherAllAntennas()
+        private NativeArray<AntennaData> GatherAllAntennas(Dictionary<RealAntenna, int> antennaDict, Dictionary<int, RealAntenna> reverseDict, List<CommNet.CommNode> nodes)
         {
-            allAntennas.Clear();
-            allAntennasReverse.Clear();
+            antennaDict.Clear();
+            reverseDict.Clear();
             var antennaDatas = new NativeList<AntennaData>(Allocator.Persistent);
             int index = 0;
-            if ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet is RACommNetwork net)
-                foreach (RACommNode node in net.Nodes)
+            if (nodes != null)
+                foreach (RACommNode node in nodes)
                     foreach (RealAntenna ra in node.RAAntennaList)
                     {
-                        allAntennas.Add(ra, index);
-                        allAntennasReverse.Add(index, ra);
+                        antennaDict.Add(ra, index);
+                        reverseDict.Add(index, ra);
                         antennaDatas.Add(new AntennaData()
                         {
                             txPower = ra.TxPower,
@@ -732,24 +735,24 @@ namespace RealAntennas.Precompute
         // Iterate through all CommNode pairs.
         // Produce a NativeList of all indices of antenna pairs to be computed. (int4: node1, node2, ant1, ant2)
         // Exclude combinations of antennas that are incompatible (eg out-of-band)
-        public void PairAllAntennasAndNodes()
+        public void PairAllAntennasAndNodes(NativeList<int4> antennaPairs, NativeList<int2> nodePairs, Dictionary<RealAntenna,int> antennaDict, List<CommNet.CommNode> nodes)
         {
-            allAntennaPairs.Clear();
-            allNodePairs.Clear();
-            if ((RACommNetScenario.Instance as RACommNetScenario)?.Network?.CommNet is RACommNetwork net)
+            antennaPairs.Clear();
+            nodePairs.Clear();
+            if (nodes != null)
             {
                 int index1 = 0;
-                foreach (RACommNode node1 in net.Nodes)
+                foreach (RACommNode node1 in nodes)
                 {
                     int index2 = 0;
-                    foreach (RACommNode node2 in net.Nodes)
+                    foreach (RACommNode node2 in nodes)
                     {
                         if (!ReferenceEquals(node1, node2))
                             foreach (RealAntenna a_ra in node1.RAAntennaList)
                                 foreach (RealAntenna b_ra in node2.RAAntennaList)
                                     if (a_ra.Compatible(b_ra))
-                                        allAntennaPairs.Add(new int4(index1, index2, allAntennas[a_ra], allAntennas[b_ra]));
-                        allNodePairs.Add(new int2(index1, index2));
+                                        antennaPairs.Add(new int4(index1, index2, antennaDict[a_ra], antennaDict[b_ra]));
+                        nodePairs.Add(new int2(index1, index2));
                         index2++;
                     }
                     index1++;
