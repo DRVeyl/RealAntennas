@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 
@@ -15,6 +11,7 @@ namespace RealAntennas.Network
         public Dictionary<RealAntenna, List<LinkDetails>> items = new Dictionary<RealAntenna, List<LinkDetails>>();
         public Dictionary<RealAntenna, bool> visible = new Dictionary<RealAntenna, bool>();
         public RealAntenna antenna;
+        public bool showUI = true;
         private Rect Window = new Rect(120, 120, 900, 900);
         private Vector2 scrollPos;
 
@@ -34,8 +31,11 @@ namespace RealAntennas.Network
         }
         public void OnGUI()
         {
-            GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
+            if (showUI)
+            {
+                GUI.skin = HighLogic.Skin;
+                Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
+            }
         }
         private void GUIDisplay(int windowID)
         {
