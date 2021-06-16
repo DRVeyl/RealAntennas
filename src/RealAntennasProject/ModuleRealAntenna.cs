@@ -50,7 +50,7 @@ namespace RealAntennas
 
         public Targeting.AntennaTarget Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
-        [KSPField(guiName = "Active Transmission Time", guiFormat = "P0", groupName = PAWGroupPlanner),
+        [KSPField(guiName = "Active Transmission Time", guiFormat = "P0", groupName = PAWGroup),
          UI_FloatRange(minValue = 0, maxValue = 1, stepIncrement = 0.01f, scene = UI_Scene.Editor)]
         public float plannerActiveTxTime = 0;
 
