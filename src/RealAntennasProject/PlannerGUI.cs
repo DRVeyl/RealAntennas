@@ -13,11 +13,12 @@ namespace RealAntennas
         private readonly Dictionary<ProtoVessel, List<RealAntenna>> protoVesselAntennaCache = new Dictionary<ProtoVessel, List<RealAntenna>>();
         private readonly string[] distMults = new string[4] { "Km", "Mm", "Gm", "Tm" };
         private readonly List<string> rateStrings = new List<string>();
-        private float fTechLevel = 0;
+        private int iTechLevel = 0, currentGroundStationTechLevel;
         private double distanceMax = 1e6, distanceMin = 1e4;
         private string dMin, dMax;
         private int dMaxMultIndex, dMinMultIndex;
         private int bodyIndex = 0;
+        private bool showDebugUI = true;
         public bool RequestUpdate { get; set; } = false;
 
         public RealAntenna peerAntenna, fixedAntenna;
@@ -35,7 +36,9 @@ namespace RealAntennas
         public void Start()
         {
             DiscoverProtoVesselAntennas(protoVesselAntennaCache);
-            fTechLevel = RACommNetScenario.GroundStationTechLevel;
+            iTechLevel = RACommNetScenario.GroundStationTechLevel;
+            float fTSLvl = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
+            currentGroundStationTechLevel = Mathf.RoundToInt(RACommNetScenario.MaxTL * (HighLogic.CurrentGame.Mode == Game.Modes.CAREER ? fTSLvl : 1));
 
             // Terminology: peer antenna is on the left of the GUI, and will move around.
             // Fixed antenna is on the right of the GUI, and will be positioned at/near homeworld surface.
@@ -72,21 +75,28 @@ namespace RealAntennas
             if (HighLogic.LoadedSceneIsEditor)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"Ground Station TechLevel: {fTechLevel}");
-                fTechLevel = GUILayout.HorizontalSlider(Mathf.RoundToInt(fTechLevel), 0, RACommNetScenario.MaxTL);
-                fTechLevel = Mathf.RoundToInt(fTechLevel);
-                if (GUILayout.Button("Apply"))
+                GUILayout.BeginVertical();
+                GUILayout.Label($"Ground Station TechLevel: {currentGroundStationTechLevel:F0}");
+                GUILayout.Label($"Ground Station (Planning) TechLevel: {iTechLevel}");
+                GUILayout.EndVertical();
+                iTechLevel = Mathf.RoundToInt(GUILayout.HorizontalSlider(iTechLevel, 0, RACommNetScenario.MaxTL, GUILayout.Width(150), GUILayout.ExpandWidth(false)));
+                if (GUILayout.Button("Apply", GUILayout.ExpandWidth(false)))
                 {
-                    RACommNetScenario.GroundStationTechLevel = Mathf.RoundToInt(fTechLevel);
+                    RACommNetScenario.GroundStationTechLevel = iTechLevel;
                     (RACommNetScenario.Instance as RACommNetScenario).RebuildHomes();
+                    fixedAntenna = peerAntenna;
+                    ScreenMessages.PostScreenMessage($"Set Ground Station TL to {iTechLevel} and reset Home antenna to {peerAntenna.Name}", 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
                     RequestUpdate = true;
                 }
+                GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
             GUIStyle boxStyle = new GUIStyle(HighLogic.Skin.box);
             boxStyle.alignment = TextAnchor.UpperCenter;
 
-            GUILayout.BeginHorizontal("Antenna Selection", boxStyle, GUILayout.ExpandHeight(true));
+            GUILayout.BeginVertical("Antenna Selection", boxStyle, GUILayout.ExpandHeight(true));
+            GUILayout.Space(SPACING);
+            GUILayout.BeginHorizontal();
             GUILayout.BeginVertical("Primary", boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));
             GUILayout.Space(SPACING);
             if (GUILayout.Button($"{peerSelectionMode}"))
@@ -98,7 +108,7 @@ namespace RealAntennas
 
             GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("Home", boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));
+            GUILayout.BeginVertical("Peer", boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));
             GUILayout.Space(SPACING);
             if (GUILayout.Button($"{fixedSelectionMode}"))
             {
@@ -108,8 +118,8 @@ namespace RealAntennas
                 RequestUpdate = true;
 
             GUILayout.EndVertical();
-
             GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
 
             var bodyList = new List<CelestialBody> { Planetarium.fetch.Sun };
             bodyList.AddRange(Planetarium.fetch.Sun.orbitingBodies);
@@ -166,6 +176,10 @@ namespace RealAntennas
             if (GUILayout.Button("Plan!", GUILayout.ExpandWidth(false)))
                 RequestUpdate = true;
 
+            GUILayout.Space(SPACING * 2);
+            showDebugUI = GUILayout.Toggle(showDebugUI, "Show Details");
+            if (connectionDebugger != null)
+                connectionDebugger.showUI = showDebugUI;
             GUILayout.Space(SPACING * 2);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close", GUILayout.ExpandWidth(false)))
@@ -315,6 +329,9 @@ namespace RealAntennas
             // Can't use ??= here, because Unity overrides the == operator for gameObjects and probably Components?
             if (connectionDebugger == null)
                 connectionDebugger = new GameObject($"Planning Antenna Debugger: {peerAntennaCopy.Name}").AddComponent<Network.ConnectionDebugger>();
+            connectionDebugger.showUI = showDebugUI;
+            bool debuggerDisplayState = connectionDebugger.visible.FirstOrDefault().Value;
+            connectionDebugger.visible.Clear();
             connectionDebugger.items.Clear();
             fixedNode.RAAntennaList.Clear();
             peerNearNode.RAAntennaList.Clear();
@@ -330,7 +347,7 @@ namespace RealAntennas
 
             precompute.Initialize(nodes);
             precompute.DoThings(bodies, nodes, true);
-            precompute.Complete(net);
+            precompute.SimulateComplete(ref net.connectionDebugger, nodes);
 
             nodes = new List<CommNet.CommNode> { fixedNode, peerFarNode };
             peerAntennaCopy.ParentNode = peerFarNode;
@@ -338,22 +355,24 @@ namespace RealAntennas
 
             precompute.Initialize(nodes);
             precompute.DoThings(bodies, nodes, true);
-            precompute.Complete(net);
+            precompute.SimulateComplete(ref net.connectionDebugger, nodes);
 
             net.connectionDebugger = debugger;
             rateStrings.Clear();
+            connectionDebugger.visible[fixedAntennaCopy] = debuggerDisplayState;
             if (connectionDebugger.items.TryGetValue(fixedAntennaCopy, out var results))
             {
                 int i = 0;
+                float[] rates = { 0, 0, 0, 0 };
                 foreach (var res in results)
                 {
-                    // Seems like the Near side is computed first and should be first in the list, but isn't?
-                    if (res.tx == fixedAntennaCopy)
-                        rateStrings.Add($"{(i < 2 ? "Far" : "Near")} Rx Rate: {RATools.PrettyPrintDataRate(res.dataRate)}");
-                    else
-                        rateStrings.Add($"{(i < 2 ? "Far" : "Near")} Tx Rate: {RATools.PrettyPrintDataRate(res.dataRate)}");
+                    int txInd = res.tx == fixedAntennaCopy ? 1 : 0;
+                    int index = 2 * (i/2) + txInd;  // Integer math: 1 / 2 = 0
+                    rates[index] = res.dataRate;    // 0 = Far Tx.  3 = Near Rx.
                     i++;
                 }
+                rateStrings.Add($"Tx/Rx rate at max distance: {RATools.PrettyPrintDataRate(rates[0])}/{RATools.PrettyPrintDataRate(rates[1])}");
+                rateStrings.Add($"Tx/Rx rate at min distance: {RATools.PrettyPrintDataRate(rates[2])}/{RATools.PrettyPrintDataRate(rates[3])}");
             }
             RequestUpdate = false;
         }
