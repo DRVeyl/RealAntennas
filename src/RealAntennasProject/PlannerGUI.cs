@@ -347,7 +347,7 @@ namespace RealAntennas
 
             precompute.Initialize(nodes);
             precompute.DoThings(bodies, nodes, true);
-            precompute.SimulateComplete(ref net.connectionDebugger, nodes);
+            precompute.SimulateComplete(ref net.connectionDebugger, nodes, log: false);
 
             nodes = new List<CommNet.CommNode> { fixedNode, peerFarNode };
             peerAntennaCopy.ParentNode = peerFarNode;
@@ -355,7 +355,7 @@ namespace RealAntennas
 
             precompute.Initialize(nodes);
             precompute.DoThings(bodies, nodes, true);
-            precompute.SimulateComplete(ref net.connectionDebugger, nodes);
+            precompute.SimulateComplete(ref net.connectionDebugger, nodes, log: false);
 
             net.connectionDebugger = debugger;
             rateStrings.Clear();

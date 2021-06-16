@@ -421,6 +421,17 @@ namespace RealAntennas.Precompute
             DisposeJobData();
         }
 
+        // Don't actually make links.
+        public void SimulateComplete(ref Network.ConnectionDebugger connectionDebugger, List<CommNet.CommNode> Nodes, bool log = true)
+        {
+            if (!tempAllocationsActive)
+                return;
+            precomputeJobHandle.Complete();
+            if (connectionDebugger is Network.ConnectionDebugger)
+                GatherDebugInfo(connectionDebugger.antenna, Nodes, ref connectionDebugger, log);
+            DisposeJobData();
+        }
+
         public void Complete(RACommNetwork RACN)
         {
             if (!tempAllocationsActive)
@@ -479,94 +490,102 @@ namespace RealAntennas.Precompute
                 }
             }
 
-            if (RACN.DebugAntenna is RealAntenna)
-            {
-                var nodePairs = StringBuilderCache.Acquire();
-                var antPairs = StringBuilderCache.Acquire();
-                allAntennas.TryGetValue(RACN.DebugAntenna, out int targetIndex);
-                foreach (var pair in allNodePairs)
-                {
-                    if (pair.x <= pair.y)
-                    {
-                        var p2 = new int2(pair.y, pair.x);
-                        if (validMap.TryGetValue(pair, out bool valid) &&
-                            validMap.TryGetValue(p2, out bool valid2))
-                        {
-                            RACommNode a = RACN.Nodes[pair.x] as RACommNode;
-                            RACommNode b = RACN.Nodes[pair.y] as RACommNode;
-                            if (a == RACN.DebugAntenna.ParentNode || b == RACN.DebugAntenna.ParentNode)
-                            {
-                                nodePairs.AppendLine($"Nodes: {a.name} -> {b.name} Valid: {valid} / {valid2}");
-                            }
-                        }
-                    }
-                }
-                for (int i = 0; i < allValidAntennaPairs.Length; i++)
-                {
-                    var quad = allValidAntennaPairs[i];
-                    if (targetIndex == quad.z || targetIndex == quad.w)
-                    {
-                        RealAntenna tx = allAntennasReverse[quad.z];
-                        RealAntenna rx = allAntennasReverse[quad.w];
-                        var otherAntenna = (tx == RACN.DebugAntenna) ? rx : tx;
-                        if (tx == RACN.DebugAntenna || rx == RACN.DebugAntenna)
-                        {
-                            double3 txToRx = rxPos[i] - txPos[i];
-                            double3 rxToTx = txPos[i] - rxPos[i];
-                            double txToRxAngle = MathUtils.Angle2(txToRx, txDir[i]);
-                            double rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[i]);
-                            var debugData = new Network.LinkDetails
-                            {
-                                txNode = RACN.Nodes[quad.x] as RACommNode,
-                                rxNode = RACN.Nodes[quad.y] as RACommNode,
-                                tx = tx,
-                                rx = rx,
-                                txPower = txPower[i],
-                                rxPower = rxPower[i],
-                                txPos = txPos[i],
-                                rxPos = rxPos[i],
-                                txToRx = txToRx,
-                                rxToTx = rxToTx,
-                                txDir = txDir[i],
-                                rxDir = rxDir[i],
-                                txBeamwidth = txBeamwidth[i],
-                                rxBeamwidth = rxBeamwidth[i],
-                                txToRxAngle = txToRxAngle,
-                                rxToTxAngle = rxToTxAngle,
-                                txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[i]),
-                                rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[i]),
-                                pointingLoss = pointingLoss[i],
-                                pathLoss = pathLoss[i],
-                                atmosphereNoise = atmosphereNoise[i],
-                                bodyNoise = bodyNoise[i],
-                                noiseTemp = noiseTemp[i],
-                                noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i],
-                                N0 = n0[i],
-                                minEb = minEb[i],
-                                minDataRate = minDataRate[i],
-                                dataRate = dataRate[i],
-                                maxDataRate = maxDataRate[i],
-                                rateSteps = rateSteps[i],
-                            };
-                            if (!RACN.connectionDebugger.items.ContainsKey(otherAntenna))
-                                RACN.connectionDebugger.items.Add(otherAntenna, new List<Network.LinkDetails>());
-                            var item = RACN.connectionDebugger.items[otherAntenna];
-                            string sData = $"{debugData}";
-                            item.Add(debugData);
-                            antPairs.AppendLine(sData);
-                        }
-                        else
-                        {
-                            antPairs.AppendLine($"Thought indices {quad.z} or {quad.w} matched target {targetIndex} but discovered antennas {tx} | {rx} | looking for {RACN.DebugAntenna}");
-                        }
-                    }
-                }
-                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {nodePairs.ToStringAndRelease()}");
-                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {antPairs.ToStringAndRelease()}");
-                RACN.connectionDebugger = null;
-            }
+            if (RACN.connectionDebugger is Network.ConnectionDebugger)
+                GatherDebugInfo(RACN.DebugAntenna, RACN.Nodes, ref RACN.connectionDebugger);
             DisposeJobData();
             Profiler.EndSample();
+        }
+
+        public void GatherDebugInfo(RealAntenna debugAntenna, List<CommNet.CommNode> Nodes, ref Network.ConnectionDebugger connectionDebugger, bool log=true)
+        {
+            var nodePairs = StringBuilderCache.Acquire();
+            var antPairs = StringBuilderCache.Acquire();
+            allAntennas.TryGetValue(debugAntenna, out int targetIndex);
+            foreach (var pair in allNodePairs)
+            {
+                if (pair.x <= pair.y)
+                {
+                    var p2 = new int2(pair.y, pair.x);
+                    if (validMap.TryGetValue(pair, out bool valid) &&
+                        validMap.TryGetValue(p2, out bool valid2))
+                    {
+                        RACommNode a = Nodes[pair.x] as RACommNode;
+                        RACommNode b = Nodes[pair.y] as RACommNode;
+                        if (a == debugAntenna.ParentNode || b == debugAntenna.ParentNode)
+                        {
+                            nodePairs.AppendLine($"Nodes: {a.name} -> {b.name} Valid: {valid} / {valid2}");
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < allValidAntennaPairs.Length; i++)
+            {
+                var quad = allValidAntennaPairs[i];
+                if (targetIndex == quad.z || targetIndex == quad.w)
+                {
+                    RealAntenna tx = allAntennasReverse[quad.z];
+                    RealAntenna rx = allAntennasReverse[quad.w];
+                    var otherAntenna = (tx == debugAntenna) ? rx : tx;
+                    if (tx == debugAntenna || rx == debugAntenna)
+                    {
+                        double3 txToRx = rxPos[i] - txPos[i];
+                        double3 rxToTx = txPos[i] - rxPos[i];
+                        double txToRxAngle = MathUtils.Angle2(txToRx, txDir[i]);
+                        double rxToTxAngle = MathUtils.Angle2(rxToTx, rxDir[i]);
+                        var debugData = new Network.LinkDetails
+                        {
+                            txNode = Nodes[quad.x] as RACommNode,
+                            rxNode = Nodes[quad.y] as RACommNode,
+                            tx = tx,
+                            rx = rx,
+                            txPower = txPower[i],
+                            rxPower = rxPower[i],
+                            txPos = txPos[i],
+                            rxPos = rxPos[i],
+                            txToRx = txToRx,
+                            rxToTx = rxToTx,
+                            txDir = txDir[i],
+                            rxDir = rxDir[i],
+                            txBeamwidth = txBeamwidth[i],
+                            rxBeamwidth = rxBeamwidth[i],
+                            txToRxAngle = txToRxAngle,
+                            rxToTxAngle = rxToTxAngle,
+                            txPointLoss = Physics.PointingLoss(txToRxAngle, txBeamwidth[i]),
+                            rxPointLoss = Physics.PointingLoss(rxToTxAngle, rxBeamwidth[i]),
+                            pointingLoss = pointingLoss[i],
+                            pathLoss = pathLoss[i],
+                            atmosphereNoise = atmosphereNoise[i],
+                            bodyNoise = bodyNoise[i],
+                            noiseTemp = noiseTemp[i],
+                            noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i],
+                            N0 = n0[i],
+                            minEb = minEb[i],
+                            minDataRate = minDataRate[i],
+                            dataRate = dataRate[i],
+                            maxDataRate = maxDataRate[i],
+                            rateSteps = rateSteps[i],
+                        };
+                        if (!connectionDebugger.items.ContainsKey(otherAntenna))
+                            connectionDebugger.items.Add(otherAntenna, new List<Network.LinkDetails>());
+                        var item = connectionDebugger.items[otherAntenna];
+                        string sData = $"{debugData}";
+                        item.Add(debugData);
+                        antPairs.AppendLine(sData);
+                    }
+                    else
+                    {
+                        antPairs.AppendLine($"Thought indices {quad.z} or {quad.w} matched target {targetIndex} but discovered antennas {tx} | {rx} | looking for {debugAntenna}");
+                    }
+                }
+            }
+            if (log)
+            {
+                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {nodePairs}");
+                UnityEngine.Debug.Log($"[RealAntennas.Jobs] {antPairs}");
+            }
+            nodePairs.Release();
+            antPairs.Release();
+            connectionDebugger = null;
         }
 
         private void DisposeJobData()
