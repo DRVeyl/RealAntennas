@@ -99,26 +99,6 @@ namespace RealAntennas
         public virtual bool DirectionCheck(RealAntenna other) => DirectionCheck(other.Position);
         public virtual bool DirectionCheck(Vector3 pos) => Physics.PointingLoss(this, pos) < Physics.MaxPointingLoss;
 
-        public virtual double BestDataRateToPeer(RealAntenna rx)
-        {
-            RealAntenna tx = this;
-            Vector3 toSource = rx.Position - tx.Position;
-            float distance = toSource.magnitude;
-            if (!Compatible(rx)) return 0;
-            if ((tx.Parent is ModuleRealAntenna) && !tx.Parent.CanComm()) return 0;
-            if ((rx.Parent is ModuleRealAntenna) && !rx.Parent.CanComm()) return 0;
-            if ((distance < tx.MinimumDistance) || (distance < rx.MinimumDistance)) return 0;
-            if (!(tx.DirectionCheck(rx) && rx.DirectionCheck(tx))) return 0;
-
-            double RSSI = Physics.ReceivedPower(tx, rx, distance, tx.Frequency);
-            float temp = Physics.NoiseTemperature(rx, tx.Position);
-            float Noise = Physics.NoiseFloor((float)Bandwidth, temp);
-            double CI = RSSI - Noise;
-            double margin = CI - RequiredCI;
-
-            return (CI > Encoder.RequiredEbN0) ? DataRate * Encoder.CodingRate : 0;
-        }
-
         public virtual void LoadFromConfigNode(ConfigNode config)
         {
             int tl = (config.HasValue("TechLevel")) ? int.Parse(config.GetValue("TechLevel")) : 0;

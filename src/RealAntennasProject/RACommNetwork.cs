@@ -19,38 +19,23 @@ namespace RealAntennas
         private readonly System.Diagnostics.Stopwatch tempWatch = new System.Diagnostics.Stopwatch();
         internal readonly Precompute.Precompute precompute = new Precompute.Precompute();
 
-        private readonly RealAntenna[] bestFwdAntPair = new RealAntenna[2];
-        private readonly RealAntenna[] bestRevAntPair = new RealAntenna[2];
         public List<CommNode> Nodes { get => nodes; }
         public RealAntenna DebugAntenna => connectionDebugger?.antenna;
         public Network.ConnectionDebugger connectionDebugger = null;
 
         public override CommNode Add(CommNode conn)
         {
-            if (!(conn is RACommNode c))
+            if (!(conn is RACommNode))
             {
                 Debug.LogWarning($"{ModTag} Wrong commnode type, so ignoring.");
                 return conn;
             }
-            //Debug.Log($"{ModTag} Adding {c.DebugToString()}");
             return base.Add(conn);
         }
         protected override bool SetNodeConnection(CommNode a, CommNode b)
         {
-            if (a.isHome && b.isHome)
-            {
-                Disconnect(a, b);
-                return false;
-            }
-            double distance = (b.precisePosition - a.precisePosition).magnitude;
-            if (TestOcclusion(a.precisePosition, a.occluder, b.precisePosition, b.occluder, distance))
-                return TryConnect(a, b, distance);
-
-            Disconnect(a, b, true);
+            Debug.LogError($"[RACommNetwork] SetNodeConnection called, but it should never be!");
             return false;
-            // Specific antenna selection within the set available to a CommNode is deferred until TryConnect()
-            // Do not prematurely halt based on range here anymore, because we need to check (all?) pairings.
-            // TryConnect() should call Disconnect() if no connection can be achieved.
         }
 
         protected override void PostUpdateNodes()
@@ -61,34 +46,8 @@ namespace RealAntennas
 
         protected override bool TryConnect(CommNode a, CommNode b, double distance, bool aCanRelay = true, bool bCanRelay = true, bool bothRelay = true)
         {
-            if ((!(a is RACommNode rac_a)) || (!(b is RACommNode rac_b)))
-            {
-                Debug.LogError($"{ModTag} TryConnect() but a({a}) or b({b}) null or not RACommNode!");
-                return base.TryConnect(a, b, distance, aCanRelay, bCanRelay, bothRelay);
-            }
-            if (!rac_a.CanComm() || !rac_b.CanComm())
-            {
-                Disconnect(a, b);
-                return false;
-            }
-            // Antenna selection was deferred until here.  Each RACommNode has a List<RealAntenna>.
-            Profiler.BeginSample("RealAntennas CommNetwork TryConnect");
-            bestFwdAntPair[0] = null;
-            bestFwdAntPair[1] = null;
-            bestRevAntPair[0] = null;
-            bestRevAntPair[1] = null;
-
-            //if (FwdDataRate < double.Epsilon || RevDataRate < double.Epsilon)
-            if (!SelectBestAntennaPairs(rac_a.RAAntennaList, rac_b.RAAntennaList, bestFwdAntPair, bestRevAntPair, out double FwdDataRate, out double RevDataRate))
-            {
-                Disconnect(a, b);
-                Profiler.EndSample();
-                return false;
-            }
-            //MakeLink(bestFwdAntPair[0], bestFwdAntPair[1], bestRevAntPair[0], bestRevAntPair[1], rac_a, rac_b, distance, FwdDataRate, RevDataRate);
-
-            Profiler.EndSample();
-            return true;
+            Debug.LogError($"[RACommNetwork] TryConnect called, but it should never be!");
+            return false;
         }
 
         internal void MakeLink(RealAntenna fwdTx,
@@ -123,33 +82,6 @@ namespace RealAntennas
                 Debug.LogWarning($"{ModTag} Detected actual rate {FwdDataRate} greater than expected max {FwdBestDataRate} for antennas {link.FwdAntennaTx} and {link.FwdAntennaRx}");
 
             link.Update(Math.Min(link.FwdMetric, link.RevMetric));
-        }
-
-        protected virtual bool SelectBestAntennaPairs(List<RealAntenna> fwdList, List<RealAntenna> revList, RealAntenna[] bestFwdAntPair, RealAntenna[] bestRevAntPair, out double FwdDataRate, out double RevDataRate)
-        {
-            FwdDataRate = RevDataRate = 0;
-            foreach (RealAntenna first in fwdList)
-            {
-                foreach (RealAntenna second in revList)
-                {
-                    double candidateFwdRate = first.BestDataRateToPeer(second);
-                    double candidateRevRate = second.BestDataRateToPeer(first);
-                    if (FwdDataRate < candidateFwdRate)
-                    {
-                        bestFwdAntPair[0] = first;
-                        bestFwdAntPair[1] = second;
-                        FwdDataRate = candidateFwdRate;
-                    }
-                    if (RevDataRate < candidateRevRate)
-                    {
-                        bestRevAntPair[0] = second;
-                        bestRevAntPair[1] = first;
-                        RevDataRate = candidateRevRate;
-                    }
-                }
-            }
-            //Debug.LogFormat(ModTag + "Queried {0}/{1} and got rates {2}/{3}", rac_a, rac_b, RATools.PrettyPrint(FwdDataRate)+"bps", RATools.PrettyPrint(RevDataRate)+"bps");
-            return (FwdDataRate >= double.Epsilon && RevDataRate >= double.Epsilon);
         }
 
         protected override CommLink Connect(CommNode a, CommNode b, double distance)
@@ -346,8 +278,8 @@ namespace RealAntennas
         }
         */
 
-        private HashSet<RACommNode> sptSet = new HashSet<RACommNode>();
-        private List<RACommNode> pathSortList = new List<RACommNode>();
+        private readonly HashSet<RACommNode> sptSet = new HashSet<RACommNode>();
+        private readonly List<RACommNode> pathSortList = new List<RACommNode>();
         public override CommNode FindClosestWhere(CommNode cnStart, CommPath path, Func<CommNode, CommNode, bool> where)
         {
             if (!(cnStart is RACommNode start && where != null))

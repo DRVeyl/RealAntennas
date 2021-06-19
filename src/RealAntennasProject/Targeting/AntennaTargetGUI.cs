@@ -13,9 +13,8 @@ namespace RealAntennas.Targeting
         enum SortMode { Alphabetical, Distance, VesselType, ParentBody, RFBand };
         SortMode sortMode = SortMode.Alphabetical;
         private TargetModeInfo targetMode = TargetModeInfo.All.Values.First();
-        private string sLat = "0", sLon = "0", sAlt = "0", sAzimuth = "0", sElevation = "0", sForward = "0", sUp = "0";
+        private string sLat = "0", sLon = "0", sAlt = "0", sAzimuth = "0", sElevation = "0", sForward = "0";
         float deflection = 0;
-        private int minVesselTL = 0, minBodyCenterTL = 0, minBodyLLATL = 0, minAzElTL = 0, minOrbitRelTL = 0;
         private bool showTargetModeInfo = false;
 
         public RealAntenna antenna { get; set; }
