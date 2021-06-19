@@ -37,6 +37,7 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MapUI\Settings.cs" />
     <Compile Include="Network\ConnectionDebugger.cs" />
     <Compile Include="Network\LinkDetails.cs" />
     <Compile Include="Targeting\AntennaTargetGUI.cs" />

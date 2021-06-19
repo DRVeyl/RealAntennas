@@ -13,16 +13,10 @@ namespace RealAntennas.MapUI
     {
         private const string icon = "RealAntennas/radio-antenna";
         private const int numCirclePts = 180;
-        internal int numCircles = 4;
-        internal float ConeOpacity = 1f;
 
         public Color colorToTarget = XKCDColors.BananaYellow;
         public Color color3dB = XKCDColors.BarbiePink;
         public Color color10dB = XKCDColors.Lavender;
-        public bool drawTarget = false;
-        public bool drawCone3 = true;
-        public bool drawCone10 = true;
-        public float lineScaleWidth = 2.5f;
 
         private readonly List<Vector3d> targetPoints = new List<Vector3d>();
         private readonly List<Vector3> targetPoints_out = new List<Vector3>();
@@ -38,21 +32,14 @@ namespace RealAntennas.MapUI
         private readonly Dictionary<CommNode, Dictionary<RealAntenna, GameObject>> cone3Renderers = new Dictionary<CommNode, Dictionary<RealAntenna, GameObject>>();
         private readonly Dictionary<CommNode, Dictionary<RealAntenna, GameObject>> cone10Renderers = new Dictionary<CommNode, Dictionary<RealAntenna, GameObject>>();
 
-        public NetUIConfigurationWindow configWindow = null;
-
-        internal enum DrawConesMode { None, Cone2D, Cone3D };
-        internal DrawConesMode drawConesMode = DrawConesMode.Cone3D;
-        internal enum RadioPerspective { Transmit, Receive };
-        internal RadioPerspective linkEndPerspective = RadioPerspective.Transmit;
+        public enum DrawConesMode { None, Cone2D, Cone3D };
+        public enum RadioPerspective { Transmit, Receive };
 
         protected override void Start()
         {
             base.Start();
             if (!(HighLogic.LoadedSceneIsFlight || HighLogic.LoadedScene == GameScenes.TRACKSTATION))
                 return;
-            Debug.Log($"[RACN UI] Start() in {HighLogic.LoadedScene}");
-            configWindow = gameObject.AddComponent<NetUIConfigurationWindow>();
-            configWindow.parent = this;
 
             if (MapView.fetch is MapView)
             {
@@ -63,23 +50,14 @@ namespace RealAntennas.MapUI
                     SiteNode siteNode = SiteNode.Spawn(gs);
                     Texture2D stationTexture = (GameDatabase.Instance.GetTexture(home.icon, false) is Texture2D tex) ? tex : defaultTex;
                     siteNode.wayPoint.node.SetIcon(Sprite.Create(stationTexture, new Rect(0, 0, stationTexture.width, stationTexture.height), new Vector2(0.5f, 0.5f), 100f));
-                    //                    MapView.fetch.siteNodes.Add(SiteNode.Spawn(gs));
                 }
-
-//                RAOrbitRenderer.ReplaceOrbitRenderers();
             }
             RATelemetryUpdate.Install();
         }
 
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            if (configWindow != null)
-                Destroy(configWindow);
-        }
-
         private void GatherLinkLines(List<CommLink> linkList)
         {
+            var settings = RACommNetScenario.MapUISettings;
             foreach (RACommLink link in linkList)
             {
                 GameObject go;
@@ -99,10 +77,10 @@ namespace RealAntennas.MapUI
                 Vector3 camPos = cam.transform.position;
                 float dStart = (float) Vector3d.Distance(camPos, scaledStart);
                 float dEnd = (float) Vector3d.Distance(camPos, scaledEnd);
-                renderer.startWidth = dStart * lineScaleWidth / 1000;
-                renderer.endWidth = dEnd * lineScaleWidth / 1000;
-                Color startColor = (linkEndPerspective == RadioPerspective.Transmit) ? LinkColor(link.FwdMetric) : LinkColor(link.RevMetric);
-                Color endColor = (linkEndPerspective == RadioPerspective.Transmit) ? LinkColor(link.RevMetric) : LinkColor(link.FwdMetric);
+                renderer.startWidth = dStart * settings.lineScaleWidth / 1000;
+                renderer.endWidth = dEnd * settings.lineScaleWidth / 1000;
+                Color startColor = (settings.radioPerspective == RadioPerspective.Transmit) ? LinkColor(link.FwdMetric) : LinkColor(link.RevMetric);
+                Color endColor = (settings.radioPerspective == RadioPerspective.Transmit) ? LinkColor(link.RevMetric) : LinkColor(link.FwdMetric);
                 SetColorGradient(renderer, startColor, endColor);
                 renderer.positionCount = 2;
                 renderer.SetPositions(new Vector3[] { scaledStart, scaledEnd });
@@ -119,6 +97,7 @@ namespace RealAntennas.MapUI
         public void GatherAntennaCones(RACommNode node)
         {
             if (node == null || node.RAAntennaList.Count == 0) return;
+            var settings = RACommNetScenario.MapUISettings;
             CheckRenderers(node);
 
             foreach (RealAntenna ra in node.RAAntennaList)
@@ -146,60 +125,60 @@ namespace RealAntennas.MapUI
                     Camera cam = PlanetariumCamera.Camera;
                     Vector3 camPos = cam.transform.position;
 
-                    if (drawTarget)
+                    if (settings.drawTarget)
                     {
                         targetPoints.Add(node.precisePosition);
                         targetPoints.Add(node.precisePosition + ra.ToTarget);
                         LocalToScaledSpace(targetPoints, targetPoints_out);
-                        float dStart = Vector3.Distance(camPos, targetPoints[0]);
-                        float dEnd = Vector3.Distance(camPos, targetPoints[1]);
-                        targetRenderer.startWidth = dStart * lineScaleWidth / 1000;
-                        targetRenderer.endWidth = dEnd * lineScaleWidth / 1000;
-                        SetColorGradient(targetRenderer, colorToTarget, colorToTarget, ConeOpacity, ConeOpacity);
+                        float dStart = Vector3.Distance(camPos, targetPoints_out[0]);
+                        float dEnd = Vector3.Distance(camPos, targetPoints_out[1]);
+                        targetRenderer.startWidth = dStart * settings.lineScaleWidth / 1000;
+                        targetRenderer.endWidth = dEnd * settings.lineScaleWidth / 1000;
+                        SetColorGradient(targetRenderer, colorToTarget, colorToTarget, settings.coneOpacity, settings.coneOpacity);
                     }
 
-                    if (drawCone3 && drawConesMode != DrawConesMode.None)
+                    if (settings.drawCone3 && settings.drawConesMode != DrawConesMode.None)
                     {
                         cone3Points.Add(cone3.end1);
                         cone3Points.Add(cone3.vertex);
-                        if (drawConesMode == DrawConesMode.Cone3D)
-                            MakeCircles(cone3Points, cone3, numCircles);
+                        if (settings.drawConesMode == DrawConesMode.Cone3D)
+                            MakeCircles(cone3Points, cone3, settings.coneCircles);
                         else
                             cone3Points.Add(cone3.end2);
                         LocalToScaledSpace(cone3Points, cone3Points_out);
                         float dStart = Vector3.Distance(camPos, ScaledSpace.LocalToScaledSpace(cone3.vertex));
-                        cone3Renderer.startWidth = dStart * lineScaleWidth / 1000;
-                        cone3Renderer.endWidth = dStart * lineScaleWidth / 1000;
-                        SetColorGradient(cone3Renderer, color3dB, color3dB, ConeOpacity, ConeOpacity);
+                        cone3Renderer.startWidth = dStart * settings.lineScaleWidth / 1000;
+                        cone3Renderer.endWidth = dStart * settings.lineScaleWidth / 1000;
+                        SetColorGradient(cone3Renderer, color3dB, color3dB, settings.coneOpacity, settings.coneOpacity);
                     }
 
-                    if (drawCone10 && drawConesMode != DrawConesMode.None)
+                    if (settings.drawCone10 && settings.drawConesMode != DrawConesMode.None)
                     {
                         cone10Points.Add(cone10.end1);
                         cone10Points.Add(cone10.vertex);
-                        if (drawConesMode == DrawConesMode.Cone3D)
-                            MakeCircles(cone10Points, cone10, numCircles);
+                        if (settings.drawConesMode == DrawConesMode.Cone3D)
+                            MakeCircles(cone10Points, cone10, settings.coneCircles);
                         else
                             cone10Points.Add(cone10.end2);
 
                         LocalToScaledSpace(cone10Points, cone10Points_out);
                         float dStart = Vector3.Distance(camPos, ScaledSpace.LocalToScaledSpace(cone10.vertex));
-                        cone10Renderer.startWidth = dStart * lineScaleWidth / 1000;
-                        cone10Renderer.endWidth = dStart * lineScaleWidth / 1000;
-                        SetColorGradient(cone10Renderer, color10dB, color10dB, ConeOpacity, ConeOpacity);
+                        cone10Renderer.startWidth = dStart * settings.lineScaleWidth / 1000;
+                        cone10Renderer.endWidth = dStart * settings.lineScaleWidth / 1000;
+                        SetColorGradient(cone10Renderer, color10dB, color10dB, settings.coneOpacity, settings.coneOpacity);
                     }
 
                     targetRenderer.positionCount = targetPoints.Count;
                     targetRenderer.SetPositions(targetPoints_out.ToArray());
-                    targetRenderer.enabled = drawTarget;
+                    targetRenderer.enabled = settings.drawTarget;
 
                     cone3Renderer.positionCount = cone3Points.Count;
                     cone3Renderer.SetPositions(cone3Points_out.ToArray());
-                    cone3Renderer.enabled = drawCone3 && drawConesMode != DrawConesMode.None;
+                    cone3Renderer.enabled = settings.drawCone3 && settings.drawConesMode != DrawConesMode.None;
 
                     cone10Renderer.positionCount = cone10Points.Count;
                     cone10Renderer.SetPositions(cone10Points_out.ToArray());
-                    cone10Renderer.enabled = drawCone10 && drawConesMode != DrawConesMode.None;
+                    cone10Renderer.enabled = settings.drawCone10 && settings.drawConesMode != DrawConesMode.None;
                 }
             }
         }
@@ -280,14 +259,15 @@ namespace RealAntennas.MapUI
             DisableAllLinkRenderers();
             DisableAllConeRenderers();
             if (CommNetUI.Mode == CommNetUI.DisplayMode.None) return;
+            var settings = RACommNetScenario.MapUISettings;
             if (this.draw3dLines != MapView.Draw3DLines)
             {
                 this.draw3dLines = MapView.Draw3DLines;
                 ResetRendererLayer(MapView.Draw3DLines);
             }
-            colorToTarget.a = ConeOpacity;
-            color3dB.a = ConeOpacity;
-            color10dB.a = ConeOpacity;
+            colorToTarget.a = settings.coneOpacity;
+            color3dB.a = settings.coneOpacity;
+            color10dB.a = settings.coneOpacity;
 
             if (RACommNetScenario.RACN is RACommNetwork commNet)
             {
@@ -299,14 +279,13 @@ namespace RealAntennas.MapUI
                         GatherAntennaCones(node);
                     }
                 }
-                if (vessel is Vessel && vessel.Connection is CommNetVessel cnv && 
-                    cnv.Comm is RACommNode commNode && cnv.ControlPath is CommPath commPath)
+                if (vessel?.Connection?.Comm is RACommNode commNode &&
+                    vessel?.Connection?.ControlPath is CommPath commPath)
                 {
                     switch (CommNetUI.Mode)
                     {
                         case DisplayMode.FirstHop:
-                            CommLink cl = commPath.FirstOrDefault();
-                            if (cl != null)
+                            if (commPath.FirstOrDefault() is CommLink cl)
                             {
                                 commLinkList.Clear();
                                 commLinkList.Add(cl.start == commNode ? cl.start[cl.end] : cl.end[cl.start]);

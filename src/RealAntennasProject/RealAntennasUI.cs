@@ -15,25 +15,41 @@ namespace RealAntennas
         private ApplicationLauncherButton button;
 
         private Rect winPos = new Rect(450, 100, 400, 100);
-        private const int winID = 731806;
         private GameObject antennaConsoleGO = null;
+        private GameObject netUIConfigWindowGO = null;
 
         protected void Awake()
         {
             GameEvents.onGUIApplicationLauncherReady.Add(OnGuiAppLauncherReady);
+            GameEvents.OnMapExited.Add(OnMapExit);
         }
 
-        private void Update()
+        public void OnDestroy()
+        {
+            GameEvents.OnMapExited.Remove(OnMapExit);
+            GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
+            if (button != null)
+                ApplicationLauncher.Instance.RemoveModApplication(button);
+        }
+
+        public void OnMapExit()
+        {
+            Destroy(netUIConfigWindowGO.GetComponent<MapUI.NetUIConfigurationWindow>());
+            netUIConfigWindowGO.DestroyGameObject();
+            netUIConfigWindowGO = null;
+        }
+
+        public void Update()
         {
             if (GameSettings.MODIFIER_KEY.GetKey() && Input.GetKeyDown(KeyCode.I))
                 showUI = !showUI;
         }
 
-        private void OnGUI()
+        public void OnGUI()
         {
             if (showUI)
             {
-                winPos = GUILayout.Window(winID, winPos, WindowGUI, $"{modName}", GUILayout.MinWidth(200));
+                winPos = GUILayout.Window(GetHashCode(), winPos, WindowGUI, modName, GUILayout.MinWidth(200));
             }
         }
 
@@ -67,19 +83,25 @@ namespace RealAntennas
             }
 
             GUILayout.EndVertical();
-            if (MapView.fetch is MapView map && MapView.MapIsEnabled)
+            if (MapView.fetch is MapView && MapView.MapIsEnabled)
             {
-                MapUI.NetUIConfigurationWindow win = scen.UI.configWindow;
-                if (GUILayout.Button($"{(win.showUI ? "Hide" : "Show")} Config Window"))
+                if (netUIConfigWindowGO is GameObject && GUILayout.Button("Hide Config Window"))
                 {
-                    if (win.showUI) win.HideWindow(); else win.ShowWindow();
+                    Destroy(netUIConfigWindowGO.GetComponent<MapUI.NetUIConfigurationWindow>());
+                    netUIConfigWindowGO.DestroyGameObject();
+                    netUIConfigWindowGO = null;
+                }
+                else if (netUIConfigWindowGO == null && GUILayout.Button("Show Config Window"))
+                {
+                    netUIConfigWindowGO = new GameObject("RealAntennas.NetUIConfigWindow");
+                    netUIConfigWindowGO.AddComponent<MapUI.NetUIConfigurationWindow>();
                 }
             }
 
             if (antennaConsoleGO is null && GUILayout.Button("Launch Control Console"))
             {
                 antennaConsoleGO = new GameObject();
-                antennaConsoleGO.AddComponent(typeof(Targeting.RemoteAntennaControlUI));
+                antennaConsoleGO.AddComponent<Targeting.RemoteAntennaControlUI>();
             } else if (antennaConsoleGO is GameObject && GUILayout.Button("Close Control Console")) {
                 antennaConsoleGO.DestroyGameObject();
                 antennaConsoleGO = null;
@@ -139,13 +161,6 @@ namespace RealAntennas
                     Debug.LogException(ex);
                 }
             }
-        }
-
-        public void OnDestroy()
-        {
-            GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
-            if (button != null)
-                ApplicationLauncher.Instance.RemoveModApplication(button);
         }
     }
 }

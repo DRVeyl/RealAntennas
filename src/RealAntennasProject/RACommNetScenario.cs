@@ -23,7 +23,9 @@ namespace RealAntennas
 
         public Network.RACommNetNetwork Network { get; private set; } = null;
         public MapUI.RACommNetUI UI { get; private set; } = null;
+        public MapUI.Settings MapSettings { get; private set; } = null;
         public static RACommNetwork RACN => (Instance as RACommNetScenario)?.Network?.CommNet as RACommNetwork;
+        public static MapUI.Settings MapUISettings => (Instance as RACommNetScenario)?.MapSettings;
 
         protected override void Start()
         {
@@ -51,9 +53,25 @@ namespace RealAntennas
                 DestroyNetwork();
                 Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately after Homes rebuild logging.");
             }
+            MapSettings = new MapUI.Settings();
             RebuildHomes();
             if (CommNetEnabled)     // Don't self-delete if we are not enabled.
                 base.OnAwake();     // Will set CommNetScenario.Instance to this
+        }
+
+        public override void OnLoad(ConfigNode gameNode)
+        {
+            base.OnLoad(gameNode);
+            if (gameNode.HasNode("MapUISettings"))
+                ConfigNode.LoadObjectFromConfig(MapSettings, gameNode.GetNode("MapUISettings"));
+        }
+
+        public override void OnSave(ConfigNode gameNode)
+        {
+            base.OnSave(gameNode);
+            var node = ConfigNode.CreateConfigFromObject(MapSettings);
+            node.name = "MapUISettings";
+            gameNode.AddNode(node);
         }
 
         private System.Collections.IEnumerator NotifyDisabled()
@@ -68,7 +86,7 @@ namespace RealAntennas
         }
 
 
-        private void OnDestroy()
+        public void OnDestroy()
         {
             if (Network) Destroy(Network);
             if (UI) Destroy(UI);
