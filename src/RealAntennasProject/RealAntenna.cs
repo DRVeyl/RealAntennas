@@ -134,7 +134,7 @@ namespace RealAntennas
             AMWTemp = (config.HasValue("AMWTemp")) ? float.Parse(config.GetValue("AMWTemp")) : 290f;
             if (config.HasNode("TARGET"))
                 Target = Targeting.AntennaTarget.LoadFromConfig(config.GetNode("TARGET"), this);
-            if (CanTarget && !(Target?.Validate() == true))
+            if (CanTarget && !(Target?.Validate() == true) && HighLogic.LoadedSceneHasPlanetarium)
                 Target = Targeting.AntennaTarget.LoadFromConfig(SetDefaultTarget(), this);
         }
 
