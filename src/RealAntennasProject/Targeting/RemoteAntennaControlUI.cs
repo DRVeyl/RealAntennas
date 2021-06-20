@@ -36,16 +36,16 @@ namespace RealAntennas.Targeting
             }
             scrollSourcePos = GUILayout.BeginScrollView(scrollSourcePos, GUILayout.ExpandWidth(true));
             foreach (var ra in from Vessel v in sourceVessels
-                               from RealAntenna ra in (v.Connection?.Comm as RACommNode)?.RAAntennaList?.Where(x => x.CanTarget)
+                               from RealAntenna ra in (v.Connection?.Comm as RACommNode)?.RAAntennaList
                                select ra)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"{(ra.ParentNode as RACommNode)?.ParentVessel?.vesselName} {ra.ToStringShort()}");
-                if (GUILayout.Button("Target"))
+                GUILayout.Label($"{ra.ParentNode?.displayName}: {ra.ToStringShort()}", GUILayout.ExpandWidth(true));
+                if (ra.CanTarget && GUILayout.Button("Target", GUILayout.ExpandWidth(false)))
                 {
                     Targeting.AntennaTargetManager.AcquireGUI(ra);
                 }
-                if (GUILayout.Button("Debug"))
+                if (GUILayout.Button("Debug", GUILayout.ExpandWidth(false)))
                 {
                     var dbg = new GameObject($"Antenna Debugger: {ra.Name}").AddComponent<Network.ConnectionDebugger>();
                     dbg.antenna = ra;

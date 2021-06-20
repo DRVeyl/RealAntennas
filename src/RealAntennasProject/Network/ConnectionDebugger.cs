@@ -43,7 +43,7 @@ namespace RealAntennas.Network
             var style = new GUIStyle(HighLogic.Skin.box);
 
             GUILayout.BeginVertical(HighLogic.Skin.box);
-            GUILayout.Label($"Vessel: {parentVessel?.name ?? "None"}");
+            GUILayout.Label($"Vessel: {parentVessel?.GetDisplayName() ?? "None"}");
             GUILayout.Label($"Antenna: {antenna.Name}");
             GUILayout.Label($"Band: {antenna.RFBand.name}       Power: {antenna.TxPower}dBm");
             if (antenna.CanTarget)
@@ -58,7 +58,7 @@ namespace RealAntennas.Network
                 if (!visible.ContainsKey(item.Key))
                     visible[item.Key] = false;
                 bool mode = visible[item.Key];
-                mode = GUILayout.Toggle(mode, $"{item.Key}", HighLogic.Skin.button, GUILayout.ExpandWidth(true), GUILayout.Height(20));
+                mode = GUILayout.Toggle(mode, $"{item.Key.ParentNode?.displayName}:{item.Key}", HighLogic.Skin.button, GUILayout.ExpandWidth(true), GUILayout.Height(20));
                 visible[item.Key] = mode;
                 if (mode)
                 {
