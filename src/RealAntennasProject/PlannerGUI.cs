@@ -18,7 +18,7 @@ namespace RealAntennas
         private string dMin, dMax;
         private int dMaxMultIndex, dMinMultIndex;
         private int bodyIndex = 0;
-        private bool showDebugUI = true;
+        private bool showDebugUI = false;
         public bool RequestUpdate { get; set; } = false;
 
         public RealAntenna peerAntenna, fixedAntenna;
@@ -52,8 +52,8 @@ namespace RealAntennas
 
             ConvertDistance(distanceMax, out double tMax, out dMaxMultIndex);
             ConvertDistance(distanceMin, out double tMin, out dMinMultIndex);
-            dMin = $"{tMax:F3}";
-            dMax = $"{tMin:F3}";
+            dMin = $"{tMin:F3}";
+            dMax = $"{tMax:F3}";
         }
 
         public void OnDestroy()
@@ -136,8 +136,8 @@ namespace RealAntennas
                 MinMaxDistance(body, out distanceMin, out distanceMax);
                 ConvertDistance(distanceMax, out double tMax, out dMaxMultIndex);
                 ConvertDistance(distanceMin, out double tMin, out dMinMultIndex);
-                dMin = $"{tMax:F3}";
-                dMax = $"{tMin:F3}";
+                dMin = $"{tMin:F3}";
+                dMax = $"{tMax:F3}";
                 RequestUpdate = true;
             }
             GUILayout.EndVertical();
@@ -368,11 +368,11 @@ namespace RealAntennas
                 {
                     int txInd = res.tx == fixedAntennaCopy ? 1 : 0;
                     int index = 2 * (i/2) + txInd;  // Integer math: 1 / 2 = 0
-                    rates[index] = res.dataRate;    // 0 = Far Tx.  3 = Near Rx.
+                    rates[index] = res.dataRate;    // 0 = Near Tx.  3 = Far Rx.
                     i++;
                 }
-                rateStrings.Add($"Tx/Rx rate at max distance: {RATools.PrettyPrintDataRate(rates[0])}/{RATools.PrettyPrintDataRate(rates[1])}");
-                rateStrings.Add($"Tx/Rx rate at min distance: {RATools.PrettyPrintDataRate(rates[2])}/{RATools.PrettyPrintDataRate(rates[3])}");
+                rateStrings.Add($"Tx/Rx rate at max distance: {RATools.PrettyPrintDataRate(rates[2])}/{RATools.PrettyPrintDataRate(rates[3])}");
+                rateStrings.Add($"Tx/Rx rate at min distance: {RATools.PrettyPrintDataRate(rates[0])}/{RATools.PrettyPrintDataRate(rates[1])}");
             }
             RequestUpdate = false;
         }
