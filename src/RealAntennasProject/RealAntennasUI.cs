@@ -34,9 +34,12 @@ namespace RealAntennas
 
         public void OnMapExit()
         {
-            Destroy(netUIConfigWindowGO.GetComponent<MapUI.NetUIConfigurationWindow>());
-            netUIConfigWindowGO.DestroyGameObject();
-            netUIConfigWindowGO = null;
+            if (netUIConfigWindowGO is GameObject)
+            {
+                Destroy(netUIConfigWindowGO.GetComponent<MapUI.NetUIConfigurationWindow>());
+                netUIConfigWindowGO.DestroyGameObject();
+                netUIConfigWindowGO = null;
+            }
         }
 
         public void Update()
