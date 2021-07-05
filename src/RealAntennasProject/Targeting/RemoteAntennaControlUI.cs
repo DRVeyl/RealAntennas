@@ -8,15 +8,17 @@ namespace RealAntennas.Targeting
     {
         const string GUIName = "Antenna Control Center";
         private Rect Window = new Rect(100, 100, 800, 500);
-        private Vector2 scrollSourcePos;
+        private Vector2 scrollSourcePos, iconSize = new Vector2(30,30);
         private enum SortMode { Alphabetical, VesselType, ParentBody, RFBand };
         private SortMode sourceSortMode = SortMode.Alphabetical;
         private readonly List<Vessel> sourceVessels = new List<Vessel>();
+        private readonly Dictionary<string, bool> filters = new Dictionary<string, bool>();
 
         public void Start()
         {
             sourceVessels.Clear();
             sourceVessels.AddRange(FlightGlobals.Vessels.Where(v => v.Connection is RACommNetVessel && v.Connection.Comm is RACommNode));
+            TextureTools.Setup(filters, true);
         }
 
         public void OnGUI()
@@ -25,18 +27,24 @@ namespace RealAntennas.Targeting
             Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
         }
 
-
         void GUIDisplay(int windowID)
         {
-            if (GUILayout.Button($"Source Sort Mode: {sourceSortMode}"))
+            GUILayout.BeginHorizontal();
+            foreach (var category in TextureTools.categories)
             {
-                //(i1, i2) => i1.ToString().CompareTo(i2.ToString())
+                if (TextureTools.textures.ContainsKey(category))
+                    filters[category] = GUILayout.Toggle(filters[category], TextureTools.textures[category], HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
+            }
+            GUILayout.EndHorizontal();
+            if (GUILayout.Button($"Sort Mode: {sourceSortMode}"))
+            {
                 sourceSortMode = (SortMode)(((int)(sourceSortMode + 1)) % System.Enum.GetNames(typeof(SortMode)).Length);
                 SortList(sourceVessels, sourceSortMode);
             }
             scrollSourcePos = GUILayout.BeginScrollView(scrollSourcePos, GUILayout.ExpandWidth(true));
             foreach (var ra in from Vessel v in sourceVessels
                                from RealAntenna ra in (v.Connection?.Comm as RACommNode)?.RAAntennaList
+                               where filters[TextureTools.GetKeyFromVesselType(v.vesselType)]
                                select ra)
             {
                 GUILayout.BeginHorizontal();

@@ -74,6 +74,7 @@
     <Compile Include="Targeting\AntennaTarget.cs" />
     <Compile Include="Targeting\AntennaTargetManager.cs" />
     <Compile Include="Targeting\TargetModeInfo.cs" />
+    <Compile Include="Targeting\TextureTools.cs" />
     <Compile Include="TechLevelInfo.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Network\RACommNetNetwork.cs" />
@@ -130,7 +131,6 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program - 1.8.1 Dev\GameData\RealAntennas\Plugins\"

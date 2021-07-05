@@ -9,13 +9,14 @@ namespace RealAntennas.Targeting
     {
         const string GUIName = "Antenna Targeting";
         Rect Window = new Rect(20, 100, 280, 200);
-        Vector2 scrollVesselPos, scrollBodyPos;
+        Vector2 scrollVesselPos, scrollBodyPos, iconSize = new Vector2(30, 30);
         enum SortMode { Alphabetical, Distance, VesselType, ParentBody, RFBand };
         SortMode sortMode = SortMode.Alphabetical;
         private TargetModeInfo targetMode = TargetModeInfo.All.Values.First();
         private string sLat = "0", sLon = "0", sAlt = "0", sAzimuth = "0", sElevation = "0", sForward = "0";
         float deflection = 0;
         private bool showTargetModeInfo = false;
+        private readonly Dictionary<string, bool> filters = new Dictionary<string, bool>();
 
         public RealAntenna antenna { get; set; }
 
@@ -25,6 +26,7 @@ namespace RealAntennas.Targeting
         {
             vessels.Clear();
             vessels.AddRange(FlightGlobals.Vessels);
+            TextureTools.Setup(filters, true);
         }
 
         public void OnGUI()
@@ -35,7 +37,6 @@ namespace RealAntennas.Targeting
 
         void GUIDisplay(int windowID)
         {
-            string s = $"{(antenna?.ParentNode as RACommNode)?.ParentVessel?.vesselName} {antenna?.ToStringShort()}";
             Vessel parentVessel = (antenna?.ParentNode as RACommNode)?.ParentVessel;
 
             GUILayout.BeginVertical(HighLogic.Skin.box);
@@ -67,13 +68,24 @@ namespace RealAntennas.Targeting
             if (targetMode.mode == TargetMode.Vessel)
             {
                 GUILayout.BeginHorizontal();
+                foreach (var category in TextureTools.categories)
+                {
+                    if (TextureTools.textures.ContainsKey(category))
+                        filters[category] = GUILayout.Toggle(filters[category], TextureTools.textures[category], HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
                 GUILayout.Label(targetMode.text, GUILayout.ExpandWidth(true));
                 HandleSortMode(sortIcon, parentVessel);
                 GUILayout.EndHorizontal();
+
                 scrollVesselPos = GUILayout.BeginScrollView(scrollVesselPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
                 foreach (Vessel v in vessels)
                 {
-                    if (GUILayout.Button(v.name))
+                    
+                    if (filters.TryGetValue(TextureTools.GetKeyFromVesselType(v.vesselType), out bool show)
+                        && show && GUILayout.Button(v.name))
                     {
                         var x = new ConfigNode(AntennaTarget.nodeName);
                         x.AddValue("name", $"{TargetMode.Vessel}");
