@@ -10,6 +10,8 @@ namespace RealAntennas
         private const int GUIWidth = 800, GUIHeight = 400;
         private const int SPACING = 20;
         Rect Window = new Rect(250, 100, GUIWidth, GUIHeight);
+        private GUIStyle windowStyle, boxStyle;
+
         private readonly Dictionary<ProtoVessel, List<RealAntenna>> protoVesselAntennaCache = new Dictionary<ProtoVessel, List<RealAntenna>>();
         private readonly string[] distMults = new string[4] { "Km", "Mm", "Gm", "Tm" };
         private readonly List<string> rateStrings = new List<string>();
@@ -39,6 +41,10 @@ namespace RealAntennas
             iTechLevel = RACommNetScenario.GroundStationTechLevel;
             float fTSLvl = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
             currentGroundStationTechLevel = Mathf.RoundToInt(RACommNetScenario.MaxTL * (HighLogic.CurrentGame.Mode == Game.Modes.CAREER ? fTSLvl : 1));
+            GameEvents.onEditorPodDeleted.Add(OnEditorRestart);
+            GameEvents.onEditorRestart.Add(OnEditorRestart);
+            windowStyle = new GUIStyle(HighLogic.Skin.window) { alignment = TextAnchor.UpperLeft };
+            boxStyle = new GUIStyle(HighLogic.Skin.box) { alignment = TextAnchor.UpperCenter };
 
             // Terminology: peer antenna is on the left of the GUI, and will move around.
             // Fixed antenna is on the right of the GUI, and will be positioned at/near homeworld surface.
@@ -62,12 +68,16 @@ namespace RealAntennas
             peerNearGO.DestroyGameObject();
             peerFarGO.DestroyGameObject();
             parentPartModule.plannerGUI = null;
+            GameEvents.onEditorPodDeleted.Remove(OnEditorRestart);
+            GameEvents.onEditorRestart.Remove(OnEditorRestart);
         }
+
+        public void OnEditorRestart() => Destroy(this);
 
         public void OnGUI()
         {
             GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, "Antenna Planning", HighLogic.Skin.window, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
+            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, "Antenna Planning", windowStyle, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
         }
 
         void GUIDisplay(int windowID)
@@ -91,8 +101,6 @@ namespace RealAntennas
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
-            GUIStyle boxStyle = new GUIStyle(HighLogic.Skin.box);
-            boxStyle.alignment = TextAnchor.UpperCenter;
 
             GUILayout.BeginVertical("Antenna Selection", boxStyle, GUILayout.ExpandHeight(true));
             GUILayout.Space(SPACING);
@@ -144,8 +152,8 @@ namespace RealAntennas
 
             GUILayout.BeginVertical("Parameters", boxStyle);
             GUILayout.Space(SPACING);
-            GUILayout.Label($"Primary Antenna: {peerAntenna.ParentNode?.name} {peerAntenna?.ToStringShort()}");
-            GUILayout.Label($"Fixed Antenna: {fixedAntenna.ParentNode?.name} {fixedAntenna?.ToStringShort()}");
+            GUILayout.Label($"Primary Antenna: {peerAntenna.ParentNode?.displayName} {peerAntenna?.ToStringShort()}");
+            GUILayout.Label($"Fixed Antenna: {fixedAntenna.ParentNode?.displayName} {fixedAntenna?.ToStringShort()}");
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Distance Max:");
             dMax = GUILayout.TextArea(dMax, 10, GUILayout.Width(125));
@@ -225,7 +233,7 @@ namespace RealAntennas
                 }
                 foreach (Vessel v in FlightGlobals.Vessels.Where(x => x.Connection?.Comm is RACommNode))
                     foreach (RealAntenna ra in (v.Connection.Comm as RACommNode).RAAntennaList)
-                        if (GUILayout.Button($"{v.name} {ra.ToStringShort()}"))
+                        if (GUILayout.Button($"{v.GetDisplayName()} {ra.ToStringShort()}"))
                         {
                             antenna = ra;
                             res = true;
@@ -254,7 +262,6 @@ namespace RealAntennas
                 {
                     if (part.FindModule(ModuleRealAntenna.ModuleName) is ProtoPartModuleSnapshot snap)
                     {
-                        ModuleRealAntenna mra = part.partInfo.partPrefab.FindModuleImplementing<ModuleRealAntenna>();
                         RealAntenna ra = new RealAntennaDigital(part.partInfo.title) { ParentNode = null };
                         ra.LoadFromConfigNode(snap.moduleValues);
                         antennas.Add(ra);
