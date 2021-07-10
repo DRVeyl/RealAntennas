@@ -65,7 +65,9 @@ namespace RealAntennas.MapUI
                 {
                     go = new GameObject("LinkLineRenderer");
                     LineRenderer rend = go.AddComponent<LineRenderer>();
-                    InitializeRenderer(rend);
+                    bool dotted = link.FwdAntennaTx.TechLevelInfo.Level < RACommNetScenario.minRelayTL ||
+                                  link.FwdAntennaRx.TechLevelInfo.Level < RACommNetScenario.minRelayTL;
+                    InitializeRenderer(rend, dotted);
                     linkRenderers.Add(link, go);
                 }
                 go = linkRenderers[link];
@@ -324,11 +326,11 @@ namespace RealAntennas.MapUI
             }
         }
 
-        private void InitializeRenderer(LineRenderer rend)
+        private void InitializeRenderer(LineRenderer rend, bool dotted = false)
         {
-            //            rend.material = MapView.DottedLinesMaterial;
-            rend.material = this.lineMaterial;
-            rend.material.SetTexture("_MainTex", lineTexture);
+            rend.material = dotted ? MapView.DottedLinesMaterial : lineMaterial;
+            rend.material.SetTexture("_MainTex", dotted ? MapView.DottedLinesMaterial.mainTexture : lineTexture);
+            rend.textureMode = dotted ? LineTextureMode.Tile : LineTextureMode.Stretch;
             ResetRendererLayer(rend, MapView.Draw3DLines);
             rend.receiveShadows = false;
             rend.generateLightingData = false;
