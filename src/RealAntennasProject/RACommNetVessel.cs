@@ -35,13 +35,16 @@ namespace RealAntennas
         public double IdlePowerDraw()
         {
             double ec = 0;
-            foreach (RealAntenna ra in antennaList)
+            if (Vessel.vesselType != VesselType.DeployedScienceController)
             {
-                ec += ra.IdlePowerDraw;
-            }
-            foreach (RealAntenna ra in inactiveAntennas)
-            {
-                ec += ra.IdlePowerDraw;
+                foreach (RealAntenna ra in antennaList)
+                {
+                    ec += ra.IdlePowerDraw;
+                }
+                foreach (RealAntenna ra in inactiveAntennas)
+                {
+                    ec += ra.IdlePowerDraw;
+                }
             }
             return ec;
         }
