@@ -44,9 +44,9 @@ namespace RealAntennas.MapUI
             if (MapView.fetch is MapView)
             {
                 Texture2D defaultTex = GameDatabase.Instance.GetTexture(icon, false);
-                foreach (RACommNetHome home in GameObject.FindObjectsOfType<RACommNetHome>())
+                foreach (RACommNetHome home in FindObjectsOfType<RACommNetHome>())
                 {
-                    MapUI.GroundStationSiteNode gs = new MapUI.GroundStationSiteNode(home.Comm as RACommNode);
+                    MapUI.GroundStationSiteNode gs = new MapUI.GroundStationSiteNode(home.Comm);
                     SiteNode siteNode = SiteNode.Spawn(gs);
                     Texture2D stationTexture = (GameDatabase.Instance.GetTexture(home.icon, false) is Texture2D tex) ? tex : defaultTex;
                     siteNode.wayPoint.node.SetIcon(Sprite.Create(stationTexture, new Rect(0, 0, stationTexture.width, stationTexture.height), new Vector2(0.5f, 0.5f), 100f));

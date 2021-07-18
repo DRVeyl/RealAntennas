@@ -34,8 +34,8 @@ namespace RealAntennas
             Kerbalism.Kerbalism.DetectKerbalismDLL();
             if (CommNetEnabled)
             {
-                UI = gameObject.AddComponent<MapUI.RACommNetUI>();
                 Network = gameObject.AddComponent<Network.RACommNetNetwork>();
+                UI = gameObject.AddComponent<MapUI.RACommNetUI>();
                 RangeModel = new Network.RealAntennasRangeModel();
 
                 ApplyGameSettings();
