@@ -328,6 +328,11 @@ namespace RealAntennas
             fixedNode.precisePosition = fixedNode.position;
             peerNearNode.precisePosition = peerNearNode.position;
             peerFarNode.precisePosition = peerFarNode.position;
+            fixedNode.isHome = fixedAntenna.ParentNode?.isHome ?? false;
+            peerNearNode.isHome = peerFarNode.isHome = peerAntenna.ParentNode?.isHome ?? false;
+            peerNearNode.ParentBody = peerNearNode.isHome ? home : null;
+            peerFarNode.ParentBody = peerFarNode.isHome ? home : null;
+            fixedNode.ParentBody = fixedNode.isHome ? home : null;
 
             var nodes = new List<CommNet.CommNode> { fixedNode, peerNearNode };
             var bodies = new List<CelestialBody> { Planetarium.fetch.Home };
