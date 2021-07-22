@@ -228,7 +228,7 @@ namespace RealAntennas
             float atmos = AtmosphericTemp(rx, origin);
             float cosmic = CosmicBackgroundTemp(rx, origin);
             // Home Stations are directional, but treated as always pointing towards the peer.
-            float allbody = (rx.ParentNode.isHome) ? AllBodyTemps(rx, origin - rx.Position) : AllBodyTemps(rx, rx.ToTarget);
+            float allbody = rx.ParentNode.isHome ? AllBodyTemps(rx, origin - rx.Position) : AllBodyTemps(rx, rx.ToTarget);
             float total = amt + atmos + cosmic + allbody;
             //            Debug.LogFormat("NoiseTemp: Antenna {0:F2}  Atmos: {1:F2}  Cosmic: {2:F2}  Bodies: {3:F2}  Total: {4:F2}", amt, atmos, cosmic, allbody, total);
             return total;
@@ -298,14 +298,18 @@ namespace RealAntennas
 
         private static float CosmicBackgroundTemp(RealAntenna rx, Vector3d origin)
         {
-            var rxNode = rx.ParentNode as RACommNode;
-            Vector3d normal = (rxNode?.ParentBody is CelestialBody) ? rxNode.GetSurfaceNormalVector() : Vector3d.zero;
-            bool isHome = (rx.ParentNode as RACommNode)?.ParentBody is CelestialBody;
-            Vector3d to_origin = origin - rx.Position;
-            return CosmicBackgroundTemp(new double3(normal.x, normal.y, normal.z),
-                                        new double3(to_origin.x, to_origin.y, to_origin.z),
-                                        rx.Frequency,
-                                        isHome);
+            float temp = 3;
+            if (rx.ParentNode is RACommNode rxNode)
+            {
+                Vector3d normal = (rxNode.ParentBody is CelestialBody) ? rxNode.GetSurfaceNormalVector() : Vector3d.zero;
+                Vector3d to_origin = origin - rx.Position;
+                temp = CosmicBackgroundTemp(new double3(normal.x, normal.y, normal.z),
+                                            new double3(to_origin.x, to_origin.y, to_origin.z),
+                                            rx.Frequency,
+                                            rxNode.isHome);
+
+            }
+            return temp;
         }
 
         public static float AllBodyTemps(RealAntenna rx, Vector3d rxPointing)
