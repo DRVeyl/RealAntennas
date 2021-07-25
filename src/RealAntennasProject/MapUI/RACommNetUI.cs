@@ -50,6 +50,7 @@ namespace RealAntennas.MapUI
                     SiteNode siteNode = SiteNode.Spawn(gs);
                     Texture2D stationTexture = (GameDatabase.Instance.GetTexture(home.icon, false) is Texture2D tex) ? tex : defaultTex;
                     siteNode.wayPoint.node.SetIcon(Sprite.Create(stationTexture, new Rect(0, 0, stationTexture.width, stationTexture.height), new Vector2(0.5f, 0.5f), 100f));
+                    siteNode.wayPoint.node.OnUpdateVisible += home.OnUpdateVisible;
                 }
             }
             RATelemetryUpdate.Install();

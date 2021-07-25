@@ -72,6 +72,18 @@ namespace RealAntennas.Network
             }
         }
 
+        internal void OnUpdateVisible(KSP.UI.Screens.Mapview.MapNode mapNode, KSP.UI.Screens.Mapview.MapNode.IconData iconData)
+        {
+            Vector3d worldPos = ScaledSpace.LocalToScaledSpace(Comm.precisePosition);
+            iconData.visible &= MapView.MapCamera.transform.InverseTransformPoint(worldPos).z >= 0 && !IsOccludedToCamera(Comm.precisePosition, body);
+        }
+
+        private bool IsOccludedToCamera(Vector3d position, CelestialBody body)
+        {
+            Vector3d camPos = ScaledSpace.ScaledToLocalSpace(PlanetariumCamera.Camera.transform.position);
+            return Vector3d.Angle(camPos - position, body.position - position) <= 90;
+        }
+
         public void CheckNodeConsistency()
         {
             Vector3d desiredPos = body.GetWorldSurfacePosition(lat, lon, alt);
