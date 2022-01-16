@@ -3,21 +3,10 @@
 ################################################################################
 
 /.vs
-/src/.vs/RealAntennasProject/v15/Server/sqlite3
-/src/.vs/RealAntennasProject/v15
-/src/RealAntennasProject/bin/Debug/Assembly-CSharp-firstpass.dll
-/src/RealAntennasProject/bin/Debug/Assembly-CSharp.dll
-/src/RealAntennasProject/bin/Debug/Ionic.Zip.dll
-/src/RealAntennasProject/bin/Debug/KSPAssets.dll
-/src/RealAntennasProject/bin/Debug/KSPTrackIR.dll
-/src/RealAntennasProject/bin/Debug/Mono.Cecil.dll
-/src/RealAntennasProject/bin/Debug/TDx.TDxInput.dll
-/src/RealAntennasProject/bin/Debug/UnityEngine.dll
-/src/RealAntennasProject/bin/Debug/UnityEngine.UI.dll
+/src/.vs
 *.CopyComplete
 *.cache
-/src/RealAntennasProject/obj/Debug/RealAntennasProject.csproj.FileListAbsolute.txt
-/src/.vs/RealAntennasProject/v16
-/GameData/RealAntennas/.vs
 /src/RealAntennasProject/bin
 /src/RealAntennasProject/obj
+/src/RealAntennasProject/*.csproj*
+/GameData/RealAntennas/Plugins
