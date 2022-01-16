@@ -102,7 +102,6 @@ namespace RealAntennas
             base.OnLoad(node);
             if (node.name != "CURRENTUPGRADE")
                 Configure(node);
-            Debug.Log($"{ModTag} OnLoad from {node.name}: {this}");
         }
 
         public override void OnSave(ConfigNode node)
