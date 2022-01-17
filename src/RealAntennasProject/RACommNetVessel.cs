@@ -20,22 +20,20 @@ namespace RealAntennas
         public override void OnNetworkPreUpdate()
         {
             base.OnNetworkPreUpdate();
-            if (Vessel.vesselType == VesselType.DeployedScienceController)
-            {
-                var cluster = GetDeployedScienceCluster(Vessel);
-                powered = cluster?.IsPowered ?? false;
-            }
+            var cluster = GetDeployedScienceCluster(Vessel);
+            if (cluster != null)
+                powered = cluster.IsPowered;
             else if (Vessel.loaded && electricChargeDef != null)
             {
                 Vessel.GetConnectedResourceTotals(electricChargeDef.id, out double amt, out double _);
-                powered = (amt > 0);
+                powered = amt > 0;
             }
         }
 
         public double IdlePowerDraw()
         {
             double ec = 0;
-            if (Vessel.vesselType != VesselType.DeployedScienceController)
+            if (!IsDeployedScienceCluster(Vessel))
             {
                 foreach (RealAntenna ra in antennaList)
                 {
@@ -226,10 +224,15 @@ namespace RealAntennas
             (part.FindModuleImplementing<ModuleDeployableAntenna>() is ModuleDeployableAntenna mda) ?
             mda.deployState == ModuleDeployablePart.DeployState.EXTENDED : true;
 
+        private bool IsDeployedScienceCluster(Vessel v) => GetDeployedScienceCluster(v) != null;
         private DeployedScienceCluster GetDeployedScienceCluster(Vessel vessel)
         {
-            var id = vessel.loaded ? vessel.rootPart.persistentId : vessel.protoVessel.protoPartSnapshots[0].persistentId;
-            DeployedScience.Instance.DeployedScienceClusters.TryGetValue(id, out DeployedScienceCluster cluster);
+            DeployedScienceCluster cluster = null;
+            if (vessel.vesselType == VesselType.DeployedScienceController)
+            {
+                var id = vessel.loaded ? vessel.rootPart.persistentId : vessel.protoVessel.protoPartSnapshots[0].persistentId;
+                DeployedScience.Instance?.DeployedScienceClusters?.TryGetValue(id, out cluster);
+            }
             return cluster;
         }
     }
