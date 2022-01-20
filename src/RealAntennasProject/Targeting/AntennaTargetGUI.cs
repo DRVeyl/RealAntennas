@@ -16,7 +16,6 @@ namespace RealAntennas.Targeting
         private string sLat = "0", sLon = "0", sAlt = "0", sAzimuth = "0", sElevation = "0", sForward = "0";
         float deflection = 0;
         private bool showTargetModeInfo = false;
-        private readonly Dictionary<string, bool> filters = new Dictionary<string, bool>();
 
         public RealAntenna antenna { get; set; }
 
@@ -26,7 +25,6 @@ namespace RealAntennas.Targeting
         {
             vessels.Clear();
             vessels.AddRange(FlightGlobals.Vessels);
-            TextureTools.Setup(filters, true);
         }
 
         public void OnGUI()
@@ -68,10 +66,10 @@ namespace RealAntennas.Targeting
             if (targetMode.mode == TargetMode.Vessel)
             {
                 GUILayout.BeginHorizontal();
-                foreach (var category in TextureTools.categories)
+                foreach (var vType in TextureTools.vesselTypes)
                 {
-                    if (TextureTools.textures.ContainsKey(category))
-                        filters[category] = GUILayout.Toggle(filters[category], TextureTools.textures[category], HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
+                    if (TextureTools.filterTextures.TryGetValue(vType, out Texture2D tex))
+                        TextureTools.filterStates[vType] = GUILayout.Toggle(TextureTools.filterStates[vType], tex, HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
                 }
                 GUILayout.EndHorizontal();
 
@@ -83,8 +81,7 @@ namespace RealAntennas.Targeting
                 scrollVesselPos = GUILayout.BeginScrollView(scrollVesselPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
                 foreach (Vessel v in vessels)
                 {
-                    
-                    if (filters.TryGetValue(TextureTools.GetKeyFromVesselType(v.vesselType), out bool show)
+                    if (TextureTools.filterStates.TryGetValue(v.vesselType, out bool show)
                         && show && GUILayout.Button(v.name))
                     {
                         var x = new ConfigNode(AntennaTarget.nodeName);

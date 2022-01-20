@@ -53,6 +53,7 @@ namespace RealAntennas
                 DestroyNetwork();
                 Debug.Log($"{ModTag} Ignore CommNetScenario ERR immediately after Homes rebuild logging.");
             }
+            Targeting.TextureTools.Initialize();
             MapSettings = new MapUI.Settings();
             RebuildHomes();
             if (CommNetEnabled)     // Don't self-delete if we are not enabled.
@@ -64,6 +65,7 @@ namespace RealAntennas
             base.OnLoad(gameNode);
             if (gameNode.HasNode("MapUISettings"))
                 ConfigNode.LoadObjectFromConfig(MapSettings, gameNode.GetNode("MapUISettings"));
+            Targeting.TextureTools.Load(gameNode);
         }
 
         public override void OnSave(ConfigNode gameNode)
@@ -72,6 +74,7 @@ namespace RealAntennas
             var node = ConfigNode.CreateConfigFromObject(MapSettings);
             node.name = "MapUISettings";
             gameNode.AddNode(node);
+            Targeting.TextureTools.Save(gameNode);
         }
 
         private System.Collections.IEnumerator NotifyDisabled()
@@ -135,6 +138,8 @@ namespace RealAntennas
 
             if (KopernicusNode != null)
             {
+                var sb = StringBuilderCache.Acquire();
+                sb.Append($"{ModTag} Building homes: ");
                 foreach (ConfigNode bodyNode in KopernicusNode.GetNodes("Body"))
                 {
                     string t = bodyNode.GetValue("name");
@@ -149,11 +154,13 @@ namespace RealAntennas
                             bool result = false;
                             if (cityNode.TryGetValue("RACommNetStation", ref result) && result)
                             {
-                                BuildHome(cityNode, body);
+                                CommNetHome h = BuildHome(cityNode, body);
+                                sb.Append($"{h.nodeName}  ");
                             }
                         }
                     }
                 }
+                Debug.Log(sb.ToStringAndRelease());
             }
         }
 
@@ -163,20 +170,20 @@ namespace RealAntennas
             logger.Append($"{ModTag} Unloaded the following homes: ");
             foreach (CommNetHome home in FindObjectsOfType<CommNetHome>())
             {
-                logger.Append($"{home}  ");
+                logger.Append($"{home.nodeName}  ");
                 DestroyImmediate(home);
             }
             GroundStations.Clear();
             Debug.Log(logger.ToStringAndRelease());
         }
 
-        private void BuildHome(ConfigNode node, CelestialBody body)
+        private CommNetHome BuildHome(ConfigNode node, CelestialBody body)
         {
             GameObject newHome = new GameObject(body.name);
             Network.RACommNetHome home = newHome.AddComponent<Network.RACommNetHome>();
             home.Configure(node, body);
             if (!GroundStations.ContainsKey(home.nodeName)) GroundStations.Add(home.nodeName, home);
-            Debug.Log($"{ModTag} Built: {home.name} {home.nodeName}");
+            return home;
         }
     }
 }

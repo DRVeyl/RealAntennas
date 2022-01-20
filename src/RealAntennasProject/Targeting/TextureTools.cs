@@ -6,44 +6,62 @@ namespace RealAntennas.Targeting
 {
     public class TextureTools
     {
-        public static Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
-        public static List<string> categories = new List<string>();
+        public static readonly List<VesselType> vesselTypes = new List<VesselType>(16)
+        {
+            VesselType.Debris,
+            VesselType.Probe,
+            VesselType.Rover,
+            VesselType.Lander,
+            VesselType.Ship,
+            VesselType.Station,
+            VesselType.Base,
+            VesselType.Plane,
+            VesselType.Relay,
+            VesselType.EVA,
+            VesselType.Flag,
+            VesselType.SpaceObject,
+            VesselType.Unknown,
+            VesselType.DeployedScienceController,
+        };
+        public static readonly Dictionary<VesselType, Texture2D> filterTextures = new Dictionary<VesselType, Texture2D>(16);
+        public static readonly Dictionary<VesselType, bool> filterStates = new Dictionary<VesselType, bool>(16);
         public static void Initialize()
         {
-            if (categories.Count == 0)
-            {
-                categories.Add(GetKeyFromVesselType(VesselType.Debris));
-                categories.Add(GetKeyFromVesselType(VesselType.Probe));
-                categories.Add(GetKeyFromVesselType(VesselType.Rover));
-                categories.Add(GetKeyFromVesselType(VesselType.Lander));
-                categories.Add(GetKeyFromVesselType(VesselType.Ship));
-                categories.Add(GetKeyFromVesselType(VesselType.Station));
-                categories.Add(GetKeyFromVesselType(VesselType.Base));
-                categories.Add(GetKeyFromVesselType(VesselType.Plane));
-                categories.Add(GetKeyFromVesselType(VesselType.Relay));
-                categories.Add(GetKeyFromVesselType(VesselType.EVA));
-                categories.Add(GetKeyFromVesselType(VesselType.Flag));
-                categories.Add(GetKeyFromVesselType(VesselType.SpaceObject));
-                categories.Add(GetKeyFromVesselType(VesselType.Unknown));
-                categories.Add(GetKeyFromVesselType(VesselType.DeployedScienceController));
-            }
-            if (textures.Count == 0)
-                foreach (var t in Resources.FindObjectsOfTypeAll<Sprite>().Where(x => categories.Contains(x.name)))
-                    textures[t.name] = TextureFromSprite(t);
+            var sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+
+            if (filterTextures.Count == 0)
+                foreach (var t in vesselTypes)
+                {
+                    string name = GetTextureNameFromVesselType(t);
+                    if (sprites.FirstOrDefault(x => x.name == name) is Sprite s)
+                        filterTextures[t] = TextureFromSprite(s);
+                }
+
+            if (filterStates.Count == 0)
+                foreach (var t in filterTextures.Keys)
+                    filterStates[t] = true;
         }
 
-        public static void Setup(Dictionary<string, bool> filters = null, bool setDefaults = false)
+        public static void Save(ConfigNode node)
         {
-            Initialize();
-            if (setDefaults && filters != null)
+            ConfigNode n = new ConfigNode("FilterSettings");
+            foreach (var vType in vesselTypes)
+                if (filterStates.TryGetValue(vType, out bool val))
+                    n.AddValue($"{vType}", val);
+            node.AddNode(n);
+        }
+
+        public static void Load(ConfigNode node)
+        {
+            ConfigNode n = null;
+            if (node.TryGetNode("FilterSettings", ref n))
             {
-                foreach (var c in TextureTools.categories)
-                    filters.Add(c, false);
-                filters[GetKeyFromVesselType(VesselType.Probe)] = true;
-                filters[GetKeyFromVesselType(VesselType.Relay)] = true;
-                filters[GetKeyFromVesselType(VesselType.Station)] = true;
-                filters[GetKeyFromVesselType(VesselType.Ship)] = true;
-                filters[GetKeyFromVesselType(VesselType.Lander)] = true;
+                foreach (var vType in vesselTypes)
+                {
+                    bool val = false;
+                    if (n.TryGetValue($"{vType}", ref val))
+                        filterStates[vType] = val;
+                }
             }
         }
 
@@ -97,7 +115,7 @@ namespace RealAntennas.Targeting
                 return sprite.texture;
         }
 
-        public static string GetKeyFromVesselType(VesselType vesselType)
+        public static string GetTextureNameFromVesselType(VesselType vesselType)
         {
              return vesselType switch
             {

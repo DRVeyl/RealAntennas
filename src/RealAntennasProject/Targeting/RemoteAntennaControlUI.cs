@@ -12,13 +12,11 @@ namespace RealAntennas.Targeting
         private enum SortMode { Alphabetical, VesselType, ParentBody, RFBand };
         private SortMode sourceSortMode = SortMode.Alphabetical;
         private readonly List<Vessel> sourceVessels = new List<Vessel>();
-        private readonly Dictionary<string, bool> filters = new Dictionary<string, bool>();
 
         public void Start()
         {
             sourceVessels.Clear();
             sourceVessels.AddRange(FlightGlobals.Vessels.Where(v => v.Connection is RACommNetVessel && v.Connection.Comm is RACommNode));
-            TextureTools.Setup(filters, true);
         }
 
         public void OnGUI()
@@ -30,10 +28,10 @@ namespace RealAntennas.Targeting
         void GUIDisplay(int windowID)
         {
             GUILayout.BeginHorizontal();
-            foreach (var category in TextureTools.categories)
+            foreach (var vType in TextureTools.vesselTypes)
             {
-                if (TextureTools.textures.ContainsKey(category))
-                    filters[category] = GUILayout.Toggle(filters[category], TextureTools.textures[category], HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
+                if (TextureTools.filterTextures.TryGetValue(vType, out Texture2D tex))
+                    TextureTools.filterStates[vType] = GUILayout.Toggle(TextureTools.filterStates[vType], tex, HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
             }
             GUILayout.EndHorizontal();
             if (GUILayout.Button($"Sort Mode: {sourceSortMode}"))
@@ -44,7 +42,7 @@ namespace RealAntennas.Targeting
             scrollSourcePos = GUILayout.BeginScrollView(scrollSourcePos, GUILayout.ExpandWidth(true));
             foreach (var ra in from Vessel v in sourceVessels
                                from RealAntenna ra in (v.Connection?.Comm as RACommNode)?.RAAntennaList
-                               where filters[TextureTools.GetKeyFromVesselType(v.vesselType)]
+                               where TextureTools.filterStates[v.vesselType]
                                select ra)
             {
                 GUILayout.BeginHorizontal();
