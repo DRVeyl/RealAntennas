@@ -81,8 +81,9 @@ namespace RealAntennas
         public void AntennaPlanningGUI()
         {
             plannerGUI = new GameObject($"{RAAntenna.Name}-Planning").AddComponent<PlannerGUI>();
-            plannerGUI.peerAntenna = RAAntenna;
-            plannerGUI.fixedAntenna = RAAntenna;
+            plannerGUI.primaryAntenna = RAAntenna;
+            var homes = RACommNetScenario.GroundStations.Values.Where(x => x.Comm is RACommNode);
+            plannerGUI.fixedAntenna = plannerGUI.GetBestMatchingGroundStation(RAAntenna, homes) is RealAntenna bestDSNAntenna ? bestDSNAntenna : RAAntenna;
             plannerGUI.parentPartModule = this;
         }
 
