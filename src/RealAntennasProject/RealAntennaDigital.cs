@@ -16,7 +16,7 @@
         {
             if (orig is RealAntennaDigital o) modulator = new RAModulator(o.modulator);
         }
-        public override string ToString() => $"{Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"{Name} [{RFBand.name} {Gain:F1} dBi {TxPower} dBm [TL:{TechLevelInfo.Level:N0}] {modulator}] {(CanTarget ? $" ->{Target}" : null)}";
 
 
         // Energy/bit (Eb) = Received Power / datarate

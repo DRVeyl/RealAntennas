@@ -66,7 +66,7 @@ namespace RealAntennas
         public static readonly string DefaultTargetName = "None";
         private readonly float minimumSpotRadius = 1e3f;
 
-        public override string ToString() => $"{Name} [{Gain:F1} dBi {RFBand.name} {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
+        public override string ToString() => $"{Name} [{RFBand.name} {Gain:F1} dBi {TxPower} dBm [TL:{TechLevelInfo.Level:N0}]] {(CanTarget ? $" ->{Target}" : null)}";
         public virtual string ToStringShort() => $"{Name} [{RFBand.name} {TxPower} dBm] {(CanTarget ? $" ->{Target}" : null)}";
 
         public RealAntenna() : this("New RealAntennaDigital") { }
