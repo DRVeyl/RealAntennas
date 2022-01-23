@@ -70,7 +70,15 @@ namespace RealAntennas
             float y_offset_sq = Math.Max(0, (radius * radius) - (x_offset * x_offset));
             float y_offset = math.sqrt(y_offset_sq);
             float3 calc = new float3(x_offset, y_offset, 0);
-            return (float) Angle2(center - point, calc - point);
+            return (float)Angle2(center - point, calc - point);
+        }
+
+        public static float ElevationAngle(double3 position, double3 surfaceNormal, double3 origin)
+        {
+            double3 to_origin = origin - position;
+            float angle = (float)Angle2(surfaceNormal, to_origin);
+            float elevation = math.max(0, 90.0f - angle);
+            return elevation;
         }
     }
 }

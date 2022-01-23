@@ -23,9 +23,10 @@ namespace RealAntennas
 
         public Vector3d GetSurfaceNormalVector()
         {
-            if (ParentBody == null) return Vector3d.zero;
-            ParentBody.GetLatLonAlt(position, out double lat, out double lon, out double _);
-            return ParentBody.GetSurfaceNVector(lat, lon);
+            CelestialBody body = ParentBody ? ParentBody : ParentVessel?.mainBody;
+            if (body == null) return Vector3d.zero;
+            body.GetLatLonAlt(position, out double lat, out double lon, out double _);
+            return body.GetSurfaceNVector(lat, lon);
         }
 
         public bool CanComm()

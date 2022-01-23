@@ -14,6 +14,7 @@ namespace RealAntennas.Network
         public RealAntenna tx;
         public RealAntenna rx;
         public float atmosphereNoise;
+        public float antennaElevation;
         public float bodyNoise;
         public float noiseTemp;
         public float noise;
@@ -29,6 +30,7 @@ namespace RealAntennas.Network
         public float rxPointLoss;
         public float txPower;
         public float rxPower;
+        public float minSymbolRate;
         public float N0;
         public float minEb;
         public double3 txDir;

@@ -277,9 +277,7 @@ namespace RealAntennas
 
         public static float AtmosphericTemp(double3 position, double3 surfaceNormal, double3 origin, float frequency)
         {
-            double3 to_origin = origin - position;
-            float angle = (float) MathUtils.Angle2(surfaceNormal, to_origin);
-            float elevation = math.max(0, 90.0f - angle);
+            float elevation = MathUtils.ElevationAngle(position, surfaceNormal, origin);
             return AtmosphereNoiseTemperature(elevation, frequency);
         }
 

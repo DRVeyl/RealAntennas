@@ -97,6 +97,7 @@ namespace RealAntennas.Precompute
         private NativeArray<float> pointingLoss;
         private NativeArray<float> rxPower;
         private NativeArray<float> atmosphereNoise;
+        private NativeArray<float> antennaElevation;
         private NativeArray<float> bodyNoise;
         private NativeArray<float> noiseTemp;
         private NativeArray<float> n0;
@@ -333,6 +334,7 @@ namespace RealAntennas.Precompute
             }.Schedule(allValidAntennaPairs, 8, extractDataJob);
 
             atmosphereNoise = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
+            antennaElevation = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             var atmoNoiseJob = new CalcAntennaAtmoNoise
             {
                 txPos = txPos,
@@ -340,7 +342,8 @@ namespace RealAntennas.Precompute
                 rxFreq = rxFreq,
                 rxHome = rxHome,
                 rxSurfaceNormal = rxSurfaceNormal,
-                atmoNoise = atmosphereNoise
+                atmoNoise = atmosphereNoise,
+                elevation = antennaElevation,
             }.Schedule(allValidAntennaPairs, 8, extractDataJob);
 
             noiseTemp = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
@@ -555,9 +558,11 @@ namespace RealAntennas.Precompute
                             pointingLoss = pointingLoss[i],
                             pathLoss = pathLoss[i],
                             atmosphereNoise = atmosphereNoise[i],
+                            antennaElevation = antennaElevation[i],
                             bodyNoise = bodyNoise[i],
                             noiseTemp = noiseTemp[i],
                             noise = atmosphereNoise[i] + bodyNoise[i] + noiseTemp[i],
+                            minSymbolRate = minSymbolRate[i],
                             N0 = n0[i],
                             minEb = minEb[i],
                             minDataRate = minDataRate[i],
@@ -628,6 +633,7 @@ namespace RealAntennas.Precompute
             pointingLoss.Dispose();
             rxPower.Dispose();
             atmosphereNoise.Dispose();
+            antennaElevation.Dispose();
             bodyNoise.Dispose();
             noiseTemp.Dispose();
             n0.Dispose();

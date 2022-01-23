@@ -39,7 +39,7 @@ namespace RealAntennas.Precompute
             AntennaData tx = antennas[k.z];
             AntennaData rx = antennas[k.w];
             rxPrecalcNoise[index] = antennaNoise[k.w];
-            rxSurfaceNormal[index] = rx.isHome ? rxNode.surfaceNormal : double3.zero;
+            rxSurfaceNormal[index] = rxNode.surfaceNormal;
 
             txPower[index] = tx.txPower;
             txFreq[index] = tx.freq;
@@ -101,10 +101,13 @@ namespace RealAntennas.Precompute
         [ReadOnly] public NativeArray<double3> txPos;
         [ReadOnly] public NativeArray<double3> rxSurfaceNormal;
         [WriteOnly] public NativeArray<float> atmoNoise;
+        [WriteOnly] public NativeArray<float> elevation;
 
         public void Execute(int index)
         {
-            atmoNoise[index] = rxHome[index] ? Physics.AtmosphericTemp(rxPos[index], rxSurfaceNormal[index], txPos[index], rxFreq[index]) : 0;
+            float el = MathUtils.ElevationAngle(rxPos[index], rxSurfaceNormal[index], txPos[index]);
+            atmoNoise[index] = rxHome[index] ? Physics.AtmosphereNoiseTemperature(el, rxFreq[index]) : 0;
+            elevation[index] = el;
         }
     }
     // Collect receiver noise.  Refer to the cache'd result, or derive new for isHome antennas.
