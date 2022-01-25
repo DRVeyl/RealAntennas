@@ -220,20 +220,20 @@ namespace RealAntennas
             {
                 if (HighLogic.LoadedSceneIsEditor)
                 {
-                    foreach (var x in protoVesselAntennaCache)
-                        foreach (RealAntenna ra in x.Value)
-                            if (GUILayout.Button($"{x.Key.vesselName} {ra.ToStringShort()}", buttonStyle))
-                            {
-                                antenna = ra;
-                                res = true;
-                            }
-
                     ShipConstruct sc = EditorLogic.RootPart.ship;
                     foreach (Part p in sc.Parts)
                         foreach (ModuleRealAntenna mra in p.FindModulesImplementing<ModuleRealAntenna>())
                             if (GUILayout.Button($"{sc.shipName} {mra.RAAntenna.ToStringShort()}", buttonStyle))
                             {
                                 antenna = mra.RAAntenna;
+                                res = true;
+                            }
+
+                    foreach (var x in protoVesselAntennaCache)
+                        foreach (RealAntenna ra in x.Value)
+                            if (GUILayout.Button($"{x.Key.vesselName} {ra.ToStringShort()}", buttonStyle))
+                            {
+                                antenna = ra;
                                 res = true;
                             }
                 }
