@@ -93,6 +93,8 @@ namespace RealAntennas
             GameEvents.onPlanetariumTargetChanged.Remove(OnMapFocusChange);
             base.OnDestroy();
             comm?.Net.Remove(comm);
+            comm = null;
+            vessel.connection = null;
         }
 
         protected override void UpdateComm()
