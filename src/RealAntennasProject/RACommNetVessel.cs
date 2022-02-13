@@ -94,7 +94,7 @@ namespace RealAntennas
             base.OnDestroy();
             comm?.Net.Remove(comm);
             comm = null;
-            vessel.connection = null;
+            if (vessel) vessel.connection = null;
         }
 
         protected override void UpdateComm()
