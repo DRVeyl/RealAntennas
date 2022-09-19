@@ -10,20 +10,20 @@ namespace RealAntennas
     {
         private const string PAWGroup = "RealAntennas";
         private const string PAWGroupPlanner = "Antenna Planning";
-        [KSPField(guiActiveEditor = true, guiName = "Antenna", isPersistant = true, groupName = PAWGroup, groupDisplayName = PAWGroup),
-        UI_Toggle(disabledText = "<color=red><b>Disabled</b></color>", enabledText = "<color=green>Enabled</color>", scene =UI_Scene.Editor)]
+        [KSPField(guiActiveEditor = true, guiName = "#RA_Gerneric_Antenna", isPersistant = true, groupName = PAWGroup, groupDisplayName = PAWGroup),  // "Antenna"
+        UI_Toggle(disabledText = "#RA_Gerneric_Disabled", enabledText = "#RA_Gerneric_Enabled", scene =UI_Scene.Editor)] // "<color=red><b>Disabled</b></color>" | "<color=green>Enabled</color>"
         public bool _enabled = true;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Gain", guiUnits = " dBi", guiFormat = "F1", groupName = PAWGroup, groupDisplayName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_Gain", guiUnits = " dBi", guiFormat = "F1", groupName = PAWGroup, groupDisplayName = PAWGroup)]  // "Gain"
         public float Gain;          // Physical directionality, measured in dBi
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Transmit Power (dBm)", guiUnits = " dBm", guiFormat = "F1", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_TransmitPower_dBm", guiUnits = " dBm", guiFormat = "F1", groupName = PAWGroup), // "Transmit Power (dBm)"
         UI_FloatRange(maxValue = 60, minValue = 0, stepIncrement = 1, scene = UI_Scene.Editor)]
         public float TxPower = 30;       // Transmit Power in dBm (milliwatts)
 
         [KSPField] protected float MaxTxPower = 60;    // Per-part max setting for TxPower
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Tech Level", guiFormat = "N0", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_TechLevel", guiFormat = "N0", groupName = PAWGroup), // "Tech Level"
         UI_FloatRange(minValue = 0f, stepIncrement = 1f, scene = UI_Scene.Editor)]
         private float TechLevel = -1f;
         private int techLevel => Convert.ToInt32(TechLevel);
@@ -35,24 +35,24 @@ namespace RealAntennas
         [KSPField(isPersistant = true)] public float referenceFrequency = 0;
         [KSPField] public bool applyMassModifier = true;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "RF Band", groupName = PAWGroup),
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_RFBand", groupName = PAWGroup),  // "RF Band"
          UI_ChooseOption(scene = UI_Scene.Editor)]
         public string RFBand = "S";
 
         public Antenna.BandInfo RFBandInfo => Antenna.BandInfo.All[RFBand];
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Active)", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_ActivePowerConsumed", groupName = PAWGroup)]  // "Power (Active)"
         public string sActivePowerConsumed = string.Empty;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Power (Idle)", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#RA_Gerneric_IdlePowerConsumed", groupName = PAWGroup)]  // "Power (Idle)"
         public string sIdlePowerConsumed = string.Empty;
 
-        [KSPField(guiActive = true, guiName = "Antenna Target", groupName = PAWGroup)]
+        [KSPField(guiActive = true, guiName = "#RA_Gerneric_AntennaTarget", groupName = PAWGroup)]  // "Antenna Target"
         public string sAntennaTarget = string.Empty;
 
         public Targeting.AntennaTarget Target { get => RAAntenna.Target; set => RAAntenna.Target = value; }
 
-        [KSPField(guiName = "Active Transmission Time", guiFormat = "P0", groupName = PAWGroup),
+        [KSPField(guiName = "#RA_Gerneric_plannerActiveTxTime", guiFormat = "P0", groupName = PAWGroup), //  "Active Transmission Time"
          UI_FloatRange(minValue = 0, maxValue = 1, stepIncrement = 0.01f, scene = UI_Scene.Editor)]
         public float plannerActiveTxTime = 0;
 
@@ -74,10 +74,10 @@ namespace RealAntennas
         public float PowerDraw => RATools.LogScale(PowerDrawLinear);
         public float PowerDrawLinear => RATools.LinearScale(TxPower) / RAAntenna.PowerEfficiency;
 
-        [KSPEvent(active = true, guiActive = true, guiName = "Antenna Targeting", groupName = PAWGroup)]
+        [KSPEvent(active = true, guiActive = true, guiName = "#RA_Gerneric_AntennaTargeting", groupName = PAWGroup)]  // "Antenna Targeting"
         void AntennaTargetGUI() => Targeting.AntennaTargetManager.AcquireGUI(RAAntenna);
 
-        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "Antenna Planning", groupName = PAWGroup)]
+        [KSPEvent(active = true, guiActive = true, guiActiveEditor = true, guiName = "#RA_PlannerGUI_title", groupName = PAWGroup)]  // Antenna Planning
         public void AntennaPlanningGUI()
         {
             plannerGUI = new GameObject($"{RAAntenna.Name}-Planning").AddComponent<PlannerGUI>();
@@ -87,7 +87,7 @@ namespace RealAntennas
             plannerGUI.parentPartModule = this;
         }
 
-        [KSPEvent(active = true, guiActive = true, name = "Debug Antenna", groupName = PAWGroup)]
+        [KSPEvent(active = true, guiActive = true, name = "#RA_Gerneric_DebugAntenna", groupName = PAWGroup)]  // Debug Antenna
         public void DebugAntenna()
         {
             var dbg = new GameObject($"Antenna Debugger: {part.partInfo.title}").AddComponent<Network.ConnectionDebugger>();
@@ -283,7 +283,7 @@ namespace RealAntennas
                 }
             } else
             {
-                res = $"<color=green>Omni-directional</color>: {Gain:F1} dBi";
+                res = $"<color=green>{Local.Gerneric_Omni_directional}</color>: {Gain:F1} dBi";  // Omni-directional
             }
             return res;
         }
@@ -376,7 +376,7 @@ namespace RealAntennas
         public string PlannerUpdate(List<KeyValuePair<string, double>> resources, CelestialBody _, Dictionary<string, double> environment)
         {
             resources.Add(plannerECConsumption);   // ecConsumption is updated by the Toggle event
-            return "comms";
+            return Local.Gerneric_comms;  // comms
         }
         private void RecalculatePlannerECConsumption()
         {

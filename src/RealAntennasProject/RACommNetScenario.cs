@@ -82,10 +82,10 @@ namespace RealAntennas
             yield return new WaitForSeconds(2);
             while (!CommNetEnabled)
             {
-                ScreenMessages.PostScreenMessage("RealAntennas: CommNet Disabled in Difficulty Settings", DisabledNotifyInterval / 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+                ScreenMessages.PostScreenMessage(Local.NotifyMessages_disable, DisabledNotifyInterval / 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);  // "RealAntennas: CommNet Disabled in Difficulty Settings"
                 yield return new WaitForSeconds(DisabledNotifyInterval);
             }
-            ScreenMessages.PostScreenMessage("RealAntennas: CommNet enabled, requires scene change to take effect", 10, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+            ScreenMessages.PostScreenMessage(Local.NotifyMessages_enable, 10, ScreenMessageStyle.UPPER_CENTER, Color.yellow);  // "RealAntennas: CommNet enabled, requires scene change to take effect"
         }
 
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using KSP.Localization;
 
 namespace RealAntennas
 {
@@ -34,8 +35,7 @@ namespace RealAntennas
         enum SelectionMode { Vessel, GroundStation };
         private SelectionMode primarySelectionMode = SelectionMode.Vessel;
         private SelectionMode fixedSelectionMode = SelectionMode.GroundStation;
-        private const string sNoConnection = "<color=orange><b>(No Connection)</b></color>";
-
+        private string sNoConnection = "<color=orange><b>"+ Local.PlannerGUI_NoConnection + "</b></color>";  // (No Connection)
         public void Start()
         {
             DiscoverProtoVesselAntennas(protoVesselAntennaCache);
@@ -63,6 +63,23 @@ namespace RealAntennas
             dMax = $"{tMax:F3}";
             RequestUpdate = true;
         }
+        /// <summary>
+        /// localized SelectionMode text
+        /// </summary>
+        /// <param name="selectionMode"></param>
+        /// <returns></returns>
+        static string mode(SelectionMode selectionMode)
+        {
+            switch(selectionMode)
+            {
+                case SelectionMode.Vessel:
+                    return Local.PlannerGUI_SelectionMode_Vessel;
+                case SelectionMode.GroundStation:
+                    return Local.PlannerGUI_SelectionMode_GroundStation;
+                default:
+                    return "";
+            }
+        }
 
         public void OnDestroy()
         {
@@ -79,7 +96,7 @@ namespace RealAntennas
         public void OnGUI()
         {
             GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, "Antenna Planning", windowStyle, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
+            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, Local.PlannerGUI_title, windowStyle, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));  // "Antenna Planning"
         }
 
         void GUIDisplay(int windowID)
@@ -88,28 +105,28 @@ namespace RealAntennas
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.BeginVertical();
-                GUILayout.Label($"Ground Station TechLevel: {currentGroundStationTechLevel:F0}");
-                GUILayout.Label($"Ground Station (Planning) TechLevel: {iTechLevel}");
+                GUILayout.Label(Local.PlannerGUI_curGSTechLevel + $" {currentGroundStationTechLevel: F0}"); // Ground Station TechLevel: 
+                GUILayout.Label(Local.PlannerGUI_iTechLevel + $" {iTechLevel}");  // Ground Station (Planning) TechLevel:
                 GUILayout.EndVertical();
                 iTechLevel = Mathf.RoundToInt(GUILayout.HorizontalSlider(iTechLevel, 0, RACommNetScenario.MaxTL, GUILayout.Width(150), GUILayout.ExpandWidth(false)));
-                if (GUILayout.Button("Apply", GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button(Local.Gerneric_Apply, GUILayout.ExpandWidth(false)))  // "Apply"
                 {
                     RACommNetScenario.GroundStationTechLevel = iTechLevel;
                     (RACommNetScenario.Instance as RACommNetScenario).RebuildHomes();
                     fixedAntenna = primaryAntenna;
-                    ScreenMessages.PostScreenMessage($"Set Ground Station TL to {iTechLevel} and reset Home antenna to {primaryAntenna.Name}", 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#RA_PlannerGUI_PostMsg", iTechLevel, primaryAntenna.Name), 2, ScreenMessageStyle.UPPER_CENTER, Color.yellow); // $"Set Ground Station TL to {iTechLevel} and reset Home antenna to {primaryAntenna.Name}"
                     RequestUpdate = true;
                 }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
 
-            GUILayout.BeginVertical("Antenna Selection", boxStyle, GUILayout.ExpandHeight(true));
+            GUILayout.BeginVertical(Local.PlannerGUI_AntennaSelection, boxStyle, GUILayout.ExpandHeight(true));  // "Antenna Selection"
             GUILayout.Space(SPACING);
             GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical("Primary", boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));
+            GUILayout.BeginVertical(Local.PlannerGUI_Primary, boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true)); // "Primary"
             GUILayout.Space(SPACING);
-            if (GUILayout.Button($"{primarySelectionMode}"))
+            if (GUILayout.Button($"{mode(primarySelectionMode)}")) // primarySelectionMode
             {
                 primarySelectionMode = primarySelectionMode == SelectionMode.Vessel ? SelectionMode.GroundStation : SelectionMode.Vessel;
             }
@@ -118,9 +135,9 @@ namespace RealAntennas
 
             GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("Peer", boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));
+            GUILayout.BeginVertical(Local.PlannerGUI_Peer, boxStyle, GUILayout.Height(200), GUILayout.ExpandHeight(true));  // "Peer"
             GUILayout.Space(SPACING);
-            if (GUILayout.Button($"{fixedSelectionMode}"))
+            if (GUILayout.Button($"{mode(fixedSelectionMode)}"))  // fixedSelectionMode
             {
                 fixedSelectionMode = fixedSelectionMode == SelectionMode.Vessel ? SelectionMode.GroundStation : SelectionMode.Vessel;
             }
@@ -135,9 +152,9 @@ namespace RealAntennas
             bodyList.AddRange(Planetarium.fetch.Home.orbitingBodies);
             bodyList.AddRange(Planetarium.fetch.Sun.orbitingBodies);
             var bodyNames = (from CelestialBody body in bodyList
-                             select body.name).ToArray();
+                             select body.displayName.LocalizeRemoveGender()).ToArray();
 
-            GUILayout.BeginVertical("Remote Body Presets", boxStyle);
+            GUILayout.BeginVertical(Local.PlannerGUI_RemoteBodyPresets, boxStyle);  // "Remote Body Presets"
             GUILayout.Space(SPACING);
             var prev = bodyIndex;
             bodyIndex = GUILayout.SelectionGrid(bodyIndex, bodyNames, 3);
@@ -156,12 +173,12 @@ namespace RealAntennas
             }
             GUILayout.EndVertical();
 
-            GUILayout.BeginVertical("Parameters", boxStyle);
+            GUILayout.BeginVertical(Local.PlannerGUI_Parameters, boxStyle);  // "Parameters"
             GUILayout.Space(SPACING);
-            GUILayout.Label($"Primary Antenna: {primaryAntenna.ParentNode?.displayName} {primaryAntenna}");
-            GUILayout.Label($"Peer Antenna: {fixedAntenna.ParentNode?.displayName} {fixedAntenna}");
+            GUILayout.Label(Local.PlannerGUI_PrimaryAntenna + $" {primaryAntenna.ParentNode?.displayName} {primaryAntenna}");  // Primary Antenna:
+            GUILayout.Label(Local.PlannerGUI_PeerAntenna + $" {fixedAntenna.ParentNode?.displayName} {fixedAntenna}") ;  // "Peer Antenna:"
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Distance Max:");
+            GUILayout.Label(Local.PlannerGUI_Distance_Max);  // $"Distance Max:"
             dMax = GUILayout.TextArea(dMax, 10, GUILayout.Width(125));
             dMaxMultIndex = GUILayout.SelectionGrid(dMaxMultIndex, distMults, 4, GUILayout.ExpandWidth(false));
             double.TryParse(dMax, out distanceMax);
@@ -171,7 +188,7 @@ namespace RealAntennas
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Distance Min:");
+            GUILayout.Label(Local.PlannerGUI_Distance_Min);  // $"Distance Min:"
             dMin = GUILayout.TextArea(dMin, 10, GUILayout.Width(125));
             dMinMultIndex = GUILayout.SelectionGrid(dMinMultIndex, distMults, 4, GUILayout.ExpandWidth(false));
             double.TryParse(dMin, out distanceMin);
@@ -187,16 +204,16 @@ namespace RealAntennas
 
             GUILayout.Space(SPACING);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Plan!", GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(Local.PlannerGUI_Planbutton, GUILayout.ExpandWidth(false)))  // "Plan!"
                 RequestUpdate = true;
 
             GUILayout.Space(SPACING * 2);
-            showDebugUI = GUILayout.Toggle(showDebugUI, "Show Details");
+            showDebugUI = GUILayout.Toggle(showDebugUI, Local.PlannerGUI_ShowDetails);  // "Show Details"
             if (connectionDebugger != null)
                 connectionDebugger.showUI = showDebugUI;
             GUILayout.Space(SPACING * 2);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Close", GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(Local.Gerneric_Close, GUILayout.ExpandWidth(false)))  // "Close"
             {
                 Destroy(this);
                 gameObject.DestroyGameObject();
@@ -223,7 +240,7 @@ namespace RealAntennas
                     ShipConstruct sc = EditorLogic.RootPart.ship;
                     foreach (Part p in sc.Parts)
                         foreach (ModuleRealAntenna mra in p.FindModulesImplementing<ModuleRealAntenna>())
-                            if (GUILayout.Button($"{sc.shipName} {mra.RAAntenna.ToStringShort()}", buttonStyle))
+                            if (GUILayout.Button($"{sc.shipName} {mra.RAAntenna.ToStringShort()}", buttonStyle))  // 
                             {
                                 antenna = mra.RAAntenna;
                                 res = true;
@@ -231,7 +248,7 @@ namespace RealAntennas
 
                     foreach (var x in protoVesselAntennaCache)
                         foreach (RealAntenna ra in x.Value)
-                            if (GUILayout.Button($"{x.Key.vesselName} {ra.ToStringShort()}", buttonStyle))
+                            if (GUILayout.Button($"{x.Key.vesselName} {ra.ToStringShort()}", buttonStyle))  // 
                             {
                                 antenna = ra;
                                 res = true;
@@ -249,7 +266,7 @@ namespace RealAntennas
             {
                 var homes = RACommNetScenario.GroundStations.Values.Where(x => x.Comm is RACommNode);
                 if (GetBestMatchingGroundStation(peer, homes) is RealAntenna bestDSNAntenna &&
-                    GUILayout.Button($"<color=orange>[Best Station]</color>: {bestDSNAntenna.ToStringShort()}", buttonStyle))
+                    GUILayout.Button($"<color=orange>{Local.PlannerGUI_BestGS}</color>: {bestDSNAntenna.ToStringShort()}", buttonStyle))  // [Best Station]
                 {
                     antenna = bestDSNAntenna;
                     res = true;
@@ -366,7 +383,7 @@ namespace RealAntennas
             var debugger = net.connectionDebugger;
             // Can't use ??= here, because Unity overrides the == operator for gameObjects and probably Components?
             if (connectionDebugger == null)
-                connectionDebugger = new GameObject($"Planning Antenna Debugger: {peerAntennaCopy.Name}").AddComponent<Network.ConnectionDebugger>();
+                connectionDebugger = new GameObject($"Planning Antenna Debugger: {peerAntennaCopy.Name}").AddComponent<Network.ConnectionDebugger>();  // Planning Antenna Debugger
             connectionDebugger.showUI = showDebugUI;
             bool debuggerDisplayState = connectionDebugger.visible.FirstOrDefault().Value;
             connectionDebugger.visible.Clear();
@@ -409,8 +426,8 @@ namespace RealAntennas
                     rates[index] = res.dataRate;    // 0 = Near Tx.  3 = Far Rx.
                     i++;
                 }
-                string sMax = $"Tx/Rx rate at max distance: {RATools.PrettyPrintDataRate(rates[2])}/{RATools.PrettyPrintDataRate(rates[3])}";
-                string sMin = $"Tx/Rx rate at min distance: {RATools.PrettyPrintDataRate(rates[0])}/{RATools.PrettyPrintDataRate(rates[1])}";
+                string sMax = Local.PlannerGUI_xrRate_Max + $" {RATools.PrettyPrintDataRate(rates[2])}/{RATools.PrettyPrintDataRate(rates[3])}";  //Tx/Rx rate at max distance:
+                string sMin = Local.PlannerGUI_xrRate_Min + $" {RATools.PrettyPrintDataRate(rates[0])}/{RATools.PrettyPrintDataRate(rates[1])}";  // Tx/Rx rate at min distance:
                 if (rates[2] == 0 || rates[3] == 0) sMax += $"  {sNoConnection}";
                 if (rates[0] == 0 || rates[1] == 0) sMin += $"  {sNoConnection}";
 
