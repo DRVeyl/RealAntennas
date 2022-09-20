@@ -279,7 +279,7 @@ namespace RealAntennas
                 foreach (Antenna.BandInfo band in Antenna.BandInfo.All.Values)
                 {
                     float tGain = (antennaDiameter > 0) ? Physics.GainFromDishDiamater(antennaDiameter, band.Frequency, RAAntenna.AntennaEfficiency) : Physics.GainFromReference(referenceGain, referenceFrequency * 1e6f, band.Frequency);
-                    res += $"<color=green><b>{band.name}</b></color>: {tGain:F1} dBi, {Physics.Beamwidth(tGain):F1} beamwidth\n";
+                    res += $"<color=green><b>{band.name}</b></color>: {tGain:F1} dBi, {Physics.Beamwidth(tGain):F1} {Local.Gerneric_Beamwidth_moulde}\n";  // beamwidth
                 }
             } else
             {
@@ -376,7 +376,7 @@ namespace RealAntennas
         public string PlannerUpdate(List<KeyValuePair<string, double>> resources, CelestialBody _, Dictionary<string, double> environment)
         {
             resources.Add(plannerECConsumption);   // ecConsumption is updated by the Toggle event
-            return Local.Gerneric_comms;  // comms
+            return "comms";  // Local.Gerneric_comms
         }
         private void RecalculatePlannerECConsumption()
         {

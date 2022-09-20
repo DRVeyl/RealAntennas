@@ -105,8 +105,8 @@ namespace RealAntennas
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.BeginVertical();
-                GUILayout.Label(Local.PlannerGUI_curGSTechLevel + $" {currentGroundStationTechLevel: F0}"); // Ground Station TechLevel: 
-                GUILayout.Label(Local.PlannerGUI_iTechLevel + $" {iTechLevel}");  // Ground Station (Planning) TechLevel:
+                GUILayout.Label($"{Local.PlannerGUI_curGSTechLevel}: {currentGroundStationTechLevel:F0}"); // Ground Station TechLevel: 
+                GUILayout.Label($"{Local.PlannerGUI_iTechLevel}: {iTechLevel}");  // Ground Station (Planning) TechLevel:
                 GUILayout.EndVertical();
                 iTechLevel = Mathf.RoundToInt(GUILayout.HorizontalSlider(iTechLevel, 0, RACommNetScenario.MaxTL, GUILayout.Width(150), GUILayout.ExpandWidth(false)));
                 if (GUILayout.Button(Local.Gerneric_Apply, GUILayout.ExpandWidth(false)))  // "Apply"

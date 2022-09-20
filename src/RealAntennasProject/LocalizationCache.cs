@@ -93,7 +93,7 @@ namespace RealAntennas
         /// </summary>
         public static string PlannerGUI_BestGS = Localizer.Format("#RA_PlannerGUI_BestGS");
 
-        // Connection Debugger
+        // Connection Debugger strings
         /// <summary>
         /// Planning Antenna Debugger
         /// </summary>
@@ -163,7 +163,7 @@ namespace RealAntennas
         // Mod Settings
         public static string Setting_Title = Localizer.Format("#RA_Setting_Title");
 
-        // NetUI
+        // NetUI strings
         public static string NetUI_ConeMode = Localizer.Format("#RA_NetUI_ConeMode");  // ConeMode
         public static string NetUI_LinkEndMode = Localizer.Format("#RA_NetUI_LinkEndMode"); // Link End Mode
         public static string NetUI_TargetLine = Localizer.Format("#RA_NetUI_TargetLine"); // TargetLine
@@ -172,6 +172,19 @@ namespace RealAntennas
         public static string NetUI_LinkLineBrightness  = Localizer.Format("#RA_NetUI_LinkLineBrightness"); // Link Line Brightness
         public static string NetUI_ConeCircles = Localizer.Format("#RA_NetUI_ConeCircles"); // Cone Circles
         public static string NetUI_ConeOpacity= Localizer.Format("#RA_NetUI_ConeOpacity"); // Cone Opacity
+        public static string NetUI_SignalTooltips = Localizer.Format("#RA_NetUI_SignalTooltips");  // Signal (Tx/Rx)
+
+
+        // Antenna Control Center strings
+        public static string ControlCenterUI_title = Localizer.Format("#RA_ControlCenterUI_title");  // Antenna Control Center
+        public static string ControlCenterUI_SortMode = Localizer.Format("#RA_ControlCenterUI_SortMode");  // Sort Mode
+
+        // Antenna Targeting windows
+        public static string AntennaTargeting_title = Localizer.Format("#RA_AntennaTargeting_title");  // "Antenna Targeting"
+        public static string AntennaTargeting_Azimuth = Localizer.Format("#RA_AntennaTargeting_Azimuth");  // Azimuth
+        public static string AntennaTargeting_Elevation = Localizer.Format("#RA_AntennaTargeting_Elevation");  // Elevation
+        public static string AntennaTargeting_Deflection = Localizer.Format("#RA_AntennaTargeting_Deflection");  // Deflection
+
 
         // Gerneric strings
         public static string Gerneric_Apply = Localizer.Format("#RA_Gerneric_Apply");  // Apply
@@ -184,6 +197,7 @@ namespace RealAntennas
         public static string Gerneric_Position = Localizer.Format("#RA_Gerneric_Position");  // Position
         public static string Gerneric_None = Localizer.Format("#RA_Gerneric_None");  // None
         public static string Gerneric_Beamwidth= Localizer.Format("#RA_Gerneric_Beamwidth");  // Beamwidth (3dB full-width)
+        public static string Gerneric_Beamwidth_moulde= Localizer.Format("#RA_Gerneric_Beamwidth_moulde");  // beamwidth
         public static string Gerneric_AntennaAoA = Localizer.Format("#RA_Gerneric_AntennaAoA");  // Antenna AoA
         public static string Gerneric_ReceivedPower= Localizer.Format("#RA_Gerneric_ReceivedPower");  // Received Power
         public static string Gerneric_AntennaElevation= Localizer.Format("#RA_Gerneric_AntennaElevation");  // Antenna Elevation

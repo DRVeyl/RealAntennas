@@ -7,7 +7,7 @@ namespace RealAntennas.Targeting
 {
     public class AntennaTargetGUI : MonoBehaviour
     {
-        const string GUIName = "Antenna Targeting";  // 
+        string GUIName = Local.AntennaTargeting_title;  // "Antenna Targeting"
         Rect Window = new Rect(20, 100, 280, 200);
         Vector2 scrollVesselPos, scrollBodyPos, iconSize = new Vector2(30, 30);
         enum SortMode { Alphabetical, Distance, VesselType, ParentBody, RFBand };
@@ -130,7 +130,7 @@ namespace RealAntennas.Targeting
                 scrollBodyPos = GUILayout.BeginScrollView(scrollBodyPos, GUILayout.Height(200), GUILayout.ExpandWidth(true));
                 foreach (CelestialBody body in FlightGlobals.Bodies)
                 {
-                    if (GUILayout.Button(body.displayName.LocalizeRemoveGender()))  // body.name
+                    if (GUILayout.Button(body.displayName.LocalizeRemoveGender()))  // "body.name" => "body.displayName.LocalizeRemoveGender()" localization for other planet pack
                     {
                         var x = new ConfigNode(AntennaTarget.nodeName);
                         if (float.TryParse(sLat, out float flat) &&
@@ -150,9 +150,9 @@ namespace RealAntennas.Targeting
             if (targetMode.mode == TargetMode.AzEl)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Azimuth");
+                GUILayout.Label(Local.AntennaTargeting_Azimuth);  // "Azimuth"
                 sAzimuth = GUILayout.TextField(sAzimuth, 4);
-                GUILayout.Label("Elevation");
+                GUILayout.Label(Local.AntennaTargeting_Elevation); //"Elevation"
                 sElevation = GUILayout.TextField(sElevation, 4);
                 GUILayout.EndHorizontal();
                 if (GUILayout.Button(Local.Gerneric_Apply)) // Apply
@@ -175,9 +175,9 @@ namespace RealAntennas.Targeting
             if (targetMode.mode == TargetMode.OrbitRelative)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Deflection");
+                GUILayout.Label(Local.AntennaTargeting_Deflection);  // "Deflection"
                 sForward = GUILayout.TextField($"{deflection}", 5);
-                GUILayout.Label("Elevation");
+                GUILayout.Label(Local.AntennaTargeting_Elevation); //"Elevation"
                 sElevation = GUILayout.TextField(sElevation, 4);
                 GUILayout.EndHorizontal();
                 float.TryParse(sForward, out deflection);
@@ -200,7 +200,7 @@ namespace RealAntennas.Targeting
             }
             GUILayout.EndVertical();
             GUILayout.Space(15);
-            if (GUILayout.Button("Close")) Destroy(this);
+            if (GUILayout.Button(Local.Gerneric_Close)) Destroy(this);  // "Close"
             GUI.DragWindow();
         }
 
