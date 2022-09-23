@@ -12,7 +12,7 @@
         [GameParameters.CustomParameterUI("#RA_Setting_enforceMinDirectionalDistance", toolTip = "#RA_Setting_enforceMinDirectionalDistance_tooltip")]  // Apply Minimum Dish Distance|\"Antenna Cones\" directional antennas cannot point at a target that is too close.
         public bool enforceMinDirectionalDistance = true;
 
-        [GameParameters.CustomParameterUI("#RA_Setting_performanceUI", toolTip = "#RA_Setting_performanceUI_toottip")]  // Performance UI Button | Enable / Disable RealAntennas UI (shows performance metrics), also MOD+I
+        [GameParameters.CustomParameterUI("#RA_Setting_performanceUI", toolTip = "#RA_Setting_performanceUI_tooltip")]  // Performance UI Button | Enable / Disable RealAntennas UI (shows performance metrics), also MOD+I
         public bool performanceUI = true;
 
         [GameParameters.CustomParameterUI("#RA_Setting_debugWalkLogging", toolTip = "#RA_Setting_debugWalkLogging_tooltip")]  // Periodic Debug Logging | Dump RealAntennas state on interval for debugging.
