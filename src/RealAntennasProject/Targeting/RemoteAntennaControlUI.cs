@@ -6,7 +6,7 @@ namespace RealAntennas.Targeting
 {
     class RemoteAntennaControlUI : MonoBehaviour
     {
-        const string GUIName = "Antenna Control Center";
+        string GUIName = Local.ControlCenterUI_title;  // "Antenna Control Center"
         private Rect Window = new Rect(100, 100, 800, 500);
         private Vector2 scrollSourcePos, iconSize = new Vector2(30,30);
         private enum SortMode { Alphabetical, VesselType, ParentBody, RFBand };
@@ -34,7 +34,7 @@ namespace RealAntennas.Targeting
                     TextureTools.filterStates[vType] = GUILayout.Toggle(TextureTools.filterStates[vType], tex, HighLogic.Skin.button, GUILayout.Height(iconSize.y), GUILayout.Width(iconSize.x));
             }
             GUILayout.EndHorizontal();
-            if (GUILayout.Button($"Sort Mode: {sourceSortMode}"))
+            if (GUILayout.Button($"{Local.ControlCenterUI_SortMode}: {sourceSortMode}"))  // Sort Mode
             {
                 sourceSortMode = (SortMode)(((int)(sourceSortMode + 1)) % System.Enum.GetNames(typeof(SortMode)).Length);
                 SortList(sourceVessels, sourceSortMode);
@@ -47,7 +47,7 @@ namespace RealAntennas.Targeting
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"{ra.ParentNode?.displayName}: {ra.ToStringShort()}", GUILayout.ExpandWidth(true));
-                if (ra.CanTarget && GUILayout.Button("Target", GUILayout.ExpandWidth(false)))
+                if (ra.CanTarget && GUILayout.Button(Local.Gerneric_Target, GUILayout.ExpandWidth(false)))  // "Target"
                 {
                     Targeting.AntennaTargetManager.AcquireGUI(ra);
                 }
@@ -60,7 +60,7 @@ namespace RealAntennas.Targeting
             }
             GUILayout.EndScrollView();
 
-            if (GUILayout.Button("Close"))
+            if (GUILayout.Button(Local.Gerneric_Close)) //"Close"
             {
                 Destroy(this);
                 gameObject.DestroyGameObject();

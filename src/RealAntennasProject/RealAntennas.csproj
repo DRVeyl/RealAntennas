@@ -45,6 +45,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Compile Include="LocalizationCache.cs" />
     <Compile Include="MapUI\Settings.cs" />
     <Compile Include="Network\ConnectionDebugger.cs" />
     <Compile Include="Network\LinkDetails.cs" />

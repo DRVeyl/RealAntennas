@@ -56,7 +56,7 @@ namespace RealAntennas.MapUI
                         double rate = (comm.Net as RACommNetwork).MaxDataRateToHome(comm);
                         double txMetric = raLink.start.Equals(comm) ? raLink.FwdMetric : raLink.RevMetric;
                         double rxMetric = raLink.start.Equals(comm) ? raLink.RevMetric : raLink.FwdMetric;
-                        tooltip.title.SetText($"Signal (Tx/Rx) : {txMetric * 100:F0}%/{rxMetric*100:F0}%  -  {RATools.PrettyPrintDataRate(rate)}");
+                        tooltip.title.SetText($"{Local.NetUI_SignalTooltips} : {txMetric * 100:F0}%/{rxMetric*100:F0}%  -  {RATools.PrettyPrintDataRate(rate)}");  // Signal (Tx/Rx)
                     }
                 }
             }
