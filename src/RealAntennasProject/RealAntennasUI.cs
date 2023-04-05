@@ -30,6 +30,20 @@ namespace RealAntennas
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
             if (button != null)
                 ApplicationLauncher.Instance.RemoveModApplication(button);
+
+            // Mitigate memory leakage
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RAParameters>().performanceUI)
+            {
+                try
+                {
+                    GameEvents.onGameSceneLoadRequested.Remove(OnSceneChange);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"{modName} failed to remove OnSceneChange callback");
+                    Debug.LogException(ex);
+                }
+            }
         }
 
         public void OnMapExit()
