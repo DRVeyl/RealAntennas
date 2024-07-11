@@ -1,0 +1,72 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  check-secret:
+    runs-on: ubuntu-latest
+    outputs:
+      has-password: ${{ steps.has-password.outputs.defined }}
+    steps:
+      - id: has-password
+        if: "${{ env.KSP_ZIP_PASSWORD != '' }}"
+        run: echo "::set-output name=defined::true"
+        env:
+            KSP_ZIP_PASSWORD: ${{ secrets.KSP_ZIP_PASSWORD }}
+  validate-cfg-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Validate config files
+        uses: KSP-CKAN/KSPMMCfgParser@master
+  build:
+    runs-on: windows-latest
+    needs: [check-secret]
+    if: needs.check-secret.outputs.has-password == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 100
+      - name: Download required assemblies
+        id: download-assemblies
+        shell: pwsh
+        env:
+          KSP_ZIP_PASSWORD: ${{ secrets.KSP_ZIP_PASSWORD }}
+        run: |
+          Invoke-WebRequest https://ksp-ro.s3-us-west-2.amazonaws.com/KSPAssemblies-1.12.zip -OutFile KSP_Assemblies.zip
+          $KSP_DLL_PATH="${env:GITHUB_WORKSPACE}/KSP_Assemblies"
+          echo "::set-output name=ksp-dll-path::${KSP_DLL_PATH}"
+          mkdir -p "${KSP_DLL_PATH}"
+          7z.exe x "-p${env:KSP_ZIP_PASSWORD}" 'KSP_Assemblies.zip' "-o${KSP_DLL_PATH}"
+          rm 'KSP_Assemblies.zip'
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build mod solution
+        run: |
+          msbuild /p:Configuration=Release /p:ReferencePath="${{ steps.download-assemblies.outputs.ksp-dll-path }}" ${env:GITHUB_WORKSPACE}/src/RealAntennasProject.sln
+
+      - name: Assemble release
+        id: assemble-release
+        run: |
+          $RELEASE_DIR="${env:RUNNER_TEMP}/release"
+          echo "Release dir: ${RELEASE_DIR}"
+          mkdir "${RELEASE_DIR}"
+          echo "::set-output name=release-dir::${RELEASE_DIR}"
+          cp "${env:GITHUB_WORKSPACE}/GameData/RealAntennas" "${RELEASE_DIR}" -Recurse
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: RealAntennas
+          path: ${{ steps.assemble-release.outputs.release-dir }}

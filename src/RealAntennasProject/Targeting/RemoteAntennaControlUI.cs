@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ClickThroughFix;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace RealAntennas.Targeting
         public void OnGUI()
         {
             GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
+            Window = ClickThruBlocker.GUILayoutWindow(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
         }
 
         void GUIDisplay(int windowID)

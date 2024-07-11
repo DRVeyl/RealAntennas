@@ -114,6 +114,11 @@ namespace RealAntennas
                 RAAntenna.Target?.Save(node);
         }
 
+        public void OnDestroy()
+        {
+            GameEvents.OnGameSettingsApplied.Remove(ApplyGameSettings);
+        }
+
         public void Configure(ConfigNode node)
         {
             RAAntenna.Name = part.partInfo?.title ?? part.name;

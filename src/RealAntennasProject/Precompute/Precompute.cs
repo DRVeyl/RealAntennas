@@ -14,6 +14,7 @@ namespace RealAntennas.Precompute
         internal float gain;
         internal float beamwidth;
         internal bool isHome;
+        internal bool isTracking;
         internal double3 position;
         internal float3 dir;
         internal float AMW;
@@ -83,6 +84,7 @@ namespace RealAntennas.Precompute
         private NativeArray<float> rxGain;
         private NativeArray<float> rxBeamwidth;
         private NativeArray<bool> rxHome;
+        private NativeArray<bool> rxTracking;
         private NativeArray<double3> rxPos;
         private NativeArray<float3> rxDir;
         private NativeArray<float> rxAMW;
@@ -229,6 +231,7 @@ namespace RealAntennas.Precompute
             rxGain = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             rxBeamwidth = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
             rxHome = new NativeArray<bool>(allAntennaPairs.Length, Allocator.TempJob);
+            rxTracking = new NativeArray<bool>(allAntennaPairs.Length, Allocator.TempJob);
             rxPos = new NativeArray<double3>(allAntennaPairs.Length, Allocator.TempJob);
             rxDir = new NativeArray<float3>(allAntennaPairs.Length, Allocator.TempJob);
             rxAMW = new NativeArray<float>(allAntennaPairs.Length, Allocator.TempJob);
@@ -251,6 +254,7 @@ namespace RealAntennas.Precompute
                 rxBeamwidth = rxBeamwidth,
                 txHome = txHome,
                 rxHome = rxHome,
+                rxTracking = rxTracking,
                 txFreq = txFreq,
                 rxFreq = rxFreq,
                 txPower = txPower,
@@ -324,7 +328,7 @@ namespace RealAntennas.Precompute
             {
                 occluders = occluders,
                 rxPrecalcNoise = rxPrecalcNoise,
-                rxHome = rxHome,
+                rxTracking = rxTracking,
                 rxPos = rxPos,
                 rxGain = rxGain,
                 rxBeamwidth = rxBeamwidth,
@@ -619,6 +623,7 @@ namespace RealAntennas.Precompute
             rxGain.Dispose();
             rxBeamwidth.Dispose();
             rxHome.Dispose();
+            rxTracking.Dispose();
             rxPos.Dispose();
             rxDir.Dispose();
             rxAMW.Dispose();
@@ -728,6 +733,7 @@ namespace RealAntennas.Precompute
                             gain = ra.Gain,
                             beamwidth = ra.Beamwidth,
                             isHome = node.isHome,
+                            isTracking = ra.IsTracking,
                             AMW = Physics.AntennaMicrowaveTemp(ra),
                             encoder = new Encoder(ra.Encoder),
                             maxSymbolRate = Convert.ToSingle(ra.SymbolRate),

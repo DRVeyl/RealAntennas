@@ -79,7 +79,7 @@ namespace RealAntennas
             else return math.lerp(9, 10, (norm - 0.86f) / 1);
         }
         public static float PointingLoss(RealAntenna ant, Vector3 origin)
-            => (ant.CanTarget && ant.ToTarget != Vector3.zero) ? PointingLoss(Vector3.Angle(origin - ant.Position, ant.ToTarget), ant.Beamwidth) : 0;
+            => (ant.CanTarget && !ant.IsTracking) ? PointingLoss(Vector3.Angle(origin - ant.Position, ant.ToTarget), ant.Beamwidth) : 0;
 
         public static float GainAtAngle(float gain, float angle) => gain - PointingLoss(math.abs(angle), Beamwidth(gain));
         // Beamwidth is the 3dB full beamwidth contour, ~= the offset angle to the 10dB contour.

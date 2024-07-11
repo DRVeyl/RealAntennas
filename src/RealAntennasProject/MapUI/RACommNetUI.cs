@@ -18,6 +18,8 @@ namespace RealAntennas.MapUI
         public Color color3dB = XKCDColors.BarbiePink;
         public Color color10dB = XKCDColors.Lavender;
 
+        public readonly List<SiteNode> groundStationSiteNodes = new List<SiteNode>();
+
         private readonly List<Vector3d> targetPoints = new List<Vector3d>();
         private readonly List<Vector3> targetPoints_out = new List<Vector3>();
         private readonly List<Vector3d> cone3Points = new List<Vector3d>();
@@ -51,10 +53,20 @@ namespace RealAntennas.MapUI
                     Texture2D stationTexture = (GameDatabase.Instance.GetTexture(home.icon, false) is Texture2D tex) ? tex : defaultTex;
                     siteNode.wayPoint.node.SetIcon(Sprite.Create(stationTexture, new Rect(0, 0, stationTexture.width, stationTexture.height), new Vector2(0.5f, 0.5f), 100f));
                     siteNode.wayPoint.node.OnUpdateVisible += home.OnUpdateVisible;
+                    groundStationSiteNodes.Add(siteNode);
                 }
             }
             RATelemetryUpdate.Install();
         }
+
+        // If either one of these lists is nonempty, the links that are shown
+        // are exactly those in OverrideShownLinks, and the beamwidth cones are
+        // exactly those of the nodes in OverrideShownCones, regardless of the
+        // UI mode.
+        // The list is used and cleared by this class at the BetterLateThanNever
+        // timing of LateUpdate.
+        public List<CommLink> OverrideShownLinks { get; private set; } = new List<CommLink>();
+        public List<RACommNode> OverrideShownCones { get; private set; } = new List<RACommNode>();
 
         private void GatherLinkLines(List<CommLink> linkList)
         {
@@ -255,6 +267,7 @@ namespace RealAntennas.MapUI
             public Vector3d Midpoint => (end1 + end2) / 2;
         }
 
+        // Runs in LateUpdate at BetterLateThanNever (Timing5, 8008).
         protected override void UpdateDisplay()
         {
             //base.UpdateDisplay();
@@ -274,6 +287,17 @@ namespace RealAntennas.MapUI
 
             if (RACommNetScenario.RACN is RACommNetwork commNet)
             {
+                if (OverrideShownLinks.Count > 0 || OverrideShownCones.Count > 0)
+                {
+                    GatherLinkLines(OverrideShownLinks);
+                    foreach (RACommNode node in OverrideShownCones)
+                    {
+                        GatherAntennaCones(node);
+                    }
+                    OverrideShownLinks.Clear();
+                    OverrideShownCones.Clear();
+                    return;
+                }
                 if (CommNetUI.Mode == CommNetUI.DisplayMode.Network)
                 {
                     foreach (RACommNode node in commNet.Nodes)

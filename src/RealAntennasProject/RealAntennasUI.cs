@@ -1,4 +1,5 @@
-﻿using KSP.UI.Screens;
+﻿using ClickThroughFix;
+using KSP.UI.Screens;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,7 +30,10 @@ namespace RealAntennas
             GameEvents.OnMapExited.Remove(OnMapExit);
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
             if (button != null)
+            {
+                GameEvents.onGameSceneLoadRequested.Remove(OnSceneChange);
                 ApplicationLauncher.Instance.RemoveModApplication(button);
+            }
         }
 
         public void OnMapExit()
@@ -52,7 +56,7 @@ namespace RealAntennas
         {
             if (showUI)
             {
-                winPos = GUILayout.Window(GetHashCode(), winPos, WindowGUI, modName, GUILayout.MinWidth(200));
+                winPos = ClickThruBlocker.GUILayoutWindow(GetHashCode(), winPos, WindowGUI, modName, GUILayout.MinWidth(200));
             }
         }
 

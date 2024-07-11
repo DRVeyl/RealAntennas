@@ -23,8 +23,8 @@ namespace RealAntennas
 
         public static bool initialized = false;
 
-        private static readonly Dictionary<int, TechLevelInfo> All = new Dictionary<int, TechLevelInfo>();
-        public static int MaxTL { get; private set; }  = -1;
+        public static readonly Dictionary<int, TechLevelInfo> All = new Dictionary<int, TechLevelInfo>();
+        public static int MaxTL { get; set; }  = -1;
         protected static readonly string ModTag = "[RealAntennas.TechLevelInfo] ";
 
         public TechLevelInfo() { }

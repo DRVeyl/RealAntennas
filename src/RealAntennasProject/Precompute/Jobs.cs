@@ -25,6 +25,7 @@ namespace RealAntennas.Precompute
         [WriteOnly] public NativeArray<float> rxGain;
         [WriteOnly] public NativeArray<float> rxBeamwidth;
         [WriteOnly] public NativeArray<bool> rxHome;
+        [WriteOnly] public NativeArray<bool> rxTracking;
         [WriteOnly] public NativeArray<double3> rxPos;
         [WriteOnly] public NativeArray<float3> rxDir;
         [WriteOnly] public NativeArray<float> rxAMW;
@@ -47,14 +48,15 @@ namespace RealAntennas.Precompute
             txBeamwidth[index] = tx.beamwidth;
             txHome[index] = tx.isHome;
             txPos[index] = tx.position;
-            txDir[index] = tx.isHome ? (float3) (rx.position - tx.position) : tx.dir;
+            txDir[index] = tx.isTracking ? (float3) (rx.position - tx.position) : tx.dir;
 
             rxFreq[index] = rx.freq;
             rxGain[index] = rx.gain;
             rxBeamwidth[index] = rx.beamwidth;
             rxHome[index] = rx.isHome;
+            rxTracking[index] = rx.isTracking;
             rxPos[index] = rx.position;
-            rxDir[index] = rx.isHome ? (float3) (tx.position - rx.position) : rx.dir;
+            rxDir[index] = rx.isTracking ? (float3) (tx.position - rx.position) : rx.dir;
             rxAMW[index] = rx.AMW;
         }
     }
@@ -79,7 +81,7 @@ namespace RealAntennas.Precompute
     {
         [ReadOnly] public NativeArray<OccluderInfo> occluders;
         [ReadOnly] public NativeArray<float> rxPrecalcNoise;
-        [ReadOnly] public NativeArray<bool> rxHome;
+        [ReadOnly] public NativeArray<bool> rxTracking;
         [ReadOnly] public NativeArray<double3> rxPos;
         [ReadOnly] public NativeArray<float> rxGain;
         [ReadOnly] public NativeArray<float> rxBeamwidth;
@@ -88,7 +90,7 @@ namespace RealAntennas.Precompute
         [WriteOnly] public NativeArray<float> bodyNoise;
         public void Execute(int index)
         {
-            bodyNoise[index] = rxHome[index] ? Precompute.NoiseFromOccluders(rxPos[index], rxGain[index], rxDir[index], rxFreq[index], rxBeamwidth[index], occluders) : rxPrecalcNoise[index];
+            bodyNoise[index] = rxTracking[index] ? Precompute.NoiseFromOccluders(rxPos[index], rxGain[index], rxDir[index], rxFreq[index], rxBeamwidth[index], occluders) : rxPrecalcNoise[index];
         }
     }
 

@@ -2,7 +2,7 @@
 
 namespace RealAntennas
 {
-    class RACommLink : CommNet.CommLink
+    public class RACommLink : CommNet.CommLink
     {
         private const double CostScalar = 1e5;
         public double FwdDataRate { get; set; }

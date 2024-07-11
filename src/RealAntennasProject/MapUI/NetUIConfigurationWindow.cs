@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClickThroughFix;
+using System;
 using UnityEngine;
 
 namespace RealAntennas.MapUI
@@ -10,7 +11,7 @@ namespace RealAntennas.MapUI
 
         public void OnGUI()
         {
-            winPos = GUILayout.Window(GetHashCode(), winPos, WindowGUI, ModTag, GUILayout.MinWidth(200));
+            winPos = ClickThruBlocker.GUILayoutWindow(GetHashCode(), winPos, WindowGUI, ModTag, GUILayout.MinWidth(200));
         }
 
         private void WindowGUI(int ID)

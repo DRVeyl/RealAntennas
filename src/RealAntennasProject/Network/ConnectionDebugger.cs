@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
+using ClickThroughFix;
 
 
 namespace RealAntennas.Network
@@ -34,7 +35,7 @@ namespace RealAntennas.Network
             if (showUI)
             {
                 GUI.skin = HighLogic.Skin;
-                Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
+                Window = ClickThruBlocker.GUILayoutWindow(GetHashCode(), Window, GUIDisplay, GUIName, HighLogic.Skin.window);
             }
         }
         private void GUIDisplay(int windowID)

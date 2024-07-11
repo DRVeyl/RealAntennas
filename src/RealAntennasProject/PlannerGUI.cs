@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClickThroughFix;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -79,7 +80,7 @@ namespace RealAntennas
         public void OnGUI()
         {
             GUI.skin = HighLogic.Skin;
-            Window = GUILayout.Window(GetHashCode(), Window, GUIDisplay, "Antenna Planning", windowStyle, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
+            Window = ClickThruBlocker.GUILayoutWindow(GetHashCode(), Window, GUIDisplay, "Antenna Planning", windowStyle, GUILayout.Width(GUIWidth), GUILayout.Height(GUIHeight));
         }
 
         void GUIDisplay(int windowID)

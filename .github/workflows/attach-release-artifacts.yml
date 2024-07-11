@@ -1,0 +1,29 @@
+name: "Attach Release Artifacts"
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  attach-release-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v5
+        with:
+          commit: ${{ github.sha }}
+          workflow: build.yml
+          name: RealAntennas
+          skip_unpack: true
+
+      - name: Upload package to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./RealAntennas.zip
+          asset_name: RealAntennas-${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip
