@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -8,6 +8,7 @@ namespace RealAntennas.Kerbalism
     {
         public static readonly string ModTag = "[RAKerbalismLink] ";
         public static Assembly KerbalismAssembly = null;
+        public static bool newKerbalismAssembly = false;
         public static void RAKerbalismLinkHandler(object p1, Vessel v)
         {
             if (CommNet.CommNetScenario.CommNetEnabled && v.Connection is RACommNetVessel raCNV && raCNV.Comm is RACommNode node)
@@ -33,10 +34,10 @@ namespace RealAntennas.Kerbalism
                     }
                     foreach (CommNet.CommLink clink in path)
                     {
-                        sList.Add(new string[1] { clink.end.name });
+                        sList.Add(new string[1] { clink.end.displayName });
                     }
                     //sList.Add(new string[1] { path.First.end.name });
-                    target_name = path.First.end.name;
+                    target_name = path.First.end.displayName;
                 }
 
                 p1.GetType().GetField("linked").SetValue(p1, raCNV.IsConnectedHome); // Link Status
@@ -45,7 +46,14 @@ namespace RealAntennas.Kerbalism
                 p1.GetType().GetField("status").SetValue(p1, status);       // 0=direct, 1=indirect, 2=none
                 p1.GetType().GetField("strength").SetValue(p1, strength);   // Signal quality indicator (float 0..1)
                 p1.GetType().GetField("target_name").SetValue(p1, target_name);
-                p1.GetType().GetField("control_path").SetValue(p1, sList);
+                if (newKerbalismAssembly) // Release > 3.30
+                {
+                    p1.GetType().GetField("next_hop").SetValue(p1, sList[0]);
+                }
+                else //legacy code <= 3.29
+                {
+                    p1.GetType().GetField("control_path").SetValue(p1, sList);
+                }
                 p1.GetType().GetField("ec_idle")?.SetValue(p1, ecIdle);
 
                 //Debug.LogFormat($"{ModTag}Rate: {RATools.PrettyPrintDataRate(rate * 8 * 1024 * 1024)} EC: {ec:F4}  Linked:{raCNV.IsConnectedHome}  Strength: {strength:F2}  Target: {target_name}");
@@ -60,6 +68,10 @@ namespace RealAntennas.Kerbalism
                     a.assembly.GetType("KERBALISM.API") is Type KerbalismAPIType
                     )
                 {
+                    if (a.versionMajor == 3 && a.versionMinor > 29)
+                    {
+                        newKerbalismAssembly = true;
+                    }
                     KerbalismAssembly = a.assembly;
                     MethodInfo baseMethod = typeof(Kerbalism).GetMethod(nameof(RAKerbalismLinkHandler));
                     var x = baseMethod;
